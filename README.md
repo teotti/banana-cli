@@ -27,6 +27,7 @@ Run from the repository root with `bun run banana`:
 bun run banana me
 bun run banana balance
 bun run banana balances
+bun run banana currencies
 bun run banana friends
 bun run banana groups
 bun run banana groups members GROUP_ID
@@ -86,6 +87,8 @@ bun link
 banana --help
 ```
 
-Configuration, network, API, and usage errors are written to stderr as JSON.
+Configuration, network, API, and usage errors are written to stderr. Human
+commands print `Error: MESSAGE`, `--json` prints a structured error object, and
+`--raw` prints the API error body when available.
 Session tokens currently expire after 90 days; interactive login and stored
 credentials are not included in this first version.

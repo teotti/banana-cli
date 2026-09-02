@@ -17,6 +17,7 @@ Commands:
   balance                    Show the aggregate balance
   balance users              Show balances by user
   balances                   Show balances by user
+  currencies [list]          List currencies
   friends [list]             List friends
   groups [list]              List groups
   groups create              Create a group
@@ -37,6 +38,7 @@ Environment:
 
 const ME_HELP = "Usage: banana me";
 const BALANCE_HELP = `Usage: banana balance [users]`;
+const CURRENCIES_HELP = "Usage: banana currencies [list]";
 const FRIENDS_HELP = `Usage: banana friends <command>
 
 Commands:
@@ -91,13 +93,15 @@ Options:
   --direction asc|desc`;
 const EXPENSES_HELP = `Usage: banana expenses add JSON
    or: banana expenses add --title TEXT --amount AMOUNT
-                           --currency-id ID --paid-by-id ID --date DATE
+                           --currency-id ID --paid-by-id ID
+                           --date YYYY-MM-DD|DD-MM-YYYY
                            [--group-id ID] [--description TEXT]
                            [--split-type equal|custom|percentage|shares]
                            [--split USER_ID=AMOUNT]...`;
 const PAYMENTS_HELP = `Usage: banana payments add JSON
    or: banana payments add --amount AMOUNT --currency-id ID
-                           --from-user-id ID --to-user-id ID --date DATE
+                           --from-user-id ID --to-user-id ID
+                           --date YYYY-MM-DD|DD-MM-YYYY
                            [--group-id ID] [--description TEXT]`;
 
 type ErrorType = "api" | "config" | "network" | "usage";
@@ -109,6 +113,7 @@ type Presentation =
   | "user"
   | "balance"
   | "balance-users"
+  | "currency-list"
   | "friend-list"
   | "group-list"
   | "group"
@@ -256,6 +261,7 @@ async function pageWithLess(value: string) {
 function isListPresentation(presentation: Presentation) {
   return (
     presentation === "balance-users" ||
+    presentation === "currency-list" ||
     presentation === "friend-list" ||
     presentation === "group-list" ||
     presentation === "members" ||
@@ -299,6 +305,31 @@ function requiredString(value: unknown, name: string, usage: string) {
     throw new CliFailure("usage", `${name} is required\n${usage}`);
   }
   return value;
+}
+
+function isoDate(value: unknown, usage: string) {
+  const input = requiredString(value, "--date", usage);
+  const ymd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
+  const dmy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(input);
+  const normalized = ymd
+    ? input
+    : dmy
+      ? `${dmy[3]}-${dmy[2]}-${dmy[1]}`
+      : "";
+  const date = new Date(`${normalized}T00:00:00.000Z`);
+
+  if (
+    !normalized ||
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== normalized
+  ) {
+    throw new CliFailure(
+      "usage",
+      "--date must use YYYY-MM-DD or DD-MM-YYYY",
+    );
+  }
+
+  return date.toISOString();
 }
 
 function repeatedStrings(value: unknown) {
@@ -402,6 +433,18 @@ function parseFriendsList(args: string[]): ParsedCommand {
     path: "/friends",
     presentation: "friend-list",
     query,
+  };
+}
+
+function parseCurrencies(args: string[]): ParsedCommand {
+  if (args[0] === "list") args = args.slice(1);
+  if (wantsHelp(args)) return { kind: "help", text: CURRENCIES_HELP };
+  const { positionals } = parseOptions(args);
+  requirePositionals(positionals, 0, CURRENCIES_HELP);
+  return {
+    kind: "request",
+    path: "/currencies",
+    presentation: "currency-list",
   };
 }
 
@@ -649,7 +692,7 @@ function parseExpenses(args: string[]): ParsedCommand {
         "--paid-by-id",
         EXPENSES_HELP,
       ),
-      date: requiredString(values.date, "--date", EXPENSES_HELP),
+      date: isoDate(values.date, EXPENSES_HELP),
       splits,
       ...(groupId === undefined ? {} : { groupId }),
       ...(description === undefined ? {} : { description }),
@@ -715,7 +758,7 @@ function parsePayments(args: string[]): ParsedCommand {
         "--to-user-id",
         PAYMENTS_HELP,
       ),
-      date: requiredString(values.date, "--date", PAYMENTS_HELP),
+      date: isoDate(values.date, PAYMENTS_HELP),
       ...(groupId === undefined ? {} : { groupId }),
       ...(description === undefined ? {} : { description }),
     },
@@ -764,6 +807,7 @@ function parseCommand(args: string[]): ParsedCommand {
     throw new CliFailure("usage", BALANCE_HELP);
   }
 
+  if (command === "currencies") return parseCurrencies(rest);
   if (command === "friends") return parseFriends(rest);
   if (command === "groups") return parseGroups(rest);
   if (command === "expenses") return parseExpenses(rest);
@@ -1200,6 +1244,8 @@ function cleanResponse(presentation: Presentation, body: unknown): unknown {
           totalOwing: numeric(entry.totalOwing),
         };
       });
+    case "currency-list":
+      return asArray(body);
     case "friend-list":
       return cleanFriendList(body);
     case "group-list":
@@ -1668,6 +1714,25 @@ function formatHuman(presentation: Presentation, body: unknown) {
         }),
       ].join("\n\n");
     }
+    case "currency-list": {
+      const currencies = asArray(body);
+      if (!currencies.length) return "No currencies.";
+      return [
+        "Currencies",
+        ...currencies.map((value, index) => {
+          const currency = asRecord(value);
+          return formatCard(index, currency.name, [
+            `ID: ${display(currency.id)}`,
+            `Code: ${display(currency.code)}`,
+            `Symbol: ${display(currency.symbol)}`,
+            `Type: ${display(currency.type)}`,
+            `Decimals: ${display(currency.decimals)}`,
+            `Rate to base: ${display(currency.exchangeRateToBase)}`,
+            `Updated: ${display(currency.updatedAt)}`,
+          ]);
+        }),
+      ].join("\n\n");
+    }
     case "friend-list": {
       const items = asArray(response.items);
       const lines = items.length
@@ -1844,7 +1909,7 @@ function formatHuman(presentation: Presentation, body: unknown) {
   }
 }
 
-function serializeFailure(error: unknown) {
+function serializeFailure(error: unknown, mode: OutputMode) {
   const failure =
     error instanceof CliFailure
       ? error
@@ -1852,16 +1917,25 @@ function serializeFailure(error: unknown) {
           "network",
           error instanceof Error ? error.message : String(error),
         );
+  const json = JSON.stringify({
+    error: {
+      type: failure.type,
+      ...(failure.status === undefined ? {} : { status: failure.status }),
+      message: failure.message,
+      ...(failure.body === undefined ? {} : { body: failure.body }),
+    },
+  });
   return {
     exitCode: failure.type === "usage" ? 2 : 1,
-    json: JSON.stringify({
-      error: {
-        type: failure.type,
-        ...(failure.status === undefined ? {} : { status: failure.status }),
-        message: failure.message,
-        ...(failure.body === undefined ? {} : { body: failure.body }),
-      },
-    }),
+    output:
+      mode === "human"
+        ? `Error: ${failure.message}`
+        : mode === "raw" &&
+            failure.type === "api" &&
+            failure.body !== undefined &&
+            failure.body !== null
+          ? JSON.stringify(failure.body)
+          : json,
   };
 }
 
@@ -1871,6 +1945,11 @@ export async function runCli(
 ): Promise<number> {
   const stdout = runtime.stdout ?? console.log;
   const stderr = runtime.stderr ?? console.error;
+  const outputMode: OutputMode = args.includes("--json")
+    ? "json"
+    : args.includes("--raw")
+      ? "raw"
+      : "human";
 
   try {
     const output = parseOutputFlags(args);
@@ -1957,8 +2036,8 @@ export async function runCli(
     }
     return 0;
   } catch (error) {
-    const failure = serializeFailure(error);
-    stderr(failure.json);
+    const failure = serializeFailure(error, outputMode);
+    stderr(failure.output);
     return failure.exitCode;
   }
 }

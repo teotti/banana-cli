@@ -49,8 +49,10 @@ describe("BananaSplit CLI", () => {
     runtime.env = {};
 
     expect(await runCli(["me"], runtime)).toBe(1);
+    expect(await runCli(["me", "--raw"], runtime)).toBe(1);
     expect(calls).toHaveLength(0);
-    expect(JSON.parse(stderr[0])).toEqual({
+    expect(stderr[0]).toBe("Error: BANANASPLIT_TOKEN is required");
+    expect(JSON.parse(stderr[1])).toEqual({
       error: {
         type: "config",
         message: "BANANASPLIT_TOKEN is required",
@@ -146,6 +148,32 @@ describe("BananaSplit CLI", () => {
       "/base/groups",
       "/base/balance/users",
     ]);
+  });
+
+  it("lists currencies with both command forms", async () => {
+    const response = [
+      {
+        id: "currency-eur",
+        name: "Euro",
+        code: "EUR",
+        symbol: "€",
+        type: "fiat",
+        decimals: 2,
+        exchangeRateToBase: "1",
+        updatedAt: "2026-09-01T00:00:00.000Z",
+      },
+    ];
+    const { calls, runtime, stdout } = harness(Response.json(response));
+
+    expect(await runCli(["currencies"], runtime)).toBe(0);
+    expect(await runCli(["currencies", "list", "--raw"], runtime)).toBe(0);
+    expect(calls.map(({ url }) => url.pathname)).toEqual([
+      "/base/currencies",
+      "/base/currencies",
+    ]);
+    expect(stdout[0]).toContain("1. Euro");
+    expect(stdout[0]).toContain("ID: currency-eur");
+    expect(JSON.parse(stdout[1])).toEqual(response);
   });
 
   it("maps group list options to API query parameters", async () => {
@@ -996,18 +1024,18 @@ describe("BananaSplit CLI", () => {
       await runCli(["groups", "list", "--limit", "zero"], runtime),
     ).toBe(2);
     expect(calls).toHaveLength(0);
-    expect(JSON.parse(stderr[0]).error).toEqual({
-      type: "usage",
-      message: "--limit must be a positive integer",
-    });
+    expect(stderr[0]).toBe("Error: --limit must be a positive integer");
   });
 
   it("rejects unknown commands and enum values", async () => {
     const { calls, runtime, stderr } = harness();
 
-    expect(await runCli(["unknown"], runtime)).toBe(2);
+    expect(await runCli(["--json", "unknown"], runtime)).toBe(2);
     expect(
-      await runCli(["groups", "list", "--sort", "newest"], runtime),
+      await runCli(
+        ["--json", "groups", "list", "--sort", "newest"],
+        runtime,
+      ),
     ).toBe(2);
     expect(calls).toHaveLength(0);
     expect(JSON.parse(stderr[1]).error.message).toBe(
@@ -1024,13 +1052,12 @@ describe("BananaSplit CLI", () => {
 
     expect(await runCli(["me"], runtime)).toBe(1);
     expect(calls).toHaveLength(0);
-    expect(JSON.parse(stderr[0]).error).toEqual({
-      type: "config",
-      message: "BANANASPLIT_API_URL must be a valid URL",
-    });
+    expect(stderr[0]).toBe(
+      "Error: BANANASPLIT_API_URL must be a valid URL",
+    );
   });
 
-  it("returns structured API errors", async () => {
+  it("formats API errors for human, JSON, and raw output", async () => {
     const { runtime, stderr, stdout } = harness(
       Response.json(
         { code: "FORBIDDEN", message: "Not a member" },
@@ -1039,8 +1066,15 @@ describe("BananaSplit CLI", () => {
     );
 
     expect(await runCli(["groups", "get", "group-1"], runtime)).toBe(1);
+    expect(
+      await runCli(["--json", "groups", "get", "group-1"], runtime),
+    ).toBe(1);
+    expect(
+      await runCli(["--raw", "groups", "get", "group-1"], runtime),
+    ).toBe(1);
     expect(stdout).toEqual([]);
-    expect(JSON.parse(stderr[0])).toEqual({
+    expect(stderr[0]).toBe("Error: Not a member");
+    expect(JSON.parse(stderr[1])).toEqual({
       error: {
         type: "api",
         status: 403,
@@ -1048,19 +1082,34 @@ describe("BananaSplit CLI", () => {
         body: { code: "FORBIDDEN", message: "Not a member" },
       },
     });
+    expect(JSON.parse(stderr[2])).toEqual({
+      code: "FORBIDDEN",
+      message: "Not a member",
+    });
   });
 
-  it("preserves text API error messages", async () => {
+  it("preserves text API error messages in raw output", async () => {
     const { runtime, stderr } = harness(
       new Response("Unauthorized", { status: 401 }),
     );
 
-    expect(await runCli(["me"], runtime)).toBe(1);
-    expect(JSON.parse(stderr[0]).error).toEqual({
-      type: "api",
-      status: 401,
-      message: "Unauthorized",
-      body: "Unauthorized",
+    expect(await runCli(["me", "--raw"], runtime)).toBe(1);
+    expect(stderr[0]).toBe(JSON.stringify("Unauthorized"));
+  });
+
+  it("uses the structured fallback for empty raw API errors", async () => {
+    const { runtime, stderr } = harness(
+      new Response(null, { status: 500 }),
+    );
+
+    expect(await runCli(["me", "--raw"], runtime)).toBe(1);
+    expect(JSON.parse(stderr[0])).toEqual({
+      error: {
+        type: "api",
+        status: 500,
+        message: "500 Request failed",
+        body: null,
+      },
     });
   });
 
@@ -1072,10 +1121,7 @@ describe("BananaSplit CLI", () => {
 
     expect(await runCli(["balance"], runtime)).toBe(1);
     expect(stderr[0]).not.toContain(TOKEN);
-    expect(JSON.parse(stderr[0]).error).toEqual({
-      type: "network",
-      message: "connection refused",
-    });
+    expect(stderr[0]).toBe("Error: connection refused");
   });
 
   it("reports request timeouts", async () => {
@@ -1088,10 +1134,7 @@ describe("BananaSplit CLI", () => {
     };
 
     expect(await runCli(["balance"], runtime)).toBe(1);
-    expect(JSON.parse(stderr[0]).error).toEqual({
-      type: "network",
-      message: "Request timed out after 25ms",
-    });
+    expect(stderr[0]).toBe("Error: Request timed out after 25ms");
   });
 
   it("lists friends with pagination options and curated output", async () => {
@@ -1278,7 +1321,7 @@ describe("BananaSplit CLI", () => {
       amount: "42",
       currencyId: "currency-eur",
       paidById: "user-1",
-      date: "2026-09-01",
+      date: "2026-09-01T00:00:00.000Z",
       splits: [
         { userId: "user-1", amount: "22" },
         { userId: "user-2", amount: "20" },
@@ -1322,7 +1365,7 @@ describe("BananaSplit CLI", () => {
           "--paid-by-id",
           "user-1",
           "--date",
-          "2026-09-01",
+          "01-09-2026",
           "--group-id",
           "group-1",
         ],
@@ -1334,7 +1377,7 @@ describe("BananaSplit CLI", () => {
       amount: "1000",
       currencyId: "currency-eur",
       paidById: "user-1",
-      date: "2026-09-01",
+      date: "2026-09-01T00:00:00.000Z",
       splits: [],
       groupId: "group-1",
     });
@@ -1399,7 +1442,7 @@ describe("BananaSplit CLI", () => {
       currencyId: "currency-eur",
       fromUserId: "user-1",
       toUserId: "user-2",
-      date: "2026-09-01",
+      date: "2026-09-01T00:00:00.000Z",
       groupId: "group-1",
       description: "Settle up",
     });
@@ -1582,9 +1625,53 @@ describe("BananaSplit CLI", () => {
 
     for (const args of cases) {
       const { calls, runtime, stderr } = harness();
-      expect(await runCli(args, runtime)).toBe(2);
+      expect(await runCli(["--json", ...args], runtime)).toBe(2);
       expect(calls).toHaveLength(0);
       expect(JSON.parse(stderr[0]).error.type).toBe("usage");
+    }
+  });
+
+  it("rejects malformed and impossible dates before making a request", async () => {
+    const cases = [
+      [
+        "expenses",
+        "add",
+        "--title",
+        "Dinner",
+        "--amount",
+        "10",
+        "--currency-id",
+        "currency-eur",
+        "--paid-by-id",
+        "user-1",
+        "--date",
+        "2026/09/02",
+        "--group-id",
+        "group-1",
+      ],
+      [
+        "payments",
+        "add",
+        "--amount",
+        "10",
+        "--currency-id",
+        "currency-eur",
+        "--from-user-id",
+        "user-1",
+        "--to-user-id",
+        "user-2",
+        "--date",
+        "31-02-2026",
+      ],
+    ];
+
+    for (const args of cases) {
+      const { calls, runtime, stderr } = harness();
+      expect(await runCli(["--json", ...args], runtime)).toBe(2);
+      expect(calls).toHaveLength(0);
+      expect(JSON.parse(stderr[0]).error.message).toBe(
+        "--date must use YYYY-MM-DD or DD-MM-YYYY",
+      );
     }
   });
 
