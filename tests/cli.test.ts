@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { runCli, type CliRuntime } from "../src/index";
+import {
+  renderCollectionBrowser,
+  renderGroupBrowser,
+  runCli,
+  type CliRuntime,
+} from "../src/index";
 
 const TOKEN = "secret-session-token";
 
@@ -126,6 +131,19 @@ describe("BananaSplit CLI", () => {
     expect(await runCli(["balance", "users"], runtime)).toBe(0);
     expect(calls.map(({ url }) => url.pathname)).toEqual([
       "/base/balance",
+      "/base/balance/users",
+    ]);
+  });
+
+  it("supports top-level list aliases", async () => {
+    const { calls, runtime } = harness();
+
+    expect(await runCli(["friends", "--raw"], runtime)).toBe(0);
+    expect(await runCli(["groups", "--raw"], runtime)).toBe(0);
+    expect(await runCli(["balances", "--raw"], runtime)).toBe(0);
+    expect(calls.map(({ url }) => url.pathname)).toEqual([
+      "/base/friends",
+      "/base/groups",
       "/base/balance/users",
     ]);
   });
@@ -315,6 +333,353 @@ describe("BananaSplit CLI", () => {
         'Next page: banana groups list --cursor "cursor-2"',
       ].join("\n"),
     );
+  });
+
+  it("renders a searchable interactive group browser", () => {
+    const rendered = renderGroupBrowser(
+      {
+        items: [
+          {
+            id: "group-1",
+            name: "Lisbon trip",
+            description: "Summer holiday",
+            type: "travel",
+            currency: "EUR",
+            balance: 12.5,
+            memberCount: 2,
+            members: ["Leonardo", "Ana"],
+            mostRecentActivity: "2026-08-28T10:00:00.000Z",
+          },
+          { id: "group-2", name: "Home", members: [] },
+        ],
+        hasMore: false,
+      },
+      "lisbon",
+    );
+
+    expect(rendered).toContain("BANANA");
+    expect(rendered).toContain("1/2");
+    expect(rendered).toContain("Lisbon trip");
+    expect(rendered).toContain("enter details");
+    expect(rendered).not.toContain("Summer holiday");
+    expect(rendered).not.toContain("Members: Leonardo, Ana");
+    expect(rendered).not.toContain("Home");
+  });
+
+  it("renders searchable balance, member, and activity browsers", () => {
+    const balances = renderCollectionBrowser(
+      "balance-users",
+      [
+        {
+          user: { id: "user-1", name: "Leonardo" },
+          balance: 10,
+          totalOwed: 10,
+          totalOwing: 0,
+        },
+        {
+          user: { id: "user-2", name: "Ana" },
+          balance: -5,
+          totalOwed: 0,
+          totalOwing: 5,
+        },
+      ],
+      "ana",
+    );
+    expect(balances).toContain("1/2");
+    expect(balances).toContain("Ana");
+    expect(balances).not.toContain("Balance: -5");
+    expect(balances).not.toContain("Leonardo");
+
+    const members = renderCollectionBrowser(
+      "members",
+      [
+        { id: "member-1", name: "Leonardo", role: "admin" },
+        { id: "member-2", name: "Ana", role: "member", isGold: true },
+      ],
+      "ana",
+    );
+    expect(members).toContain("1/2");
+    expect(members).toContain("Ana");
+    expect(members).not.toContain("Role: member");
+    expect(members).not.toContain("Leonardo");
+
+    const activities = renderCollectionBrowser(
+      "activities",
+      [
+        { entity: "expense", id: "expense-1", title: "Dinner" },
+        {
+          entity: "payment",
+          id: "payment-1",
+          description: "Payback",
+          amount: 15,
+          currency: "EUR",
+          from: { name: "Ana" },
+          to: { name: "Leonardo" },
+        },
+      ],
+      "ana",
+    );
+    expect(activities).toContain("1/2");
+    expect(activities).toContain("Payment: Payback");
+    expect(activities).not.toContain("From: Ana");
+    expect(activities).not.toContain("Dinner");
+  });
+
+  it("renders loading and error detail screens", () => {
+    const body = [{ id: "member-1", name: "Leonardo" }];
+
+    const loading = renderCollectionBrowser(
+      "members",
+      body,
+      "leo",
+      0,
+      { status: "loading", title: "Leonardo" },
+    );
+    expect(loading).toContain("Loading details…");
+    expect(loading).toContain("esc back · q quit");
+    expect(loading).not.toContain("Search: leo");
+
+    const error = renderCollectionBrowser(
+      "members",
+      body,
+      "leo",
+      0,
+      { status: "error", title: "Leonardo", message: "Not found" },
+    );
+    expect(error).toContain("Unable to load details: Not found");
+  });
+
+  it("loads curated group details from the browser", async () => {
+    let detail = "";
+    const { calls, runtime, stdout } = harness((url) =>
+      url.pathname === "/base/groups"
+        ? Response.json({
+            items: [
+              {
+                id: "group/one",
+                name: "Lisbon trip",
+                currency: { code: "EUR" },
+                balance: 12.5,
+                groupMembers: [
+                  { id: "user-1", name: "Leonardo" },
+                  { id: "user-2", name: "Ana" },
+                ],
+              },
+            ],
+            hasMore: false,
+            nextCursor: null,
+          })
+        : Response.json({
+            id: "group/one",
+            name: "Lisbon trip",
+            description: "Summer holiday",
+            type: "travel",
+            currency: { code: "EUR" },
+            balance: 12.5,
+            totalOwed: 20,
+            totalOwing: 7.5,
+            defaultSplitType: "equal",
+            useOptimalSettlement: true,
+            memberBalanceVisibility: "all_members",
+            token: "private-invite-token",
+          }),
+    );
+    runtime.browser = async (presentation, body, loadDetail) => {
+      expect(presentation).toBe("group-list");
+      detail = await loadDetail((body as any).items[0]);
+      return true;
+    };
+
+    expect(await runCli(["groups", "list"], runtime)).toBe(0);
+    expect(calls.map(({ url }) => url.pathname)).toEqual([
+      "/base/groups",
+      "/base/groups/group%2Fone",
+    ]);
+    expect(detail).toContain("Description: Summer holiday");
+    expect(detail).toContain("Owed: 20 EUR");
+    expect(detail).toContain("Members: 2");
+    expect(detail).toContain("Optimal settlement: yes");
+    expect(detail).not.toContain("private-invite-token");
+    expect(stdout).toEqual([]);
+  });
+
+  it("loads curated member details from the browser", async () => {
+    let detail = "";
+    const { calls, runtime } = harness((url) =>
+      url.pathname.endsWith("/member%2Fone")
+        ? Response.json({
+            id: "member/one",
+            userId: "user-1",
+            role: "admin",
+            isGuest: false,
+            isGold: true,
+            defaultSplitPercentage: "60",
+            joinedAt: "2026-08-01T10:00:00.000Z",
+            user: {
+              id: "user-1",
+              name: "Leonardo",
+              displayUsername: "leo",
+              email: "leo@example.test",
+              bio: "Banana keeper",
+              inviteToken: "private-user-token",
+            },
+          })
+        : Response.json([
+            {
+              id: "member/one",
+              userId: "user-1",
+              name: "Leonardo",
+              role: "admin",
+            },
+          ]),
+    );
+    runtime.browser = async (_presentation, body, loadDetail) => {
+      detail = await loadDetail((body as any[])[0]);
+      return true;
+    };
+
+    expect(
+      await runCli(["groups", "members", "group/one"], runtime),
+    ).toBe(0);
+    expect(calls.map(({ url }) => url.pathname)).toEqual([
+      "/base/groups/group%2Fone/members",
+      "/base/groups/group%2Fone/members/member%2Fone",
+    ]);
+    expect(detail).toContain("Username: leo");
+    expect(detail).toContain("Email: leo@example.test");
+    expect(detail).toContain("Bio: Banana keeper");
+    expect(detail).toContain("Default split: 60");
+    expect(detail).not.toContain("private-user-token");
+  });
+
+  it("loads expense splits and payment details from the activity browser", async () => {
+    const details: string[] = [];
+    const { calls, runtime } = harness((url) => {
+      if (url.pathname.endsWith("/expense%2Fone")) {
+        return Response.json({
+          id: "expense/one",
+          title: "Dinner",
+          description: "Team dinner",
+          amount: "42",
+          currency: { code: "EUR" },
+          date: "2026-08-27T20:00:00.000Z",
+          timezone: "Europe/Lisbon",
+          paidByUser: { id: "user-1", name: "Leonardo" },
+          creator: { id: "user-1", name: "Leonardo" },
+          group: { id: "group-1", name: "Lisbon trip", token: "private" },
+          category: { name: "Food" },
+          splitType: "shares",
+          recurrence: { frequency: "monthly", interval: 1 },
+          shares: [
+            {
+              userId: "user-1",
+              amount: "22",
+              user: { id: "user-1", name: "Leonardo" },
+            },
+            {
+              userId: "user-2",
+              amount: "20",
+              user: { id: "user-2", name: "Ana" },
+            },
+          ],
+        });
+      }
+      if (url.pathname.endsWith("/payment%2Fone")) {
+        return Response.json({
+          id: "payment/one",
+          description: "Payback",
+          amount: "15",
+          currency: { code: "EUR" },
+          date: "2026-08-28T09:00:00.000Z",
+          timezone: "Europe/Lisbon",
+          fromUser: { id: "user-2", name: "Ana" },
+          toUser: { id: "user-1", name: "Leonardo" },
+          creator: { id: "user-2", name: "Ana" },
+          group: { id: "group-1", name: "Lisbon trip" },
+          isSettlement: true,
+          usedOptimalSettlement: true,
+        });
+      }
+      return Response.json([
+        {
+          entity: "expense",
+          id: "expense/one",
+          title: "Dinner",
+          amount: 42,
+          currency: { code: "EUR" },
+        },
+        {
+          entity: "payment",
+          id: "payment/one",
+          description: "Payback",
+          amount: 15,
+          currency: { code: "EUR" },
+        },
+      ]);
+    });
+    runtime.browser = async (_presentation, body, loadDetail) => {
+      for (const item of body as any[]) details.push(await loadDetail(item));
+      return true;
+    };
+
+    expect(
+      await runCli(["groups", "activities", "group-1"], runtime),
+    ).toBe(0);
+    expect(calls.map(({ url }) => url.pathname)).toEqual([
+      "/base/groups/group-1/activities",
+      "/base/expenses/expense%2Fone",
+      "/base/payments/payment%2Fone",
+    ]);
+    expect(details[0]).toContain("Description: Team dinner");
+    expect(details[0]).toContain("Recurrence frequency: monthly");
+    expect(details[0]).toContain("Recurrence interval: 1");
+    expect(details[0]).toContain("Leonardo: 22 EUR");
+    expect(details[0]).toContain("Ana: 20 EUR");
+    expect(details[0]).not.toContain("private");
+    expect(details[1]).toContain("From: Ana");
+    expect(details[1]).toContain("To: Leonardo");
+    expect(details[1]).toContain("Optimal settlement: yes");
+    expect(details[1]).toContain("Timezone: Europe/Lisbon");
+  });
+
+  it("loads per-user balance breakdowns from the browser", async () => {
+    let detail = "";
+    const { calls, runtime } = harness((url) =>
+      url.pathname.endsWith("/balances")
+        ? Response.json({
+            balance: -7,
+            currency: { code: "EUR" },
+            balanceByGroup: [
+              { balance: -2, group: null },
+              {
+                balance: -5,
+                group: { id: "group-1", name: "Lisbon trip" },
+              },
+            ],
+          })
+        : Response.json([
+            {
+              user: { id: "user/one", name: "Ana" },
+              balance: -7,
+              totalOwed: 2,
+              totalOwing: 9,
+            },
+          ]),
+    );
+    runtime.browser = async (_presentation, body, loadDetail) => {
+      detail = await loadDetail((body as any[])[0]);
+      return true;
+    };
+
+    expect(await runCli(["balance", "users"], runtime)).toBe(0);
+    expect(calls.map(({ url }) => url.pathname)).toEqual([
+      "/base/balance/users",
+      "/base/users/user%2Fone/balances",
+    ]);
+    expect(detail).toContain("Balance: -7 EUR");
+    expect(detail).toContain("Owed: 2 EUR");
+    expect(detail).toContain("Direct: -2 EUR");
+    expect(detail).toContain("Lisbon trip: -5 EUR · group-1");
   });
 
   it("presents group details and members", async () => {
@@ -727,6 +1092,500 @@ describe("BananaSplit CLI", () => {
       type: "network",
       message: "Request timed out after 25ms",
     });
+  });
+
+  it("lists friends with pagination options and curated output", async () => {
+    const { calls, runtime, stdout } = harness(
+      Response.json({
+        items: [
+          {
+            id: "friendship-1",
+            user: {
+              id: "user-2",
+              name: "Ana",
+              isGuest: false,
+              isGold: true,
+            },
+            currency: { code: "EUR" },
+            balance: "12.5",
+            mostRecentActivity: "2026-09-01T10:00:00.000Z",
+          },
+        ],
+        hasMore: true,
+        nextCursor: "cursor-2",
+      }),
+    );
+
+    expect(
+      await runCli(
+        [
+          "friends",
+          "list",
+          "--limit",
+          "10",
+          "--cursor",
+          "next page",
+          "--sort",
+          "lastActivity",
+          "--filter",
+          "guests",
+          "--json",
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+    expect(calls[0].url.pathname).toBe("/base/friends");
+    expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
+      l: "10",
+      cursor: "next page",
+      sort: "lastActivity",
+      filter: "guests",
+    });
+    expect(JSON.parse(stdout[0])).toEqual({
+      items: [
+        {
+          id: "friendship-1",
+          user: { id: "user-2", name: "Ana" },
+          balance: 12.5,
+          currency: "EUR",
+          isGuest: false,
+          isGold: true,
+          mostRecentActivity: "2026-09-01T10:00:00.000Z",
+        },
+      ],
+      hasMore: true,
+      nextCursor: "cursor-2",
+    });
+
+    expect(await runCli(["friends", "list", "--json"], runtime)).toBe(0);
+    expect(calls[1].url.searchParams.get("l")).toBe("5");
+  });
+
+  it("browses all friends and loads friend details", async () => {
+    let rendered = "";
+    let detail = "";
+    const { calls, runtime, stdout } = harness((url) =>
+      url.pathname.endsWith("/friendship%2Fone")
+        ? Response.json({
+            id: "friendship/one",
+            status: "accepted",
+            acceptedAt: "2026-08-01T10:00:00.000Z",
+            user: {
+              id: "user-2",
+              name: "Ana",
+              isGuest: false,
+              isGold: true,
+            },
+          })
+        : Response.json({
+            items: [
+              {
+                id: "friendship/one",
+                user: {
+                  id: "user-2",
+                  name: "Ana",
+                  isGuest: false,
+                  isGold: true,
+                },
+                currency: { code: "EUR" },
+                balance: 7,
+                mostRecentActivity: "2026-09-01T10:00:00.000Z",
+              },
+            ],
+            hasMore: true,
+            nextCursor: "cursor-2",
+          }),
+    );
+    runtime.browser = async (presentation, body, loadDetail) => {
+      expect(presentation).toBe("friend-list");
+      rendered = renderCollectionBrowser(presentation, body, "ana");
+      detail = await loadDetail((body as any).items[0]);
+      return true;
+    };
+
+    expect(await runCli(["friends", "list"], runtime)).toBe(0);
+    expect(calls.map(({ url }) => url.pathname)).toEqual([
+      "/base/friends",
+      "/base/friends/friendship%2Fone",
+    ]);
+    expect(calls[0].url.searchParams.has("l")).toBe(false);
+    expect(rendered).toContain("friends");
+    expect(rendered).toContain("Ana");
+    expect(rendered).toContain("More friends are available");
+    expect(detail).toContain("Balance: 7 EUR");
+    expect(detail).toContain("Status: accepted");
+    expect(detail).toContain("Friendship ID: friendship/one");
+    expect(stdout).toEqual([]);
+  });
+
+  it("adds an expense with repeated splits", async () => {
+    const { calls, runtime, stdout } = harness(
+      Response.json({
+        id: "expense-1",
+        title: "Dinner",
+        description: "Team meal",
+        amount: "42",
+        currencyId: "currency-eur",
+        paidById: "user-1",
+        groupId: "group-1",
+        date: "2026-09-01",
+        timezone: "UTC",
+        splitType: "custom",
+        shares: [
+          { userId: "user-1", amount: "22" },
+          { userId: "user-2", amount: "20" },
+        ],
+      }),
+    );
+
+    expect(
+      await runCli(
+        [
+          "expenses",
+          "add",
+          "--title",
+          "Dinner",
+          "--amount",
+          "42",
+          "--currency-id",
+          "currency-eur",
+          "--paid-by-id",
+          "user-1",
+          "--date",
+          "2026-09-01",
+          "--group-id",
+          "group-1",
+          "--description",
+          "Team meal",
+          "--split-type",
+          "custom",
+          "--split",
+          "user-1=22",
+          "--split",
+          "user-2=20",
+          "--json",
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+    expect(calls[0].url.pathname).toBe("/base/expenses");
+    expect(calls[0].init?.method).toBe("POST");
+    expect(new Headers(calls[0].init?.headers).get("content-type")).toBe(
+      "application/json",
+    );
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+      title: "Dinner",
+      amount: "42",
+      currencyId: "currency-eur",
+      paidById: "user-1",
+      date: "2026-09-01",
+      splits: [
+        { userId: "user-1", amount: "22" },
+        { userId: "user-2", amount: "20" },
+      ],
+      groupId: "group-1",
+      description: "Team meal",
+      splitType: "custom",
+    });
+    expect(JSON.parse(stdout[0])).toEqual({
+      id: "expense-1",
+      title: "Dinner",
+      description: "Team meal",
+      amount: 42,
+      currencyId: "currency-eur",
+      paidById: "user-1",
+      groupId: "group-1",
+      date: "2026-09-01",
+      timezone: "UTC",
+      splitType: "custom",
+      splits: [
+        { userId: "user-1", amount: 22 },
+        { userId: "user-2", amount: 20 },
+      ],
+    });
+  });
+
+  it("uses server defaults for group expense splits", async () => {
+    const { calls, runtime } = harness(Response.json({ id: "expense-1" }));
+
+    expect(
+      await runCli(
+        [
+          "expenses",
+          "add",
+          "--title",
+          "Rent",
+          "--amount",
+          "1000",
+          "--currency-id",
+          "currency-eur",
+          "--paid-by-id",
+          "user-1",
+          "--date",
+          "2026-09-01",
+          "--group-id",
+          "group-1",
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+      title: "Rent",
+      amount: "1000",
+      currencyId: "currency-eur",
+      paidById: "user-1",
+      date: "2026-09-01",
+      splits: [],
+      groupId: "group-1",
+    });
+  });
+
+  it("adds a payment and supports multi-payment responses", async () => {
+    const { calls, runtime, stdout } = harness(
+      Response.json([
+        {
+          id: "payment-1",
+          description: "Settle up",
+          amount: "12",
+          currencyId: "currency-eur",
+          fromUserId: "user-1",
+          toUserId: "user-2",
+          groupId: "group-1",
+          date: "2026-09-01",
+          timezone: "UTC",
+          isSettlement: true,
+          usedOptimalSettlement: true,
+        },
+        {
+          id: "payment-2",
+          amount: "3",
+          currencyId: "currency-eur",
+          fromUserId: "user-1",
+          toUserId: "user-3",
+          groupId: "group-1",
+          date: "2026-09-01",
+        },
+      ]),
+    );
+
+    expect(
+      await runCli(
+        [
+          "payments",
+          "add",
+          "--amount",
+          "15",
+          "--currency-id",
+          "currency-eur",
+          "--from-user-id",
+          "user-1",
+          "--to-user-id",
+          "user-2",
+          "--date",
+          "2026-09-01",
+          "--group-id",
+          "group-1",
+          "--description",
+          "Settle up",
+          "--json",
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+    expect(calls[0].url.pathname).toBe("/base/payments");
+    expect(calls[0].init?.method).toBe("POST");
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+      amount: "15",
+      currencyId: "currency-eur",
+      fromUserId: "user-1",
+      toUserId: "user-2",
+      date: "2026-09-01",
+      groupId: "group-1",
+      description: "Settle up",
+    });
+    const output = JSON.parse(stdout[0]);
+    expect(output).toHaveLength(2);
+    expect(output[0]).toEqual({
+      id: "payment-1",
+      description: "Settle up",
+      amount: 12,
+      currencyId: "currency-eur",
+      fromUserId: "user-1",
+      toUserId: "user-2",
+      groupId: "group-1",
+      date: "2026-09-01",
+      timezone: "UTC",
+      isSettlement: true,
+      usedOptimalSettlement: true,
+    });
+  });
+
+  it("creates a group without exposing its invite token", async () => {
+    const { calls, runtime, stdout } = harness(
+      Response.json({
+        id: "group-1",
+        name: "Lisbon trip",
+        description: "Summer holiday",
+        type: "travel",
+        currencyId: "currency-eur",
+        creatorId: "user-1",
+        defaultSplitType: "equal",
+        memberBalanceVisibility: "all_members",
+        token: "private-invite-token",
+      }),
+    );
+
+    expect(
+      await runCli(
+        [
+          "groups",
+          "create",
+          "--name",
+          "Lisbon trip",
+          "--currency-id",
+          "currency-eur",
+          "--description",
+          "Summer holiday",
+          "--type",
+          "travel",
+          "--member",
+          "user-2",
+          "--member",
+          "user-3",
+          "--json",
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+    expect(calls[0].url.pathname).toBe("/base/groups");
+    expect(calls[0].init?.method).toBe("POST");
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+      name: "Lisbon trip",
+      currencyId: "currency-eur",
+      description: "Summer holiday",
+      type: "travel",
+      groupMembers: ["user-2", "user-3"],
+    });
+    expect(JSON.parse(stdout[0])).toEqual({
+      id: "group-1",
+      name: "Lisbon trip",
+      description: "Summer holiday",
+      type: "travel",
+      currencyId: "currency-eur",
+      creatorId: "user-1",
+      defaultSplitType: "equal",
+      memberBalanceVisibility: "all_members",
+    });
+    expect(stdout[0]).not.toContain("private-invite-token");
+  });
+
+  it("accepts JSON bodies for create commands", async () => {
+    const cases = [
+      {
+        args: ["expenses", "add"],
+        path: "/base/expenses",
+        body: {
+          title: "Dinner",
+          amount: "42",
+          currencyId: "currency-eur",
+          paidById: "user-1",
+          date: "2026-09-01",
+          splits: [{ userId: "user-1", amount: "42" }],
+          categoryId: "category-food",
+        },
+      },
+      {
+        args: ["payments", "add"],
+        path: "/base/payments",
+        body: {
+          amount: "20",
+          currencyId: "currency-eur",
+          fromUserId: "user-1",
+          toUserId: "user-2",
+          date: "2026-09-01",
+          timezone: "Europe/Lisbon",
+        },
+      },
+      {
+        args: ["groups", "create"],
+        path: "/base/groups",
+        body: {
+          name: "Lisbon trip",
+          currencyId: "currency-eur",
+          groupMembers: ["user-2"],
+        },
+      },
+    ];
+
+    for (const testCase of cases) {
+      const { calls, runtime } = harness();
+      expect(
+        await runCli(
+          [...testCase.args, JSON.stringify(testCase.body)],
+          runtime,
+        ),
+      ).toBe(0);
+      expect(calls[0].url.pathname).toBe(testCase.path);
+      expect(JSON.parse(String(calls[0].init?.body))).toEqual(testCase.body);
+    }
+  });
+
+  it("rejects invalid create arguments before making a request", async () => {
+    const cases = [
+      [
+        "expenses",
+        "add",
+        "--title",
+        "Dinner",
+        "--amount",
+        "10",
+        "--currency-id",
+        "currency-eur",
+        "--paid-by-id",
+        "user-1",
+        "--date",
+        "2026-09-01",
+      ],
+      [
+        "expenses",
+        "add",
+        "--title",
+        "Dinner",
+        "--amount",
+        "10",
+        "--currency-id",
+        "currency-eur",
+        "--paid-by-id",
+        "user-1",
+        "--date",
+        "2026-09-01",
+        "--split",
+        "missing-amount=",
+      ],
+      [
+        "payments",
+        "add",
+        "--amount",
+        "10",
+        "--currency-id",
+        "currency-eur",
+        "--from-user-id",
+        "user-1",
+        "--date",
+        "2026-09-01",
+      ],
+      ["groups", "create", "--name", "Home"],
+      ["expenses", "add", "[]"],
+      ["payments", "add", "{"],
+      ["groups", "create", "{}", "--name", "Home"],
+    ];
+
+    for (const args of cases) {
+      const { calls, runtime, stderr } = harness();
+      expect(await runCli(args, runtime)).toBe(2);
+      expect(calls).toHaveLength(0);
+      expect(JSON.parse(stderr[0]).error.type).toBe("usage");
+    }
   });
 
   it("prints command-level help", async () => {
