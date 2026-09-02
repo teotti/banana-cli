@@ -1,0 +1,14 @@
+{
+  "name": "@bananasplit/cli",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "banana": "./src/index.ts"
+  },
+  "scripts": {
+    "banana": "bun run ./src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
