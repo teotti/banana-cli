@@ -10,5 +10,9 @@
     "banana": "bun run ./src/index.ts",
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.0",
+    "typescript": "^7.0.2"
   }
 }
