@@ -32,6 +32,8 @@ bun run banana friends
 bun run banana groups
 bun run banana groups members GROUP_ID
 bun run banana groups activities GROUP_ID --search dinner
+bun run banana expenses get EXPENSE_ID
+bun run banana payments get PAYMENT_ID
 ```
 
 Create groups, expenses, and payments with explicit API IDs:
@@ -48,6 +50,21 @@ banana payments add --amount 20 --currency-id CURRENCY_ID \
   --from-user-id USER_ID --to-user-id FRIEND_ID --date 2026-09-01 \
   --description "Settle up"
 ```
+
+Edit an expense in place. Only the fields you pass change; everything else
+keeps its current value:
+
+```sh
+banana expenses edit EXPENSE_ID --title "Chinese dinner"
+banana expenses edit EXPENSE_ID --group-id GROUP_ID
+banana expenses edit EXPENSE_ID --amount 60 --split USER_ID=30 --split FRIEND_ID=30
+banana expenses edit EXPENSE_ID '{"description":null}'
+```
+
+Moving an expense into a group with `--group-id` clears its direct friendship
+link; `--no-group` does the reverse. Changing `--amount` on an equal split
+redistributes the splits automatically; any other split type needs matching
+`--split` values.
 
 Each create command also accepts its API body as one quoted JSON object:
 

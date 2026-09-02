@@ -13,6 +13,9 @@ export type Presentation =
   | "group"
   | "members"
   | "activities"
+  | "expense"
+  | "payment"
+  | "expense-updated"
   | "expense-created"
   | "payment-created"
   | "group-created";
@@ -50,8 +53,9 @@ export type RequestCommand = {
   path: string;
   presentation: Presentation;
   query?: URLSearchParams;
-  method?: "POST";
+  method?: "POST" | "PUT";
   body?: unknown;
+  mergeExpense?: string;
 };
 
 export type HelpCommand = {

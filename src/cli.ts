@@ -8,7 +8,11 @@ import {
 } from "./browser";
 import { balancePresenters, parseBalance } from "./commands/balance";
 import { currencyPresenters, parseCurrencies } from "./commands/currencies";
-import { expensePresenters, parseExpenses } from "./commands/expenses";
+import {
+  expensePresenters,
+  mergeExpenseBody,
+  parseExpenses,
+} from "./commands/expenses";
 import { friendPresenters, parseFriends } from "./commands/friends";
 import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
@@ -41,7 +45,10 @@ Commands:
   groups activities <group-id>
                              List group activities
   expenses add               Add an expense
+  expenses get <expense-id>  Show an expense
+  expenses edit <expense-id> Edit an expense
   payments add               Add a payment
+  payments get <payment-id>  Show a payment
 
 Output:
   --json                     Print curated operational JSON
@@ -186,7 +193,35 @@ export async function runCli(
       timeoutMs: runtime.timeoutMs ?? REQUEST_TIMEOUT_MS,
     };
     const env = runtime.env ?? process.env;
+    if (command.mergeExpense !== undefined) {
+      const current = await request(
+        {
+          kind: "request",
+          path: command.mergeExpense,
+          presentation: "expense",
+        },
+        requestRuntime,
+        env,
+      );
+      command.body = mergeExpenseBody(
+        current,
+        asRecord(command.body) as Record<string, unknown>,
+      );
+    }
     let body = await request(command, requestRuntime, env);
+    if (output.mode !== "raw" && command.presentation === "expense-updated") {
+      // PUT answers with a flat row, so re-read the expense for its
+      // paidBy / group / category / splits expansions.
+      body = await request(
+        {
+          kind: "request",
+          path: command.path,
+          presentation: "expense-updated",
+        },
+        requestRuntime,
+        env,
+      );
+    }
     if (output.mode !== "raw" && command.presentation === "group") {
       const members = await request(
         {

@@ -1,15 +1,18 @@
 import {
   asRecord,
+  cleanUserSummary,
   display,
   formatCard,
   humanAmount,
   isoDate,
+  namedEntity,
   numeric,
   parseJsonBody,
   parseOptions,
   requiredString,
   requirePositionals,
   wantsHelp,
+  yesNo,
 } from "../shared";
 import { CliFailure, type ParsedCommand, type Presenter } from "../types";
 
@@ -17,13 +20,25 @@ const HELP = `Usage: banana payments add JSON
    or: banana payments add --amount AMOUNT --currency-id ID
                            --from-user-id ID --to-user-id ID
                            --date YYYY-MM-DD|DD-MM-YYYY
-                           [--group-id ID] [--description TEXT]`;
+                           [--group-id ID] [--description TEXT]
+   or: banana payments get <payment-id>`;
+const GET_HELP = "Usage: banana payments get <payment-id>";
 
 export function parsePayments(args: string[]): ParsedCommand {
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
     return { kind: "help", text: HELP };
   }
   const [command, ...rest] = args;
+  if (command === "get") {
+    if (wantsHelp(rest)) return { kind: "help", text: GET_HELP };
+    const { positionals } = parseOptions(rest);
+    requirePositionals(positionals, 1, GET_HELP);
+    return {
+      kind: "request",
+      path: `/payments/${encodeURIComponent(positionals[0])}`,
+      presentation: "payment",
+    };
+  }
   if (command !== "add") throw new CliFailure("usage", HELP);
   if (wantsHelp(rest)) return { kind: "help", text: HELP };
 
@@ -67,6 +82,27 @@ export function parsePayments(args: string[]): ParsedCommand {
   };
 }
 
+function cleanPayment(body: unknown) {
+  const payment = asRecord(body);
+  return {
+    id: payment.id ?? null,
+    description: payment.description ?? null,
+    amount: numeric(payment.amount),
+    currency: asRecord(payment.currency).code ?? payment.currencyId ?? null,
+    from: cleanUserSummary(payment.fromUser),
+    to: cleanUserSummary(payment.toUser),
+    group: payment.groupId
+      ? {
+          id: payment.groupId,
+          name: asRecord(payment.group).name ?? null,
+        }
+      : null,
+    date: payment.date ?? null,
+    isSettlement: payment.isSettlement === true,
+    createdAt: payment.createdAt ?? null,
+  };
+}
+
 function cleanCreatedPaymentItem(value: unknown) {
   const payment = asRecord(value);
   return {
@@ -85,6 +121,24 @@ function cleanCreatedPaymentItem(value: unknown) {
 }
 
 export const paymentPresenters = {
+  payment: {
+    clean: cleanPayment,
+    format(body) {
+      const response = asRecord(body);
+      const group = asRecord(response.group);
+      return [
+        "Payment",
+        `Amount: ${humanAmount(response.amount, response.currency)}`,
+        `From: ${namedEntity(response.from)}`,
+        `To: ${namedEntity(response.to)}`,
+        `Group: ${response.group ? namedEntity(group) : "—"}`,
+        `Description: ${display(response.description)}`,
+        `Date: ${display(response.date)}`,
+        `Settlement: ${yesNo(response.isSettlement)}`,
+        `ID: ${display(response.id)}`,
+      ].join("\n");
+    },
+  },
   "payment-created": {
     clean(body) {
       return Array.isArray(body)
@@ -110,4 +164,4 @@ export const paymentPresenters = {
       ].join("\n\n");
     },
   },
-} satisfies Record<"payment-created", Presenter>;
+} satisfies Record<"payment" | "payment-created", Presenter>;

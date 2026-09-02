@@ -82,5 +82,27 @@ describe("BananaSplit CLI", () => {
       usedOptimalSettlement: true,
     });
   });
+  it("shows a payment by id", async () => {
+    const { calls, runtime, stdout } = harness(
+      Response.json({
+        id: "payment-1",
+        description: "Settle up",
+        amount: "20",
+        currency: { code: "EUR" },
+        fromUser: { id: "user-2", name: "Ana" },
+        toUser: { id: "user-1", name: "Leonardo" },
+        groupId: null,
+        date: "2026-09-01T00:00:00.000Z",
+        isSettlement: true,
+      }),
+    );
+
+    expect(await runCli(["payments", "get", "payment-1"], runtime)).toBe(0);
+    expect(calls[0].url.pathname).toBe("/base/payments/payment-1");
+    expect(stdout[0]).toContain("From: Ana · user-2");
+    expect(stdout[0]).toContain("To: Leonardo · user-1");
+    expect(stdout[0]).toContain("Group: —");
+    expect(stdout[0]).toContain("Settlement: yes");
+  });
 
 });
