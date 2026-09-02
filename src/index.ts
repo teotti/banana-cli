@@ -26,7 +26,10 @@ Commands:
   groups activities <group-id>
                              List group activities
   expenses add               Add an expense
+  expenses get <expense-id>  Show an expense
+  expenses edit <expense-id> Edit an expense
   payments add               Add a payment
+  payments get <payment-id>  Show a payment
 
 Output:
   --json                     Print curated operational JSON
@@ -97,12 +100,30 @@ const EXPENSES_HELP = `Usage: banana expenses add JSON
                            --date YYYY-MM-DD|DD-MM-YYYY
                            [--group-id ID] [--description TEXT]
                            [--split-type equal|custom|percentage|shares]
+                           [--split USER_ID=AMOUNT]...
+   or: banana expenses get <expense-id>
+   or: banana expenses edit <expense-id> JSON
+   or: banana expenses edit <expense-id> [--title TEXT] [--amount AMOUNT]
+                           [--currency-id ID] [--paid-by-id ID] [--date DATE]
+                           [--description TEXT] [--group-id ID | --no-group]
+                           [--split-type equal|custom|percentage|shares]
                            [--split USER_ID=AMOUNT]...`;
+const EXPENSES_GET_HELP = "Usage: banana expenses get <expense-id>";
+const EXPENSES_EDIT_HELP = `Usage: banana expenses edit <expense-id> JSON
+   or: banana expenses edit <expense-id> [--title TEXT] [--amount AMOUNT]
+                           [--currency-id ID] [--paid-by-id ID] [--date DATE]
+                           [--description TEXT] [--group-id ID | --no-group]
+                           [--split-type equal|custom|percentage|shares]
+                           [--split USER_ID=AMOUNT]...
+
+Only the fields you pass change; everything else keeps its current value.`;
 const PAYMENTS_HELP = `Usage: banana payments add JSON
    or: banana payments add --amount AMOUNT --currency-id ID
                            --from-user-id ID --to-user-id ID
                            --date YYYY-MM-DD|DD-MM-YYYY
-                           [--group-id ID] [--description TEXT]`;
+                           [--group-id ID] [--description TEXT]
+   or: banana payments get <payment-id>`;
+const PAYMENTS_GET_HELP = "Usage: banana payments get <payment-id>";
 
 type ErrorType = "api" | "config" | "network" | "usage";
 type Environment = Record<string, string | undefined>;
@@ -119,6 +140,9 @@ type Presentation =
   | "group"
   | "members"
   | "activities"
+  | "expense"
+  | "payment"
+  | "expense-updated"
   | "expense-created"
   | "payment-created"
   | "group-created";
@@ -160,8 +184,9 @@ type RequestCommand = {
   path: string;
   presentation: Presentation;
   query?: URLSearchParams;
-  method?: "POST";
+  method?: "POST" | "PUT";
   body?: unknown;
+  mergeExpense?: string;
 };
 
 type HelpCommand = {
@@ -626,6 +651,17 @@ function parseExpenses(args: string[]): ParsedCommand {
     return { kind: "help", text: EXPENSES_HELP };
   }
   const [command, ...rest] = args;
+  if (command === "get") {
+    if (wantsHelp(rest)) return { kind: "help", text: EXPENSES_GET_HELP };
+    const { positionals } = parseOptions(rest);
+    requirePositionals(positionals, 1, EXPENSES_GET_HELP);
+    return {
+      kind: "request",
+      path: `/expenses/${encodeURIComponent(positionals[0])}`,
+      presentation: "expense",
+    };
+  }
+  if (command === "edit") return parseExpensesEdit(rest);
   if (command !== "add") throw new CliFailure("usage", EXPENSES_HELP);
   if (wantsHelp(rest)) return { kind: "help", text: EXPENSES_HELP };
 
@@ -701,6 +737,90 @@ function parseExpenses(args: string[]): ParsedCommand {
   };
 }
 
+function parseExpensesEdit(args: string[]): ParsedCommand {
+  if (wantsHelp(args)) return { kind: "help", text: EXPENSES_EDIT_HELP };
+  const { positionals, values } = parseOptions(args, {
+    amount: { type: "string" },
+    "currency-id": { type: "string" },
+    date: { type: "string" },
+    description: { type: "string" },
+    "group-id": { type: "string" },
+    "no-group": { type: "boolean" },
+    "paid-by-id": { type: "string" },
+    split: { type: "string", multiple: true },
+    "split-type": { type: "string" },
+    title: { type: "string" },
+  });
+  if (positionals.length === 0) {
+    throw new CliFailure("usage", EXPENSES_EDIT_HELP);
+  }
+  const [id, ...rest] = positionals;
+  const path = `/expenses/${encodeURIComponent(id)}`;
+
+  const jsonBody = parseJsonBody(rest, values, EXPENSES_EDIT_HELP);
+  if (jsonBody !== undefined) {
+    return {
+      kind: "request",
+      method: "PUT",
+      path,
+      presentation: "expense-updated",
+      mergeExpense: path,
+      body: jsonBody,
+    };
+  }
+  requirePositionals(positionals, 1, EXPENSES_EDIT_HELP);
+
+  const groupId = values["group-id"] as string | undefined;
+  if (groupId !== undefined && values["no-group"] === true) {
+    throw new CliFailure(
+      "usage",
+      `--group-id and --no-group cannot be used together\n${EXPENSES_EDIT_HELP}`,
+    );
+  }
+  const splits = parseSplits(values.split);
+  const splitType = enumValue(values["split-type"], "--split-type", [
+    "equal",
+    "custom",
+    "percentage",
+    "shares",
+  ] as const);
+  const patch: Record<string, unknown> = {
+    ...(values.title === undefined ? {} : { title: values.title }),
+    ...(values.amount === undefined ? {} : { amount: values.amount }),
+    ...(values["currency-id"] === undefined
+      ? {}
+      : { currencyId: values["currency-id"] }),
+    ...(values["paid-by-id"] === undefined
+      ? {}
+      : { paidById: values["paid-by-id"] }),
+    ...(values.date === undefined
+      ? {}
+      : { date: isoDate(values.date, EXPENSES_EDIT_HELP) }),
+    ...(values.description === undefined
+      ? {}
+      : { description: values.description }),
+    ...(groupId === undefined ? {} : { groupId }),
+    ...(values["no-group"] === true ? { groupId: null } : {}),
+    ...(splitType === undefined ? {} : { splitType }),
+    ...(splits.length === 0 ? {} : { splits }),
+  };
+  if (Object.keys(patch).length === 0) {
+    throw new CliFailure(
+      "usage",
+      `At least one field to change is required\n${EXPENSES_EDIT_HELP}`,
+    );
+  }
+
+  return {
+    kind: "request",
+    method: "PUT",
+    path,
+    presentation: "expense-updated",
+    mergeExpense: path,
+    body: patch,
+  };
+}
+
 function parsePayments(args: string[]): ParsedCommand {
   if (
     args.length === 0 ||
@@ -710,6 +830,16 @@ function parsePayments(args: string[]): ParsedCommand {
     return { kind: "help", text: PAYMENTS_HELP };
   }
   const [command, ...rest] = args;
+  if (command === "get") {
+    if (wantsHelp(rest)) return { kind: "help", text: PAYMENTS_GET_HELP };
+    const { positionals } = parseOptions(rest);
+    requirePositionals(positionals, 1, PAYMENTS_GET_HELP);
+    return {
+      kind: "request",
+      path: `/payments/${encodeURIComponent(positionals[0])}`,
+      presentation: "payment",
+    };
+  }
   if (command !== "add") throw new CliFailure("usage", PAYMENTS_HELP);
   if (wantsHelp(rest)) return { kind: "help", text: PAYMENTS_HELP };
 
@@ -1084,6 +1214,123 @@ function cleanCreatedExpense(body: unknown) {
   };
 }
 
+function splitEvenly(total: string, userIds: string[]) {
+  const cents = Math.round(Number(total) * 100);
+  if (!Number.isFinite(cents) || userIds.length === 0) return undefined;
+  const base = Math.floor(cents / userIds.length);
+  let remainder = cents - base * userIds.length;
+  return userIds.map((userId) => {
+    const extra = remainder > 0 ? 1 : 0;
+    remainder -= extra;
+    return { userId, amount: ((base + extra) / 100).toFixed(2) };
+  });
+}
+
+function mergeExpenseBody(current: unknown, patch: Record<string, unknown>) {
+  const expense = asRecord(current);
+  const shares = asArray(expense.shares).map((value) => {
+    const share = asRecord(value);
+    return {
+      userId: String(share.userId ?? ""),
+      amount: String(share.amount ?? ""),
+    };
+  });
+  const merged: Record<string, unknown> = {
+    title: expense.title,
+    description: expense.description ?? null,
+    amount: String(expense.amount ?? ""),
+    currencyId: expense.currencyId,
+    paidById: expense.paidById,
+    groupId: expense.groupId ?? null,
+    friendshipId: expense.friendshipId ?? null,
+    date: expense.date,
+    timezone: expense.timezone ?? "UTC",
+    splitType: expense.splitType,
+    categoryId: expense.categoryId ?? null,
+    splits: shares,
+    ...patch,
+  };
+
+  // A group expense and a direct (friendship) expense are mutually exclusive.
+  if ("groupId" in patch) {
+    if (patch.groupId === null) {
+      merged.groupId = null;
+    } else {
+      merged.friendshipId = null;
+    }
+  }
+
+  const amountChanged =
+    "amount" in patch && String(patch.amount) !== String(expense.amount);
+  if (amountChanged && !("splits" in patch)) {
+    const evenly =
+      merged.splitType === "equal"
+        ? splitEvenly(
+            String(merged.amount),
+            shares.map((share) => share.userId),
+          )
+        : undefined;
+    if (evenly === undefined) {
+      throw new CliFailure(
+        "usage",
+        `Changing --amount on a ${display(merged.splitType)} split needs matching --split values\n${EXPENSES_EDIT_HELP}`,
+      );
+    }
+    merged.splits = evenly;
+  }
+  return merged;
+}
+
+function cleanExpense(body: unknown) {
+  const expense = asRecord(body);
+  return {
+    id: expense.id ?? null,
+    title: expense.title ?? null,
+    description: expense.description ?? null,
+    amount: numeric(expense.amount),
+    currency: asRecord(expense.currency).code ?? expense.currencyId ?? null,
+    paidBy: cleanUserSummary(expense.paidByUser),
+    group: expense.groupId
+      ? {
+          id: expense.groupId,
+          name: asRecord(expense.group).name ?? null,
+        }
+      : null,
+    category: asRecord(expense.category).name ?? null,
+    date: expense.date ?? null,
+    splitType: expense.splitType ?? null,
+    createdAt: expense.createdAt ?? null,
+    splits: asArray(expense.shares).map((value) => {
+      const share = asRecord(value);
+      return {
+        user: cleanUserSummary(share.user),
+        amount: numeric(share.amount),
+      };
+    }),
+  };
+}
+
+function cleanPayment(body: unknown) {
+  const payment = asRecord(body);
+  return {
+    id: payment.id ?? null,
+    description: payment.description ?? null,
+    amount: numeric(payment.amount),
+    currency: asRecord(payment.currency).code ?? payment.currencyId ?? null,
+    from: cleanUserSummary(payment.fromUser),
+    to: cleanUserSummary(payment.toUser),
+    group: payment.groupId
+      ? {
+          id: payment.groupId,
+          name: asRecord(payment.group).name ?? null,
+        }
+      : null,
+    date: payment.date ?? null,
+    isSettlement: payment.isSettlement === true,
+    createdAt: payment.createdAt ?? null,
+  };
+}
+
 function cleanCreatedPaymentItem(value: unknown) {
   const payment = asRecord(value);
   return {
@@ -1256,6 +1503,11 @@ function cleanResponse(presentation: Presentation, body: unknown): unknown {
       return cleanMembers(body);
     case "activities":
       return cleanActivities(body);
+    case "expense":
+    case "expense-updated":
+      return cleanExpense(body);
+    case "payment":
+      return cleanPayment(body);
     case "expense-created":
       return cleanCreatedExpense(body);
     case "payment-created":
@@ -1856,6 +2108,45 @@ function formatHuman(presentation: Presentation, body: unknown) {
         }),
       ].join("\n\n");
     }
+    case "expense":
+    case "expense-updated": {
+      const splits = asArray(response.splits);
+      const group = asRecord(response.group);
+      return [
+        presentation === "expense-updated" ? "Expense updated" : "Expense",
+        `Title: ${display(response.title)}`,
+        `Amount: ${humanAmount(response.amount, response.currency)}`,
+        `Paid by: ${namedEntity(response.paidBy)}`,
+        `Group: ${response.group ? namedEntity(group) : "—"}`,
+        `Category: ${display(response.category)}`,
+        `Description: ${display(response.description)}`,
+        `Date: ${display(response.date)}`,
+        `Split type: ${display(response.splitType)}`,
+        `ID: ${display(response.id)}`,
+        "",
+        "Splits",
+        ...(splits.length
+          ? splits.map((value) => {
+              const split = asRecord(value);
+              return `${namedEntity(split.user)}: ${humanAmount(split.amount, response.currency)}`;
+            })
+          : ["—"]),
+      ].join("\n");
+    }
+    case "payment": {
+      const group = asRecord(response.group);
+      return [
+        "Payment",
+        `Amount: ${humanAmount(response.amount, response.currency)}`,
+        `From: ${namedEntity(response.from)}`,
+        `To: ${namedEntity(response.to)}`,
+        `Group: ${response.group ? namedEntity(group) : "—"}`,
+        `Description: ${display(response.description)}`,
+        `Date: ${display(response.date)}`,
+        `Settlement: ${yesNo(response.isSettlement)}`,
+        `ID: ${display(response.id)}`,
+      ].join("\n");
+    }
     case "expense-created": {
       const splits = asArray(response.splits);
       return [
@@ -1996,7 +2287,35 @@ export async function runCli(
       timeoutMs: runtime.timeoutMs ?? REQUEST_TIMEOUT_MS,
     };
     const env = runtime.env ?? process.env;
+    if (command.mergeExpense !== undefined) {
+      const current = await request(
+        {
+          kind: "request",
+          path: command.mergeExpense,
+          presentation: "expense",
+        },
+        requestRuntime,
+        env,
+      );
+      command.body = mergeExpenseBody(
+        current,
+        asRecord(command.body) as Record<string, unknown>,
+      );
+    }
     let body = await request(command, requestRuntime, env);
+    if (output.mode !== "raw" && command.presentation === "expense-updated") {
+      // PUT answers with a flat row, so re-read the expense for its
+      // paidBy / group / category / splits expansions.
+      body = await request(
+        {
+          kind: "request",
+          path: command.path,
+          presentation: "expense-updated",
+        },
+        requestRuntime,
+        env,
+      );
+    }
     if (output.mode !== "raw" && command.presentation === "group") {
       const members = await request(
         {
