@@ -44,6 +44,7 @@ Commands:
   groups members <group-id>  List group members
   groups activities <group-id>
                              List group activities
+  expenses list              List the authenticated user's expenses
   expenses add               Add an expense
   expenses get <expense-id>  Show an expense
   expenses edit <expense-id> Edit an expense
@@ -182,6 +183,7 @@ export async function runCli(
     if (
       (pager || browser) &&
       (command.presentation === "group-list" ||
+        command.presentation === "expense-list" ||
         command.presentation === "friend-list") &&
       !hasExplicitLimit
     ) {
@@ -261,10 +263,19 @@ export async function runCli(
       const detail = await request(detailCommand, requestRuntime, env);
       return browserPresenter.formatDetail(item, detail);
     };
+    const loadPage = command.presentation === "expense-list"
+      ? async (cursor: string) => {
+          const query = new URLSearchParams(command.query);
+          query.set("cursor", cursor);
+          return presenter.clean(await request(
+            { ...command, query }, requestRuntime, env,
+          ));
+        }
+      : undefined;
     if (
       (!browser ||
         !browserPresentation ||
-        !(await browser(browserPresentation, clean, loadDetail))) &&
+        !(await browser(browserPresentation, clean, loadDetail, loadPage))) &&
       (!pager || !(await pager(human)))
     ) {
       stdout(human);

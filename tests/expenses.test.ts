@@ -3,6 +3,131 @@ import { runCli } from "../src/index";
 import { harness } from "./helpers";
 
 describe("BananaSplit CLI", () => {
+  it("maps expense list sorting, recurring filters, and cursors to the API", async () => {
+    for (const [filter, recurring, sort, direction] of [
+      ["--recurring", "true", "amount", "desc"],
+      ["--no-recurring", "false", "date", "asc"],
+    ]) {
+      const { calls, runtime } = harness(
+        Response.json({ items: [], hasMore: false, nextCursor: null }),
+      );
+      expect(await runCli([
+        "expenses", "list", "--limit", "10", "--cursor", "next +/=? page",
+        "--sort", sort, "--direction", direction, filter,
+      ], runtime)).toBe(0);
+      expect(calls).toHaveLength(1);
+      expect(calls[0].url.pathname).toBe("/base/expenses");
+      expect(calls[0].init?.method ?? "GET").toBe("GET");
+      expect(calls[0].init?.body).toBeUndefined();
+      expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
+        l: "10", cursor: "next +/=? page", sort, direction, recurring,
+      });
+    }
+  });
+
+  it("uses five expenses per page and leaves sorting and filtering to the API", async () => {
+    const response = { items: [], hasMore: false, nextCursor: null };
+    const { calls, runtime, stdout } = harness(Response.json(response));
+    expect(await runCli(["expenses", "list"], runtime)).toBe(0);
+    expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({ l: "5" });
+    expect(stdout[0]).toBe("No expenses.\n\nEnd of expenses.");
+    expect(await runCli(["expenses", "list", "--json"], runtime)).toBe(0);
+    expect(JSON.parse(stdout[1])).toEqual(response);
+  });
+
+  it("presents expense shares and pagination without fetching detail rows", async () => {
+    const response = {
+      items: [{
+        id: "expense-1",
+        title: "Dinner",
+        amount: "42.000000000000000000",
+        currency: { code: "EUR" },
+        paidByUser: { id: "user-1", name: "Leonardo" },
+        groupId: "group-1",
+        group: { name: "Lisbon trip", token: "private-group-token" },
+        category: { name: "Food" },
+        date: "2026-09-01T00:00:00.000Z",
+        share: { userId: "user-2", amount: "20.000000000000000000" },
+        recurrence: { frequency: "monthly" },
+      }],
+      hasMore: true,
+      nextCursor: "cursor-2",
+    };
+    const { calls, runtime, stdout } = harness(Response.json(response));
+    expect(await runCli(["expenses", "list", "--json"], runtime)).toBe(0);
+    expect(JSON.parse(stdout[0])).toEqual({
+      items: [{
+        id: "expense-1", title: "Dinner", description: null, amount: 42,
+        currency: "EUR", paidBy: { id: "user-1", name: "Leonardo" },
+        group: { id: "group-1", name: "Lisbon trip" }, category: "Food",
+        date: "2026-09-01T00:00:00.000Z", splitType: null, createdAt: null,
+        isRecurring: true, share: 20,
+      }],
+      hasMore: true, nextCursor: "cursor-2",
+    });
+    expect(await runCli(["expenses", "list"], runtime)).toBe(0);
+    for (const text of [
+      "Expenses", "1. Dinner", "ID: expense-1", "Amount: 42 EUR",
+      "Your share: 20 EUR", "Paid by: Leonardo · user-1",
+      "Group: Lisbon trip · group-1", "Category: Food",
+      "Date: 2026-09-01T00:00:00.000Z", "Recurring: yes",
+      'Next cursor: "cursor-2"', "--cursor and the same options",
+    ]) expect(stdout[1]).toContain(text);
+    expect(stdout[1]).not.toContain("private-group-token");
+    expect(await runCli(["expenses", "list", "--raw"], runtime)).toBe(0);
+    expect(JSON.parse(stdout[2])).toEqual(response);
+    expect(calls).toHaveLength(3);
+    expect(calls.every(({ url }) => url.pathname === "/base/expenses")).toBe(true);
+  });
+
+  it("handles missing and zero shares and recurring rules without expansions", async () => {
+    const { runtime, stdout } = harness(Response.json({
+      items: [
+        { id: "direct", title: "Taxi", amount: "8.10", currencyId: "EUR",
+          groupId: null, category: null, share: null, recurrence: null },
+        { id: "recurring", title: "Rent", amount: "100", currencyId: "EUR",
+          share: { amount: "0" }, recurringExpenseRuleId: "rule-1" },
+      ],
+      hasMore: false, nextCursor: null,
+    }));
+    expect(await runCli(["expenses", "list", "--json"], runtime)).toBe(0);
+    const { items } = JSON.parse(stdout[0]);
+    expect(items[0]).toMatchObject({ amount: 8.1, group: null, category: null,
+      share: null, isRecurring: false });
+    expect(items[1]).toMatchObject({ share: 0, isRecurring: true });
+    expect(await runCli(["expenses", "list"], runtime)).toBe(0);
+    expect(stdout[1]).toContain("Your share: — EUR");
+    expect(stdout[1]).toContain("Group: —");
+    expect(stdout[1]).toContain("Recurring: no");
+    expect(stdout[1]).toContain("End of expenses.");
+  });
+
+  it("rejects invalid expense list options before fetching", async () => {
+    for (const options of [
+      ["--sort", "title"], ["--direction", "up"], ["--limit", "0"],
+      ["--limit", "-1"], ["--limit", "1.5"], ["--limit", "many"],
+      ["--recurring", "--no-recurring"], ["--recurring=false"],
+      ["--page", "2"], ["--cursor"], ["unexpected"],
+    ]) {
+      const { calls, runtime, stderr } = harness();
+      expect(await runCli(["expenses", "list", ...options, "--json"], runtime)).toBe(2);
+      expect(calls).toHaveLength(0);
+      expect(JSON.parse(stderr[0]).error.type).toBe("usage");
+    }
+  });
+
+  it("documents expense lists and preserves bare expense help without auth", async () => {
+    const { calls, runtime, stdout } = harness();
+    runtime.env = {};
+    for (const args of [[], ["expenses"], ["expenses", "list", "--help"]]) {
+      expect(await runCli(args, runtime)).toBe(0);
+    }
+    expect(stdout.every((text) => text.includes("expenses list"))).toBe(true);
+    expect(stdout[1]).toContain("expenses add");
+    expect(stdout[2]).toContain("--no-recurring");
+    expect(calls).toHaveLength(0);
+  });
+
   it("adds an expense with repeated splits", async () => {
     const { calls, runtime, stdout } = harness(
       Response.json({

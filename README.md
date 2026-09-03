@@ -32,9 +32,25 @@ bun run banana friends
 bun run banana groups
 bun run banana groups members GROUP_ID
 bun run banana groups activities GROUP_ID --search dinner
+bun run banana expenses list
 bun run banana expenses get EXPENSE_ID
 bun run banana payments get PAYMENT_ID
 ```
+
+List expenses across the authenticated account, sorted by date or amount:
+
+```sh
+banana expenses list --sort amount --direction desc --limit 10
+banana expenses list --recurring --sort date --direction asc
+banana expenses list --no-recurring --json
+```
+
+Omit both recurring flags to include all expenses. In the interactive browser,
+reaching the last item loads and appends the next page with the same sorting,
+filtering, and page size. Outside the browser, use `--cursor CURSOR` with the
+same options to retrieve the next page. JSON output includes `items`, `hasMore`, and
+`nextCursor`. Each item includes `share`, the current user's share amount,
+and `isRecurring`. Full splits are available through expense details.
 
 Create groups, expenses, and payments with explicit API IDs:
 
@@ -90,12 +106,16 @@ banana groups get GROUP_ID --raw
 The output flag may appear before or after the command. `--json` and `--raw`
 cannot be used together.
 
-In an interactive terminal, `balance users`, `friends list`, `groups list`,
+In an interactive terminal, `balance users`, `friends list`, `groups list`, `expenses list`,
 `groups members`, and `groups activities` open searchable browsers; type to
 filter, use the arrow keys to select an item, press Enter to open its details,
 Esc to return, and `q` to quit. In a non-interactive command card, friend and
 group lists fall back to five items and print a copyable `Next page` cursor
-command. Use `--limit N` to choose a page size.
+command. Expense lists also default to five items outside the browser and show
+the next cursor. In the browser they use the API's default page size and load
+more as you reach the end. Search filters all loaded expenses; press ↓ at the
+end (or when no items match) to load another page. If loading fails, press ↓
+to retry. Use `--limit N` to choose a page size.
 
 To expose `banana` on your path during local development:
 

@@ -1,23 +1,32 @@
 import {
+  DEFAULT_LIST_LIMIT,
+  appendQuery,
   asArray,
   asRecord,
   cleanUserSummary,
   display,
+  encodedDetailId,
   enumValue,
+  formatCard,
   humanAmount,
   isoDate,
   namedEntity,
   numeric,
   parseJsonBody,
   parseOptions,
+  positiveInteger,
   repeatedStrings,
   requiredString,
   requirePositionals,
   wantsHelp,
+  yesNo,
 } from "../shared";
 import { CliFailure, type ParsedCommand, type Presenter } from "../types";
 
-const HELP = `Usage: banana expenses add JSON
+const HELP = `Usage: banana expenses list [--sort date|amount] [--direction asc|desc]
+                            [--limit N] [--cursor CURSOR]
+                            [--recurring | --no-recurring]
+   or: banana expenses add JSON
    or: banana expenses add --title TEXT --amount AMOUNT
                            --currency-id ID --paid-by-id ID
                            --date YYYY-MM-DD|DD-MM-YYYY
@@ -32,6 +41,19 @@ const HELP = `Usage: banana expenses add JSON
                            [--split-type equal|custom|percentage|shares]
                            [--split USER_ID=AMOUNT]...`;
 const GET_HELP = "Usage: banana expenses get <expense-id>";
+const LIST_HELP = `Usage: banana expenses list [options]
+
+Options:
+  --sort date|amount
+  --direction asc|desc
+  --limit N                     (default: ${DEFAULT_LIST_LIMIT}; API default in browser)
+  --cursor CURSOR
+  --recurring                   Only recurring expenses
+  --no-recurring                Only non-recurring expenses
+
+Omit both recurring flags to include all expenses.
+In the browser, reaching the last item loads the next page automatically.
+Reuse the same options when requesting the next cursor.`;
 const EDIT_HELP = `Usage: banana expenses edit <expense-id> JSON
    or: banana expenses edit <expense-id> [--title TEXT] [--amount AMOUNT]
                            [--currency-id ID] [--paid-by-id ID] [--date DATE]
@@ -62,6 +84,7 @@ export function parseExpenses(args: string[]): ParsedCommand {
     return { kind: "help", text: HELP };
   }
   const [command, ...rest] = args;
+  if (command === "list") return parseExpensesList(rest);
   if (command === "get") {
     if (wantsHelp(rest)) return { kind: "help", text: GET_HELP };
     const { positionals } = parseOptions(rest);
@@ -137,6 +160,54 @@ export function parseExpenses(args: string[]): ParsedCommand {
       ...(description === undefined ? {} : { description }),
       ...(splitType === undefined ? {} : { splitType }),
     },
+  };
+}
+
+function parseExpensesList(args: string[]): ParsedCommand {
+  if (wantsHelp(args)) return { kind: "help", text: LIST_HELP };
+  const { positionals, values } = parseOptions(args, {
+    cursor: { type: "string" },
+    direction: { type: "string" },
+    limit: { type: "string" },
+    "no-recurring": { type: "boolean" },
+    recurring: { type: "boolean" },
+    sort: { type: "string" },
+  });
+  requirePositionals(positionals, 0, LIST_HELP);
+  if (values.recurring && values["no-recurring"]) {
+    throw new CliFailure(
+      "usage",
+      `--recurring and --no-recurring cannot be used together\n${LIST_HELP}`,
+    );
+  }
+
+  const query = new URLSearchParams();
+  appendQuery(
+    query,
+    "l",
+    positiveInteger(values.limit, "--limit") ?? String(DEFAULT_LIST_LIMIT),
+  );
+  appendQuery(query, "cursor", values.cursor as string | undefined);
+  appendQuery(
+    query,
+    "sort",
+    enumValue(values.sort, "--sort", ["date", "amount"] as const),
+  );
+  appendQuery(
+    query,
+    "direction",
+    enumValue(values.direction, "--direction", ["asc", "desc"] as const),
+  );
+  appendQuery(
+    query,
+    "recurring",
+    values["no-recurring"] ? false : (values.recurring as boolean | undefined),
+  );
+  return {
+    kind: "request",
+    path: "/expenses",
+    presentation: "expense-list",
+    query,
   };
 }
 
@@ -370,6 +441,69 @@ function formatExpense(body: unknown, title: string) {
 }
 
 export const expensePresenters = {
+  "expense-list": {
+    clean(body) {
+      const response = asRecord(body);
+      return {
+        items: asArray(response.items).map((value) => {
+          const expense = asRecord(value);
+          const { splits, ...summary } = cleanExpense(expense);
+          return {
+            ...summary,
+            isRecurring:
+              expense.recurringExpenseRuleId != null || expense.recurrence != null,
+            share: numeric(asRecord(expense.share).amount),
+          };
+        }),
+        hasMore: response.hasMore === true,
+        nextCursor: response.nextCursor ?? null,
+      };
+    },
+    format(body) {
+      const response = asRecord(body);
+      const items = asArray(response.items);
+      const lines = items.length
+        ? [
+            "Expenses",
+            ...items.map((value, index) => {
+              const expense = asRecord(value);
+              return formatCard(index, expense.title, [
+                `ID: ${display(expense.id)}`,
+                `Amount: ${humanAmount(expense.amount, expense.currency)}`,
+                `Your share: ${humanAmount(expense.share, expense.currency)}`,
+                `Paid by: ${namedEntity(expense.paidBy)}`,
+                `Group: ${expense.group ? namedEntity(expense.group) : "—"}`,
+                `Category: ${display(expense.category)}`,
+                `Date: ${display(expense.date)}`,
+                `Recurring: ${yesNo(expense.isRecurring)}`,
+              ]);
+            }),
+          ]
+        : ["No expenses."];
+      lines.push(
+        response.hasMore
+          ? [
+              "More expenses available.",
+              ...(response.nextCursor
+                ? [
+                    `Next cursor: ${JSON.stringify(response.nextCursor)}`,
+                    "Run banana expenses list with --cursor and the same options.",
+                  ]
+                : []),
+            ].join("\n")
+          : "End of expenses.",
+      );
+      return lines.join("\n\n");
+    },
+    browser: {
+      detailPath(_command, item) {
+        return `/expenses/${encodedDetailId(item.id)}`;
+      },
+      formatDetail(_item, body) {
+        return formatExpense(cleanExpense(body), "Expense");
+      },
+    },
+  },
   expense: {
     clean: cleanExpense,
     format: (body) => formatExpense(body, "Expense"),
@@ -403,4 +537,7 @@ export const expensePresenters = {
       ].join("\n");
     },
   },
-} satisfies Record<"expense" | "expense-updated" | "expense-created", Presenter>;
+} satisfies Record<
+  "expense-list" | "expense" | "expense-updated" | "expense-created",
+  Presenter
+>;

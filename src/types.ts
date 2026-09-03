@@ -13,6 +13,7 @@ export type Presentation =
   | "group"
   | "members"
   | "activities"
+  | "expense-list"
   | "expense"
   | "payment"
   | "expense-updated"
@@ -23,15 +24,18 @@ export type BrowserPresentation =
   | "balance-users"
   | "friend-list"
   | "group-list"
+  | "expense-list"
   | "members"
   | "activities";
 export type BrowserDetailLoader = (
   item: Record<string, unknown>,
 ) => Promise<string>;
+export type BrowserPageLoader = (cursor: string) => Promise<unknown>;
 export type Browser = (
   presentation: BrowserPresentation,
   body: unknown,
   loadDetail: BrowserDetailLoader,
+  loadPage?: BrowserPageLoader,
 ) => Promise<boolean>;
 export type Fetch = (
   input: RequestInfo | URL,
