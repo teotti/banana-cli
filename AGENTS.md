@@ -19,13 +19,9 @@ There is no login flow. `.env` is gitignored and holds the real token.
 
 ## API contract
 
-The exported Elysia server type previously lived in `server.d.ts`; the modular
-refactor removed that snapshot. Consult the backend contract for current routes,
-params, bodies and response shapes. The historical snapshot remains available:
-
-```sh
-git show 0cf8de2^:server.d.ts
-```
+The exported Elysia server type lives in `server.d.ts` at the repo root.
+Consult this local contract snapshot for routes, params, request bodies and
+response shapes.
 
 Do not probe the live API to find out what exists.
 
