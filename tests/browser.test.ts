@@ -1,8 +1,222 @@
 import { describe, expect, it } from "bun:test";
+import { PassThrough } from "node:stream";
+import { browseCollection } from "../src/browser";
 import { renderCollectionBrowser, renderGroupBrowser, runCli } from "../src/index";
+import { CliFailure } from "../src/types";
 import { harness } from "./helpers";
 
+async function withBrowserTerminal(
+  check: (key: (name: string, text?: string) => void, screens: string[]) => Promise<void>,
+) {
+  const stdin = Object.getOwnPropertyDescriptor(process, "stdin")!;
+  const stdout = Object.getOwnPropertyDescriptor(process, "stdout")!;
+  const ci = process.env.CI;
+  const input = Object.assign(new PassThrough(), {
+    isTTY: true,
+    isRaw: false,
+    setRawMode(value: boolean) { this.isRaw = value; return this; },
+  });
+  const output = Object.assign(new PassThrough(), { isTTY: true, rows: 16 });
+  const screens: string[] = [];
+  output.on("data", (chunk) => screens.push(String(chunk)));
+  const key = (name: string, text = "") => input.emit("keypress", text, { name });
+  try {
+    delete process.env.CI;
+    Object.defineProperty(process, "stdin", { configurable: true, value: input });
+    Object.defineProperty(process, "stdout", { configurable: true, value: output });
+    await check(key, screens);
+  } finally {
+    key("q");
+    Object.defineProperty(process, "stdin", stdin);
+    Object.defineProperty(process, "stdout", stdout);
+    if (ci === undefined) delete process.env.CI;
+    else process.env.CI = ci;
+    input.destroy();
+    output.destroy();
+  }
+}
+
 describe("BananaSplit CLI", () => {
+  it("appends expense pages at the last item, retaining filters and selection", async () => {
+    await withBrowserTerminal(async (key, screens) => {
+      const { calls, runtime, stdout } = harness((url) => Response.json(
+        url.searchParams.get("cursor") === "start"
+          ? { items: [{ id: "e-1", title: "First" }, { id: "e-2", title: "Second" }],
+              hasMore: true, nextCursor: "next +/=" }
+          : { items: [{ id: "e-3", title: "Third", amount: "8.10" }],
+              hasMore: false, nextCursor: null },
+      ));
+      const fetch = runtime.fetch!;
+      let release!: () => void;
+      let pageRequests = 0;
+      runtime.fetch = async (input, init) => {
+        if (new URL(String(input)).searchParams.get("cursor") === "next +/=") {
+          pageRequests++;
+          await new Promise<void>((resolve) => { release = resolve; });
+        }
+        return fetch(input, init);
+      };
+      runtime.browser = browseCollection;
+      const result = runCli([
+        "expenses", "list", "--cursor", "start", "--limit", "2",
+        "--sort", "amount", "--direction", "desc", "--no-recurring",
+      ], runtime);
+      await Bun.sleep(0);
+      expect(pageRequests).toBe(0);
+      key("down");
+      expect(screens.at(-1)).toContain("Loading more expenses…");
+      key("down");
+      expect(pageRequests).toBe(1);
+      release();
+      await Bun.sleep(0);
+      const rendered = screens.at(-1)!;
+      expect(rendered).toContain("First");
+      expect(rendered).toContain("Second");
+      expect(rendered).toContain("Third");
+      expect(rendered.replace(/\x1b\[[0-9;]*m/g, "")).toContain("› ● Expense: Second");
+      expect(Object.fromEntries(calls[1].url.searchParams)).toEqual({
+        cursor: "next +/=", l: "2", sort: "amount", direction: "desc", recurring: "false",
+      });
+      key("down");
+      key("down");
+      expect(pageRequests).toBe(1);
+      key("q");
+      expect(await result).toBe(0);
+      expect(stdout).toEqual([]);
+    });
+  });
+
+  it("keeps loaded expenses on failure, retries, and searches appended pages", async () => {
+    await withBrowserTerminal(async (key, screens) => {
+      let attempts = 0;
+      const browsing = browseCollection("expense-list", {
+        items: [{ id: "e-1", title: "Dinner" }], hasMore: true, nextCursor: "next",
+      }, async () => "", async (cursor) => {
+        expect(cursor).toBe("next");
+        if (++attempts === 1) throw new CliFailure("network", "Offline");
+        return { items: [{ id: "e-2", title: "Taxi" }], hasMore: false, nextCursor: null };
+      });
+      key("down");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("Offline");
+      expect(screens.at(-1)).toContain("Press ↓ to retry");
+      expect(screens.at(-1)).toContain("Dinner");
+      key("t", "t");
+      key("a", "a");
+      key("x", "x");
+      expect(screens.at(-1)).toContain("No matching expenses.");
+      key("down");
+      await Bun.sleep(0);
+      expect(attempts).toBe(2);
+      expect(screens.at(-1)).toContain("Taxi");
+      expect(screens.at(-1)).toContain("1/2");
+      expect(screens.at(-1)).not.toContain("Offline");
+      key("escape");
+      expect(screens.at(-1)).toContain("Dinner");
+      key("q");
+      expect(await browsing).toBe(true);
+    });
+  });
+
+  it("ignores a page that completes after quitting the browser", async () => {
+    await withBrowserTerminal(async (key, screens) => {
+      let release!: (page: unknown) => void;
+      const browsing = browseCollection("expense-list", {
+        items: [], hasMore: true, nextCursor: "next",
+      }, async () => "", () => new Promise((resolve) => { release = resolve; }));
+      key("down");
+      key("q");
+      expect(await browsing).toBe(true);
+      const count = screens.length;
+      release({ items: [{ title: "Late" }], hasMore: false, nextCursor: null });
+      await Bun.sleep(0);
+      expect(screens).toHaveLength(count);
+    });
+  });
+
+  it("keeps the selected expense visible as the list grows", () => {
+    const rendered = renderCollectionBrowser("expense-list", {
+      items: Array.from({ length: 50 }, (_, id) => ({ id, title: `Expense ${id}` })),
+      hasMore: true,
+    }, "", 49, undefined, 16);
+    expect(rendered).toContain("Expense 49");
+    expect(rendered).not.toContain("Expense 0");
+    expect(rendered.split("\n").length).toBeLessThan(16);
+  });
+
+  it("browses and searches the loaded expense page", () => {
+    const body = {
+      items: [{ id: "e-1", title: "Dinner", group: { name: "Lisbon" } },
+              { id: "e-2", title: "Taxi" }],
+      hasMore: true, nextCursor: "next",
+    };
+    const rendered = renderCollectionBrowser("expense-list", body, " LISBON ");
+    expect(rendered).toContain("1/2");
+    expect(rendered).toContain("Expense: Dinner");
+    expect(rendered).not.toContain("Taxi");
+    expect(rendered).toContain("Reach the last item to load more expenses");
+    expect(rendered).toContain("enter details");
+    expect(renderCollectionBrowser("expense-list", body, "missing"))
+      .toContain("No matching expenses.");
+  });
+
+  it("loads full expense splits only when opening browser details", async () => {
+    const { calls, runtime, stdout } = harness((url) => Response.json(
+      url.pathname === "/base/expenses"
+        ? { items: [{ id: "expense/one", title: "Dinner", share: { amount: "20" } }],
+            hasMore: false, nextCursor: null }
+        : { id: "expense/one", title: "Dinner", amount: "42",
+            currency: { code: "EUR" }, paidByUser: { id: "u-1", name: "Leonardo" },
+            shares: [{ user: { id: "u-2", name: "Ana" }, amount: "20" }] },
+    ));
+    runtime.browser = async (presentation, body, loadDetail) => {
+      expect(presentation).toBe("expense-list");
+      expect(calls).toHaveLength(1);
+      const item = (body as { items: Record<string, unknown>[] }).items[0];
+      expect(item.share).toBe(20);
+      expect(item).not.toHaveProperty("splits");
+      const detail = await loadDetail(item);
+      expect(detail).toContain("Paid by: Leonardo · u-1");
+      expect(detail).toContain("Splits");
+      expect(detail).toContain("Ana · u-2: 20 EUR");
+      return true;
+    };
+    expect(await runCli(["expenses", "list", "--recurring", "--sort", "amount"], runtime)).toBe(0);
+    expect(calls.map(({ url }) => url.pathname)).toEqual([
+      "/base/expenses", "/base/expenses/expense%2Fone",
+    ]);
+    expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
+      recurring: "true", sort: "amount",
+    });
+    expect(calls[1].url.search).toBe("");
+    expect(stdout).toEqual([]);
+  });
+
+  it("preserves explicit expense limits and supports browser fallback and output modes", async () => {
+    for (const limit of [["--limit", "7"], ["--limit=7"]]) {
+      const { calls, runtime, stdout } = harness(Response.json({
+        items: [{ id: "e-1", title: "Dinner" }], hasMore: false, nextCursor: null,
+      }));
+      let browsed = 0;
+      let paged = 0;
+      runtime.browser = async () => { browsed++; return false; };
+      runtime.pager = async (text) => {
+        paged++;
+        expect(text).toContain("1. Dinner");
+        return false;
+      };
+      expect(await runCli(["expenses", "list", ...limit], runtime)).toBe(0);
+      expect(calls[0].url.searchParams.get("l")).toBe("7");
+      expect(stdout[0]).toContain("1. Dinner");
+      for (const mode of ["--json", "--raw"]) {
+        expect(await runCli(["expenses", "list", mode], runtime)).toBe(0);
+        expect(calls.at(-1)?.url.searchParams.get("l")).toBe("5");
+      }
+      expect(browsed).toBe(1);
+      expect(paged).toBe(1);
+    }
+  });
+
   it("opens all groups in the interactive pager", async () => {
     const paged: string[] = [];
     const { calls, runtime, stdout } = harness(

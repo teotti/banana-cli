@@ -5,6 +5,7 @@ import { asArray, asRecord, display } from "./shared";
 import {
   CliFailure,
   type BrowserDetailLoader,
+  type BrowserPageLoader,
   type BrowserPresentation,
   type Presentation,
 } from "./types";
@@ -67,6 +68,7 @@ export function isListPresentation(presentation: Presentation) {
   return (
     presentation === "balance-users" ||
     presentation === "currency-list" ||
+    presentation === "expense-list" ||
     presentation === "friend-list" ||
     presentation === "group-list" ||
     presentation === "members" ||
@@ -78,6 +80,7 @@ export function isBrowserPresentation(
   presentation: Presentation,
 ): presentation is BrowserPresentation {
   return (
+    presentation === "expense-list" ||
     presentation === "balance-users" ||
     presentation === "friend-list" ||
     presentation === "group-list" ||
@@ -88,7 +91,9 @@ export function isBrowserPresentation(
 
 function browserItems(presentation: BrowserPresentation, body: unknown) {
   return asArray(
-    presentation === "group-list" || presentation === "friend-list"
+    presentation === "group-list" ||
+    presentation === "friend-list" ||
+    presentation === "expense-list"
       ? asRecord(body).items
       : body,
   ).map(asRecord);
@@ -126,6 +131,8 @@ export function renderCollectionBrowser(
   query = "",
   selectedIndex = 0,
   detail?: BrowserDetailState,
+  rows = Infinity,
+  pageStatus?: string,
 ) {
   if (detail) {
     return [
@@ -147,10 +154,13 @@ export function renderCollectionBrowser(
   const allItems = browserItems(presentation, body);
   const items = filterBrowserItems(presentation, body, query);
   const activeIndex = Math.min(selectedIndex, Math.max(items.length - 1, 0));
+  const visibleCount = Math.max(1, rows - 13);
+  const start = Math.max(0, activeIndex - visibleCount + 1);
   const label = {
     "balance-users": "user balances",
     "friend-list": "friends",
     "group-list": "groups",
+    "expense-list": "expenses",
     members: "group members",
     activities: "group activities",
   }[presentation];
@@ -169,20 +179,26 @@ export function renderCollectionBrowser(
     `  ${ANSI.dim}↑↓ move · type search · enter details · esc clear · q quit${ANSI.reset}`,
     "",
     ...(items.length
-      ? items.map(
+      ? items.slice(start, start + visibleCount).map(
           (item, index) =>
-            `${index === activeIndex ? `${ANSI.cyan}› ●${ANSI.reset}` : "  ○"} ${browserItemTitle(presentation, item)}`,
+            `${start + index === activeIndex ? `${ANSI.cyan}› ●${ANSI.reset}` : "  ○"} ${browserItemTitle(presentation, item)}`,
         )
       : [`  ${ANSI.dim}No matching ${label}.${ANSI.reset}`]),
   ];
 
-  if (
-    (presentation === "group-list" || presentation === "friend-list") &&
+  if (pageStatus) {
+    lines.push("", pageStatus);
+  } else if (
+    (presentation === "group-list" ||
+      presentation === "friend-list" ||
+      presentation === "expense-list") &&
     response.hasMore
   ) {
     lines.push(
       "",
-      `${ANSI.dim}More ${presentation === "group-list" ? "groups" : "friends"} are available from the API.${ANSI.reset}`,
+      `${ANSI.dim}${presentation === "expense-list"
+        ? "Reach the last item to load more expenses (↓ to continue)."
+        : `More ${label} are available from the API.`}${ANSI.reset}`,
     );
   }
   return lines.join("\n");
@@ -209,6 +225,7 @@ export async function browseCollection(
   presentation: BrowserPresentation,
   body: unknown,
   loadDetail: BrowserDetailLoader,
+  loadPage?: BrowserPageLoader,
 ) {
   if (!hasInteractiveBrowser()) return false;
 
@@ -220,6 +237,8 @@ export async function browseCollection(
   let detail: BrowserDetailState | undefined;
   let detailGeneration = 0;
   let finished = false;
+  let loadingPage = false;
+  let pageStatus: string | undefined;
 
   emitKeypressEvents(input);
   input.setRawMode(true);
@@ -230,7 +249,7 @@ export async function browseCollection(
     const draw = () => {
       if (finished) return;
       output.write(
-        `\x1b[H\x1b[2J${renderCollectionBrowser(presentation, body, query, selectedIndex, detail)}`,
+        `\x1b[H\x1b[2J${renderCollectionBrowser(presentation, body, query, selectedIndex, detail, output.rows, pageStatus)}`,
       );
     };
     const finish = () => {
@@ -263,6 +282,31 @@ export async function browseCollection(
       }
       draw();
     };
+    const loadNextPage = async () => {
+      const response = asRecord(body);
+      const cursor = response.nextCursor;
+      if (finished || loadingPage || !loadPage || !response.hasMore ||
+          typeof cursor !== "string" || !cursor) return;
+      loadingPage = true;
+      pageStatus = "Loading more expenses…";
+      draw();
+      try {
+        const page = asRecord(await loadPage(cursor));
+        if (finished) return;
+        if (page.hasMore && page.nextCursor === cursor) {
+          throw new CliFailure("api", "Expense pagination did not advance");
+        }
+        body = { ...page, items: [...asArray(response.items), ...asArray(page.items)] };
+        pageStatus = undefined;
+      } catch (error) {
+        if (finished) return;
+        pageStatus = `Unable to load more expenses: ${error instanceof CliFailure
+          ? error.message : "Unexpected error"}. Press ↓ to retry.`;
+      } finally {
+        loadingPage = false;
+      }
+      draw();
+    };
     const onKeypress = (
       text: string,
       key: { ctrl?: boolean; meta?: boolean; name?: string },
@@ -287,6 +331,7 @@ export async function browseCollection(
         selectedIndex = Math.max(0, selectedIndex - 1);
       } else if (key.name === "down") {
         selectedIndex = Math.min(Math.max(itemCount - 1, 0), selectedIndex + 1);
+        if (selectedIndex >= itemCount - 1) void loadNextPage();
       } else if (key.name === "backspace" || key.name === "delete") {
         query = query.slice(0, -1);
         selectedIndex = 0;
