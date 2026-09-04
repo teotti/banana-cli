@@ -139,7 +139,7 @@ export function renderCollectionBrowser(
       `${ANSI.bold}${ANSI.yellow}BANANA${ANSI.reset}`,
       "",
       `◆ ${ANSI.bold}${detail.title}${ANSI.reset}`,
-      `  ${ANSI.dim}esc back · q quit${ANSI.reset}`,
+      `  ${ANSI.dim}esc/← back · q quit${ANSI.reset}`,
       "",
       detail.status === "loading"
         ? `${ANSI.dim}Loading details…${ANSI.reset}`
@@ -176,7 +176,7 @@ export function renderCollectionBrowser(
     "│",
     `◆ ${ANSI.bold}Browse ${label}${ANSI.reset}`,
     `  Search: ${query}${ANSI.yellow}█${ANSI.reset}`,
-    `  ${ANSI.dim}↑↓ move · type search · enter details · esc clear · q quit${ANSI.reset}`,
+    `  ${ANSI.dim}↑↓ move · type search · enter/→ details · esc/← clear · q quit${ANSI.reset}`,
     "",
     ...(items.length
       ? items.slice(start, start + visibleCount).map(
@@ -317,14 +317,14 @@ export async function browseCollection(
         return;
       }
       if (detail) {
-        if (key.name === "escape") {
+        if (key.name === "escape" || key.name === "left") {
           detailGeneration++;
           detail = undefined;
           draw();
         }
         return;
       }
-      if (key.name === "escape") {
+      if (key.name === "escape" || key.name === "left") {
         query = "";
         selectedIndex = 0;
       } else if (key.name === "up") {
@@ -335,7 +335,7 @@ export async function browseCollection(
       } else if (key.name === "backspace" || key.name === "delete") {
         query = query.slice(0, -1);
         selectedIndex = 0;
-      } else if (key.name === "return" || key.name === "enter") {
+      } else if (key.name === "return" || key.name === "enter" || key.name === "right") {
         const items = filterBrowserItems(presentation, body, query);
         const selected = items[Math.min(selectedIndex, items.length - 1)];
         if (selected) void openDetail(selected);

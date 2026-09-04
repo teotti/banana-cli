@@ -37,6 +37,37 @@ async function withBrowserTerminal(
 }
 
 describe("BananaSplit CLI", () => {
+  it("opens details with Enter or Right and goes back or clears search with Escape or Left", async () => {
+    await withBrowserTerminal(async (key, screens) => {
+      const opened: unknown[] = [];
+      const browsing = browseCollection("group-list", {
+        items: [{ name: "Home" }, { name: "Trip" }],
+      }, async (item) => {
+        opened.push(item.name);
+        return "Group details";
+      });
+      for (const open of ["return", "enter", "right"]) {
+        for (const back of ["escape", "left"]) {
+          key("t", "t");
+          expect(screens.at(-1)).toContain("1/2");
+          key(open);
+          await Bun.sleep(0);
+          expect(opened.at(-1)).toBe("Trip");
+          expect(screens.at(-1)).toContain("Group details");
+          key(back);
+          expect(screens.at(-1)).toContain("Search: t");
+          key(back);
+          expect(screens.at(-1)).toContain("Search: \x1b");
+          expect(screens.at(-1)).toContain("Home");
+          expect(screens.at(-1)).toContain("Trip");
+        }
+      }
+      expect(opened).toHaveLength(6);
+      key("q");
+      expect(await browsing).toBe(true);
+    });
+  });
+
   it("appends expense pages at the last item, retaining filters and selection", async () => {
     await withBrowserTerminal(async (key, screens) => {
       const { calls, runtime, stdout } = harness((url) => Response.json(
@@ -155,7 +186,7 @@ describe("BananaSplit CLI", () => {
     expect(rendered).toContain("Expense: Dinner");
     expect(rendered).not.toContain("Taxi");
     expect(rendered).toContain("Reach the last item to load more expenses");
-    expect(rendered).toContain("enter details");
+    expect(rendered).toContain("enter/→ details");
     expect(renderCollectionBrowser("expense-list", body, "missing"))
       .toContain("No matching expenses.");
   });
@@ -327,7 +358,7 @@ describe("BananaSplit CLI", () => {
     expect(rendered).toContain("BANANA");
     expect(rendered).toContain("1/2");
     expect(rendered).toContain("Lisbon trip");
-    expect(rendered).toContain("enter details");
+    expect(rendered).toContain("enter/→ details");
     expect(rendered).not.toContain("Summer holiday");
     expect(rendered).not.toContain("Members: Leonardo, Ana");
     expect(rendered).not.toContain("Home");
@@ -403,7 +434,7 @@ describe("BananaSplit CLI", () => {
       { status: "loading", title: "Leonardo" },
     );
     expect(loading).toContain("Loading details…");
-    expect(loading).toContain("esc back · q quit");
+    expect(loading).toContain("esc/← back · q quit");
     expect(loading).not.toContain("Search: leo");
 
     const error = renderCollectionBrowser(
