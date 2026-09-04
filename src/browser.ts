@@ -13,7 +13,7 @@ import {
 const PAGER_PROMPT = "↑/↓ navigate · q quit";
 const ANSI = {
   bold: "\x1b[1m",
-  cyan: "\x1b[36m",
+  yellow: "\x1b[38;2;255;228;0m",
   dim: "\x1b[2m",
   green: "\x1b[32m",
   reset: "\x1b[0m",
@@ -136,7 +136,7 @@ export function renderCollectionBrowser(
 ) {
   if (detail) {
     return [
-      `${ANSI.bold}${ANSI.cyan}BANANA${ANSI.reset}`,
+      `${ANSI.bold}${ANSI.yellow}BANANA${ANSI.reset}`,
       "",
       `◆ ${ANSI.bold}${detail.title}${ANSI.reset}`,
       `  ${ANSI.dim}esc back · q quit${ANSI.reset}`,
@@ -168,20 +168,20 @@ export function renderCollectionBrowser(
     normalizedQuery ? `/${allItems.length}` : ""
   }${ANSI.reset}`;
   const lines = [
-    `${ANSI.bold}${ANSI.cyan}BANANA${ANSI.reset}`,
+    `${ANSI.bold}${ANSI.yellow}BANANA${ANSI.reset}`,
     "",
-    `┌─ ${ANSI.cyan} ${label} ${ANSI.reset}`,
+    `┌─ ${ANSI.yellow} ${label} ${ANSI.reset}`,
     "│",
     `◇ Found ${count} ${label}`,
     "│",
     `◆ ${ANSI.bold}Browse ${label}${ANSI.reset}`,
-    `  Search: ${query}${ANSI.cyan}█${ANSI.reset}`,
+    `  Search: ${query}${ANSI.yellow}█${ANSI.reset}`,
     `  ${ANSI.dim}↑↓ move · type search · enter details · esc clear · q quit${ANSI.reset}`,
     "",
     ...(items.length
       ? items.slice(start, start + visibleCount).map(
           (item, index) =>
-            `${start + index === activeIndex ? `${ANSI.cyan}› ●${ANSI.reset}` : "  ○"} ${browserItemTitle(presentation, item)}`,
+            `${start + index === activeIndex ? `${ANSI.yellow}› ●${ANSI.reset}` : "  ○"} ${browserItemTitle(presentation, item)}`,
         )
       : [`  ${ANSI.dim}No matching ${label}.${ANSI.reset}`]),
   ];
