@@ -5334,8 +5334,8 @@ export declare const appType: Elysia<"", {
                     body: {};
                     params: {};
                     query: {
-                        p?: number | undefined;
                         l?: number | undefined;
+                        p?: number | undefined;
                     };
                     headers: {};
                     response: {
@@ -5370,10 +5370,10 @@ export declare const appType: Elysia<"", {
                                 entityType: "expense";
                                 item: {
                                     date: string;
+                                    amount: number;
                                     createdAt: string;
                                     timezone: string;
                                     title: string;
-                                    amount: number;
                                     splitType: string;
                                     currency: string | null;
                                     category: {
@@ -5401,10 +5401,10 @@ export declare const appType: Elysia<"", {
                                 entityType: "payment";
                                 item: {
                                     date: string;
+                                    amount: number;
                                     createdAt: string;
                                     description: string | null;
                                     timezone: string;
-                                    amount: number;
                                     isSettlement: boolean;
                                     currency: string | null;
                                     fromUser: {
@@ -5520,8 +5520,8 @@ export declare const appType: Elysia<"", {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                             window?: "all" | "24h" | "7d" | "30d" | undefined;
                         };
                         headers: {};
@@ -5678,8 +5678,8 @@ export declare const appType: Elysia<"", {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                         };
                         headers: {};
                         response: {
@@ -6163,8 +6163,8 @@ export declare const appType: Elysia<"", {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                         };
                         headers: {};
                         response: {
@@ -6172,10 +6172,10 @@ export declare const appType: Elysia<"", {
                                 limit: number;
                                 items: {
                                     date: string;
+                                    amount: number;
                                     createdAt: string;
                                     timezone: string;
                                     title: string;
-                                    amount: number;
                                     splitType: string;
                                     currency: string | null;
                                     category: {
@@ -6386,8 +6386,8 @@ export declare const appType: Elysia<"", {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                         };
                         headers: {};
                         response: {
@@ -6395,10 +6395,10 @@ export declare const appType: Elysia<"", {
                                 limit: number;
                                 items: {
                                     date: string;
+                                    amount: number;
                                     createdAt: string;
                                     description: string | null;
                                     timezone: string;
-                                    amount: number;
                                     isSettlement: boolean;
                                     currency: string | null;
                                     fromUser: {
@@ -6535,18 +6535,20 @@ export declare const appType: Elysia<"", {
 } & {
     admin: {
         metrics: {
-            paredes: {};
+            campaigns: {};
         } & {
-            paredes: {
+            campaigns: {
                 get: {
                     body: {};
                     params: {};
                     query: {
+                        l?: number | undefined;
                         sort?: "groups" | "friends" | "payments" | "expenses" | "createdAt" | "invites" | undefined;
                         direction?: "asc" | "desc" | undefined;
                         p?: number | undefined;
-                        l?: number | undefined;
                         window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
+                        postFestivalStart?: string | undefined;
+                        campaign: string | string[];
                     };
                     headers: {};
                     response: {
@@ -6555,7 +6557,7 @@ export declare const appType: Elysia<"", {
                             paymentCount: number;
                             limit: number;
                             window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                            metric: "paredes";
+                            metric: string[];
                             groupCount: number;
                             page: number;
                             totalPages: number;
@@ -6587,15 +6589,17 @@ export declare const appType: Elysia<"", {
                 };
             };
         } & {
-            paredes: {
+            campaigns: {
                 users: {
                     get: {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                             window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
+                            postFestivalStart?: string | undefined;
+                            campaign: string | string[];
                         };
                         headers: {};
                         response: {
@@ -6623,7 +6627,7 @@ export declare const appType: Elysia<"", {
                                     hasBio: boolean;
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "paredes";
+                                metric: string[];
                                 page: number;
                                 totalItems: number;
                                 totalPages: number;
@@ -6643,15 +6647,17 @@ export declare const appType: Elysia<"", {
                 };
             };
         } & {
-            paredes: {
+            campaigns: {
                 groups: {
                     get: {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                             window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
+                            postFestivalStart?: string | undefined;
+                            campaign: string | string[];
                         };
                         headers: {};
                         response: {
@@ -6676,7 +6682,7 @@ export declare const appType: Elysia<"", {
                                     hasImage: boolean;
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "paredes";
+                                metric: string[];
                                 page: number;
                                 totalItems: number;
                                 totalPages: number;
@@ -6696,15 +6702,17 @@ export declare const appType: Elysia<"", {
                 };
             };
         } & {
-            paredes: {
+            campaigns: {
                 expenses: {
                     get: {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                             window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
+                            postFestivalStart?: string | undefined;
+                            campaign: string | string[];
                         };
                         headers: {};
                         response: {
@@ -6712,10 +6720,10 @@ export declare const appType: Elysia<"", {
                                 limit: number;
                                 items: {
                                     date: string;
+                                    amount: number;
                                     createdAt: string;
                                     timezone: string;
                                     title: string;
-                                    amount: number;
                                     splitType: string;
                                     currency: string | null;
                                     category: {
@@ -6739,7 +6747,7 @@ export declare const appType: Elysia<"", {
                                     isRecurring: boolean;
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "paredes";
+                                metric: string[];
                                 page: number;
                                 totalItems: number;
                                 totalPages: number;
@@ -6759,15 +6767,17 @@ export declare const appType: Elysia<"", {
                 };
             };
         } & {
-            paredes: {
+            campaigns: {
                 payments: {
                     get: {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                             window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
+                            postFestivalStart?: string | undefined;
+                            campaign: string | string[];
                         };
                         headers: {};
                         response: {
@@ -6775,10 +6785,10 @@ export declare const appType: Elysia<"", {
                                 limit: number;
                                 items: {
                                     date: string;
+                                    amount: number;
                                     createdAt: string;
                                     description: string | null;
                                     timezone: string;
-                                    amount: number;
                                     isSettlement: boolean;
                                     currency: string | null;
                                     fromUser: {
@@ -6799,7 +6809,7 @@ export declare const appType: Elysia<"", {
                                     } | null;
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "paredes";
+                                metric: string[];
                                 page: number;
                                 totalItems: number;
                                 totalPages: number;
@@ -6819,15 +6829,17 @@ export declare const appType: Elysia<"", {
                 };
             };
         } & {
-            paredes: {
+            campaigns: {
                 "active-users": {
                     get: {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                             window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
+                            postFestivalStart?: string | undefined;
+                            campaign: string | string[];
                         };
                         headers: {};
                         response: {
@@ -6844,7 +6856,7 @@ export declare const appType: Elysia<"", {
                                     inviteCount: number;
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "paredes";
+                                metric: string[];
                                 page: number;
                                 totalItems: number;
                                 totalPages: number;
@@ -6864,15 +6876,17 @@ export declare const appType: Elysia<"", {
                 };
             };
         } & {
-            paredes: {
+            campaigns: {
                 guests: {
                     get: {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                             window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
+                            postFestivalStart?: string | undefined;
+                            campaign: string | string[];
                         };
                         headers: {};
                         response: {
@@ -6900,396 +6914,7 @@ export declare const appType: Elysia<"", {
                                     hasBio: boolean;
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "paredes";
-                                page: number;
-                                totalItems: number;
-                                totalPages: number;
-                            };
-                            403: "Unauthorized" | "Forbidden";
-                            422: {
-                                type: "validation";
-                                on: string;
-                                summary?: string;
-                                message?: string;
-                                found?: unknown;
-                                property?: string;
-                                expected?: string;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-    };
-} & {
-    admin: {
-        metrics: {
-            mouros: {};
-        } & {
-            mouros: {
-                get: {
-                    body: {};
-                    params: {};
-                    query: {
-                        sort?: "groups" | "friends" | "payments" | "expenses" | "createdAt" | "invites" | undefined;
-                        direction?: "asc" | "desc" | undefined;
-                        p?: number | undefined;
-                        l?: number | undefined;
-                        window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
-                    };
-                    headers: {};
-                    response: {
-                        200: {
-                            expenseCount: number;
-                            paymentCount: number;
-                            limit: number;
-                            window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                            metric: "mouros";
-                            groupCount: number;
-                            page: number;
-                            totalPages: number;
-                            joinedUserCount: number;
-                            guestCreatedCount: number;
-                            activeUserCount: number;
-                            activeUsers: {
-                                name: string;
-                                createdAt: string;
-                                username: string | null;
-                                expenseCount: number;
-                                paymentCount: number;
-                                groupCount: number;
-                                friendCount: number;
-                                inviteCount: number;
-                            }[];
-                        };
-                        403: "Unauthorized" | "Forbidden";
-                        422: {
-                            type: "validation";
-                            on: string;
-                            summary?: string;
-                            message?: string;
-                            found?: unknown;
-                            property?: string;
-                            expected?: string;
-                        };
-                    };
-                };
-            };
-        } & {
-            mouros: {
-                users: {
-                    get: {
-                        body: {};
-                        params: {};
-                        query: {
-                            p?: number | undefined;
-                            l?: number | undefined;
-                            window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
-                        };
-                        headers: {};
-                        response: {
-                            200: {
-                                limit: number;
-                                items: {
-                                    name: string;
-                                    emailVerified: boolean;
-                                    createdAt: string;
-                                    username: string | null;
-                                    isGuest: boolean;
-                                    inviteToken: string | null;
-                                    lastLoginMethod: string | null;
-                                    currency: string | null;
-                                    groupCount: number;
-                                    friendCount: number;
-                                    hasGroups: boolean;
-                                    expenseShareCount: number;
-                                    hasExpenseShares: boolean;
-                                    createdPaymentCount: number;
-                                    hasCreatedPayment: boolean;
-                                    lastActivityAt: string;
-                                    profileCompleted: boolean;
-                                    hasAvatar: boolean;
-                                    hasBio: boolean;
-                                }[];
-                                window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "mouros";
-                                page: number;
-                                totalItems: number;
-                                totalPages: number;
-                            };
-                            403: "Unauthorized" | "Forbidden";
-                            422: {
-                                type: "validation";
-                                on: string;
-                                summary?: string;
-                                message?: string;
-                                found?: unknown;
-                                property?: string;
-                                expected?: string;
-                            };
-                        };
-                    };
-                };
-            };
-        } & {
-            mouros: {
-                groups: {
-                    get: {
-                        body: {};
-                        params: {};
-                        query: {
-                            p?: number | undefined;
-                            l?: number | undefined;
-                            window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
-                        };
-                        headers: {};
-                        response: {
-                            200: {
-                                limit: number;
-                                items: {
-                                    name: string;
-                                    createdAt: string;
-                                    type: string;
-                                    useOptimalSettlement: boolean;
-                                    defaultSplitType: string;
-                                    expenseCount: number;
-                                    paymentCount: number;
-                                    currency: string | null;
-                                    creator: {
-                                        name: string;
-                                        username: string | null;
-                                    } | null;
-                                    memberCount: number;
-                                    totalExpenseAmountInEuro: number;
-                                    hasDescription: boolean;
-                                    hasImage: boolean;
-                                }[];
-                                window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "mouros";
-                                page: number;
-                                totalItems: number;
-                                totalPages: number;
-                            };
-                            403: "Unauthorized" | "Forbidden";
-                            422: {
-                                type: "validation";
-                                on: string;
-                                summary?: string;
-                                message?: string;
-                                found?: unknown;
-                                property?: string;
-                                expected?: string;
-                            };
-                        };
-                    };
-                };
-            };
-        } & {
-            mouros: {
-                expenses: {
-                    get: {
-                        body: {};
-                        params: {};
-                        query: {
-                            p?: number | undefined;
-                            l?: number | undefined;
-                            window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
-                        };
-                        headers: {};
-                        response: {
-                            200: {
-                                limit: number;
-                                items: {
-                                    date: string;
-                                    createdAt: string;
-                                    timezone: string;
-                                    title: string;
-                                    amount: number;
-                                    splitType: string;
-                                    currency: string | null;
-                                    category: {
-                                        name: string;
-                                        key: string | null;
-                                    } | null;
-                                    groupName: string | null;
-                                    hasDescription: boolean;
-                                    hasImage: boolean;
-                                    amountInEuro: number;
-                                    context: string;
-                                    paidBy: {
-                                        name: string;
-                                        username: string | null;
-                                    } | null;
-                                    createdBy: {
-                                        name: string;
-                                        username: string | null;
-                                    } | null;
-                                    participantCount: number;
-                                    isRecurring: boolean;
-                                }[];
-                                window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "mouros";
-                                page: number;
-                                totalItems: number;
-                                totalPages: number;
-                            };
-                            403: "Unauthorized" | "Forbidden";
-                            422: {
-                                type: "validation";
-                                on: string;
-                                summary?: string;
-                                message?: string;
-                                found?: unknown;
-                                property?: string;
-                                expected?: string;
-                            };
-                        };
-                    };
-                };
-            };
-        } & {
-            mouros: {
-                payments: {
-                    get: {
-                        body: {};
-                        params: {};
-                        query: {
-                            p?: number | undefined;
-                            l?: number | undefined;
-                            window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
-                        };
-                        headers: {};
-                        response: {
-                            200: {
-                                limit: number;
-                                items: {
-                                    date: string;
-                                    createdAt: string;
-                                    description: string | null;
-                                    timezone: string;
-                                    amount: number;
-                                    isSettlement: boolean;
-                                    currency: string | null;
-                                    fromUser: {
-                                        name: string;
-                                        username: string | null;
-                                    } | null;
-                                    toUser: {
-                                        name: string;
-                                        username: string | null;
-                                    } | null;
-                                    groupName: string | null;
-                                    hasDescription: boolean;
-                                    amountInEuro: number;
-                                    context: string;
-                                    createdBy: {
-                                        name: string;
-                                        username: string | null;
-                                    } | null;
-                                }[];
-                                window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "mouros";
-                                page: number;
-                                totalItems: number;
-                                totalPages: number;
-                            };
-                            403: "Unauthorized" | "Forbidden";
-                            422: {
-                                type: "validation";
-                                on: string;
-                                summary?: string;
-                                message?: string;
-                                found?: unknown;
-                                property?: string;
-                                expected?: string;
-                            };
-                        };
-                    };
-                };
-            };
-        } & {
-            mouros: {
-                "active-users": {
-                    get: {
-                        body: {};
-                        params: {};
-                        query: {
-                            p?: number | undefined;
-                            l?: number | undefined;
-                            window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
-                        };
-                        headers: {};
-                        response: {
-                            200: {
-                                limit: number;
-                                items: {
-                                    name: string;
-                                    createdAt: string;
-                                    username: string | null;
-                                    expenseCount: number;
-                                    paymentCount: number;
-                                    groupCount: number;
-                                    friendCount: number;
-                                    inviteCount: number;
-                                }[];
-                                window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "mouros";
-                                page: number;
-                                totalItems: number;
-                                totalPages: number;
-                            };
-                            403: "Unauthorized" | "Forbidden";
-                            422: {
-                                type: "validation";
-                                on: string;
-                                summary?: string;
-                                message?: string;
-                                found?: unknown;
-                                property?: string;
-                                expected?: string;
-                            };
-                        };
-                    };
-                };
-            };
-        } & {
-            mouros: {
-                guests: {
-                    get: {
-                        body: {};
-                        params: {};
-                        query: {
-                            p?: number | undefined;
-                            l?: number | undefined;
-                            window?: "all" | "24h" | "7d" | "30d" | "post-festival" | undefined;
-                        };
-                        headers: {};
-                        response: {
-                            200: {
-                                limit: number;
-                                items: {
-                                    name: string;
-                                    emailVerified: boolean;
-                                    createdAt: string;
-                                    username: string | null;
-                                    isGuest: boolean;
-                                    inviteToken: string | null;
-                                    lastLoginMethod: string | null;
-                                    currency: string | null;
-                                    groupCount: number;
-                                    friendCount: number;
-                                    hasGroups: boolean;
-                                    expenseShareCount: number;
-                                    hasExpenseShares: boolean;
-                                    createdPaymentCount: number;
-                                    hasCreatedPayment: boolean;
-                                    lastActivityAt: string;
-                                    profileCompleted: boolean;
-                                    hasAvatar: boolean;
-                                    hasBio: boolean;
-                                }[];
-                                window: "all" | "24h" | "7d" | "30d" | "post-festival";
-                                metric: "mouros";
+                                metric: string[];
                                 page: number;
                                 totalItems: number;
                                 totalPages: number;
@@ -7352,8 +6977,8 @@ export declare const appType: Elysia<"", {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                         };
                         headers: {};
                         response: {
@@ -7941,8 +7566,8 @@ export declare const appType: Elysia<"", {
                         body: {};
                         params: {};
                         query: {
-                            p?: number | undefined;
                             l?: number | undefined;
+                            p?: number | undefined;
                         };
                         headers: {};
                         response: {
@@ -8571,18 +8196,28 @@ export declare const appType: Elysia<"", {
                                             description?: string | null | undefined;
                                             groupId?: string | null | undefined;
                                             timezone?: string | undefined;
+                                            latitude?: number | null | undefined;
+                                            longitude?: number | null | undefined;
                                             exchangeRateSnapshotId?: string | null | undefined;
                                             friendshipId?: string | null | undefined;
                                             splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
+                                            locationId?: string | null | undefined;
                                             categoryId?: string | null | undefined;
                                             recurringExpenseRuleId?: string | null | undefined;
                                             importId?: string | null | undefined;
                                             importSourceRow?: number | null | undefined;
+                                            location?: {
+                                                id: string;
+                                                label: string;
+                                                latitude: number;
+                                                longitude: number;
+                                            } | null | undefined;
                                             date: Date;
+                                            amount: string;
+                                            entity: "expense";
                                             currencyId: string;
                                             createdById: string;
                                             title: string;
-                                            amount: string;
                                             paidById: string;
                                             group: {
                                                 id: string;
@@ -8591,7 +8226,6 @@ export declare const appType: Elysia<"", {
                                                 emoji: string | null;
                                                 color: string | null;
                                             } | null;
-                                            entity: "expense";
                                             currency: {
                                                 symbol: string | null;
                                                 id: string;
@@ -8603,8 +8237,8 @@ export declare const appType: Elysia<"", {
                                                 createdAt?: Date | undefined;
                                                 updatedAt?: Date | undefined;
                                                 deletedAt?: Date | null | undefined;
-                                                userId: string;
                                                 amount: string;
+                                                userId: string;
                                                 expenseId: string;
                                             } | null;
                                             paidByUser: {
@@ -8630,15 +8264,24 @@ export declare const appType: Elysia<"", {
                                                 description?: string | null | undefined;
                                                 groupId?: string | null | undefined;
                                                 timezone?: string | undefined;
+                                                latitude?: number | null | undefined;
+                                                longitude?: number | null | undefined;
                                                 splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
                                                 interval?: number | undefined;
                                                 endDate?: Date | null | undefined;
                                                 lastGenerated?: Date | null | undefined;
+                                                locationId?: string | null | undefined;
                                                 categoryId?: string | null | undefined;
+                                                location?: {
+                                                    id: string;
+                                                    label: string;
+                                                    latitude: number;
+                                                    longitude: number;
+                                                } | null | undefined;
+                                                amount: string;
                                                 currencyId: string;
                                                 creatorId: string;
                                                 title: string;
-                                                amount: string;
                                                 paidById: string;
                                                 frequency: "daily" | "weekly" | "monthly" | "yearly";
                                                 startDate: Date;
@@ -8658,9 +8301,10 @@ export declare const appType: Elysia<"", {
                                             importSourceRow?: number | null | undefined;
                                             isSettlement?: boolean | undefined;
                                             usedOptimalSettlement?: boolean | undefined;
+                                            amount: string;
+                                            entity: "payment";
                                             currencyId: string;
                                             createdById: string;
-                                            amount: string;
                                             fromUserId: string;
                                             toUserId: string;
                                             group: {
@@ -8670,7 +8314,6 @@ export declare const appType: Elysia<"", {
                                                 emoji: string | null;
                                                 color: string | null;
                                             } | null;
-                                            entity: "payment";
                                             currency: {
                                                 symbol: string | null;
                                                 id: string;
@@ -8706,18 +8349,28 @@ export declare const appType: Elysia<"", {
                                             description?: string | null | undefined;
                                             groupId?: string | null | undefined;
                                             timezone?: string | undefined;
+                                            latitude?: number | null | undefined;
+                                            longitude?: number | null | undefined;
                                             exchangeRateSnapshotId?: string | null | undefined;
                                             friendshipId?: string | null | undefined;
                                             splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
+                                            locationId?: string | null | undefined;
                                             categoryId?: string | null | undefined;
                                             recurringExpenseRuleId?: string | null | undefined;
                                             importId?: string | null | undefined;
                                             importSourceRow?: number | null | undefined;
+                                            location?: {
+                                                id: string;
+                                                label: string;
+                                                latitude: number;
+                                                longitude: number;
+                                            } | null | undefined;
                                             date: Date;
+                                            amount: string;
+                                            entity: "expense";
                                             currencyId: string;
                                             createdById: string;
                                             title: string;
-                                            amount: string;
                                             paidById: string;
                                             group: {
                                                 id: string;
@@ -8726,7 +8379,6 @@ export declare const appType: Elysia<"", {
                                                 emoji: string | null;
                                                 color: string | null;
                                             } | null;
-                                            entity: "expense";
                                             currency: {
                                                 symbol: string | null;
                                                 id: string;
@@ -8738,8 +8390,8 @@ export declare const appType: Elysia<"", {
                                                 createdAt?: Date | undefined;
                                                 updatedAt?: Date | undefined;
                                                 deletedAt?: Date | null | undefined;
-                                                userId: string;
                                                 amount: string;
+                                                userId: string;
                                                 expenseId: string;
                                             } | null;
                                             paidByUser: {
@@ -8765,15 +8417,24 @@ export declare const appType: Elysia<"", {
                                                 description?: string | null | undefined;
                                                 groupId?: string | null | undefined;
                                                 timezone?: string | undefined;
+                                                latitude?: number | null | undefined;
+                                                longitude?: number | null | undefined;
                                                 splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
                                                 interval?: number | undefined;
                                                 endDate?: Date | null | undefined;
                                                 lastGenerated?: Date | null | undefined;
+                                                locationId?: string | null | undefined;
                                                 categoryId?: string | null | undefined;
+                                                location?: {
+                                                    id: string;
+                                                    label: string;
+                                                    latitude: number;
+                                                    longitude: number;
+                                                } | null | undefined;
+                                                amount: string;
                                                 currencyId: string;
                                                 creatorId: string;
                                                 title: string;
-                                                amount: string;
                                                 paidById: string;
                                                 frequency: "daily" | "weekly" | "monthly" | "yearly";
                                                 startDate: Date;
@@ -8793,9 +8454,10 @@ export declare const appType: Elysia<"", {
                                             importSourceRow?: number | null | undefined;
                                             isSettlement?: boolean | undefined;
                                             usedOptimalSettlement?: boolean | undefined;
+                                            amount: string;
+                                            entity: "payment";
                                             currencyId: string;
                                             createdById: string;
-                                            amount: string;
                                             fromUserId: string;
                                             toUserId: string;
                                             group: {
@@ -8805,7 +8467,6 @@ export declare const appType: Elysia<"", {
                                                 emoji: string | null;
                                                 color: string | null;
                                             } | null;
-                                            entity: "payment";
                                             currency: {
                                                 symbol: string | null;
                                                 id: string;
@@ -9284,10 +8945,10 @@ export declare const appType: Elysia<"", {
             body: {};
             params: {};
             query: {
-                type?: ("all" | "groups" | "friends" | "payments" | "expenses" | "recurring_expenses")[] | undefined;
-                action?: ("created" | "updated" | "deleted" | "restored")[] | undefined;
                 l?: number | undefined;
                 cursor?: string | undefined;
+                type?: ("all" | "groups" | "friends" | "payments" | "expenses" | "recurring_expenses")[] | undefined;
+                action?: ("created" | "updated" | "deleted" | "restored")[] | undefined;
                 entityStatus?: "deleted" | "active" | undefined;
             };
             headers: {};
@@ -9295,6 +8956,7 @@ export declare const appType: Elysia<"", {
                 401: "Unauthorized";
                 200: {
                     items: {
+                        amount?: string | null | undefined;
                         id?: string | undefined;
                         createdAt?: Date | undefined;
                         currencyId?: string | null | undefined;
@@ -9306,7 +8968,6 @@ export declare const appType: Elysia<"", {
                             image: string | null;
                             username: string | null;
                         } | null | undefined;
-                        amount?: string | null | undefined;
                         friendshipId?: string | null | undefined;
                         group?: {
                             id?: string | undefined;
@@ -9336,18 +8997,27 @@ export declare const appType: Elysia<"", {
                             description?: string | null | undefined;
                             groupId?: string | null | undefined;
                             timezone?: string | undefined;
+                            latitude?: number | null | undefined;
+                            longitude?: number | null | undefined;
                             exchangeRateSnapshotId?: string | null | undefined;
                             friendshipId?: string | null | undefined;
                             splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
+                            locationId?: string | null | undefined;
                             categoryId?: string | null | undefined;
                             recurringExpenseRuleId?: string | null | undefined;
                             importId?: string | null | undefined;
                             importSourceRow?: number | null | undefined;
+                            location?: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null | undefined;
                             date: Date;
+                            amount: string;
                             currencyId: string;
                             createdById: string;
                             title: string;
-                            amount: string;
                             paidById: string;
                         } | null | undefined;
                         payment?: {
@@ -9365,9 +9035,9 @@ export declare const appType: Elysia<"", {
                             importSourceRow?: number | null | undefined;
                             isSettlement?: boolean | undefined;
                             usedOptimalSettlement?: boolean | undefined;
+                            amount: string;
                             currencyId: string;
                             createdById: string;
-                            amount: string;
                             fromUserId: string;
                             toUserId: string;
                         } | null | undefined;
@@ -9424,8 +9094,8 @@ export declare const appType: Elysia<"", {
                             createdAt?: Date | undefined;
                             updatedAt?: Date | undefined;
                             deletedAt?: Date | null | undefined;
-                            userId: string;
                             amount: string;
+                            userId: string;
                             expenseId: string;
                         } | null | undefined;
                         recurringExpenseRule?: {
@@ -9437,15 +9107,24 @@ export declare const appType: Elysia<"", {
                             description?: string | null | undefined;
                             groupId?: string | null | undefined;
                             timezone?: string | undefined;
+                            latitude?: number | null | undefined;
+                            longitude?: number | null | undefined;
                             splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
                             interval?: number | undefined;
                             endDate?: Date | null | undefined;
                             lastGenerated?: Date | null | undefined;
+                            locationId?: string | null | undefined;
                             categoryId?: string | null | undefined;
+                            location?: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null | undefined;
+                            amount: string;
                             currencyId: string;
                             creatorId: string;
                             title: string;
-                            amount: string;
                             paidById: string;
                             frequency: "daily" | "weekly" | "monthly" | "yearly";
                             startDate: Date;
@@ -9479,9 +9158,9 @@ export declare const appType: Elysia<"", {
                             schemaVersion: number;
                             diff: any;
                         } | null | undefined;
+                        entity: "recurring_expense_rules" | "group" | "expense" | "expense_share" | "payment" | "group_member" | "friendship" | "user" | "recurring_expense";
                         userId: string;
                         creatorId: string;
-                        entity: "recurring_expense_rules" | "group" | "expense" | "expense_share" | "payment" | "group_member" | "friendship" | "user" | "recurring_expense";
                         entityId: string;
                         summary: string;
                     }[];
@@ -9512,10 +9191,10 @@ export declare const appType: Elysia<"", {
                 body: {};
                 params: {};
                 query: {
-                    type?: ("all" | "groups" | "friends" | "payments" | "expenses" | "recurring_expenses")[] | undefined;
-                    action?: ("created" | "updated" | "deleted" | "restored")[] | undefined;
                     l?: number | undefined;
                     cursor?: string | undefined;
+                    type?: ("all" | "groups" | "friends" | "payments" | "expenses" | "recurring_expenses")[] | undefined;
+                    action?: ("created" | "updated" | "deleted" | "restored")[] | undefined;
                     entityStatus?: "deleted" | "active" | undefined;
                     q: string;
                 };
@@ -9524,6 +9203,7 @@ export declare const appType: Elysia<"", {
                     401: "Unauthorized";
                     200: {
                         items: {
+                            amount?: string | null | undefined;
                             id?: string | undefined;
                             createdAt?: Date | undefined;
                             currencyId?: string | null | undefined;
@@ -9535,7 +9215,6 @@ export declare const appType: Elysia<"", {
                                 image: string | null;
                                 username: string | null;
                             } | null | undefined;
-                            amount?: string | null | undefined;
                             friendshipId?: string | null | undefined;
                             group?: {
                                 id?: string | undefined;
@@ -9565,18 +9244,27 @@ export declare const appType: Elysia<"", {
                                 description?: string | null | undefined;
                                 groupId?: string | null | undefined;
                                 timezone?: string | undefined;
+                                latitude?: number | null | undefined;
+                                longitude?: number | null | undefined;
                                 exchangeRateSnapshotId?: string | null | undefined;
                                 friendshipId?: string | null | undefined;
                                 splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
+                                locationId?: string | null | undefined;
                                 categoryId?: string | null | undefined;
                                 recurringExpenseRuleId?: string | null | undefined;
                                 importId?: string | null | undefined;
                                 importSourceRow?: number | null | undefined;
+                                location?: {
+                                    id: string;
+                                    label: string;
+                                    latitude: number;
+                                    longitude: number;
+                                } | null | undefined;
                                 date: Date;
+                                amount: string;
                                 currencyId: string;
                                 createdById: string;
                                 title: string;
-                                amount: string;
                                 paidById: string;
                             } | null | undefined;
                             payment?: {
@@ -9594,9 +9282,9 @@ export declare const appType: Elysia<"", {
                                 importSourceRow?: number | null | undefined;
                                 isSettlement?: boolean | undefined;
                                 usedOptimalSettlement?: boolean | undefined;
+                                amount: string;
                                 currencyId: string;
                                 createdById: string;
-                                amount: string;
                                 fromUserId: string;
                                 toUserId: string;
                             } | null | undefined;
@@ -9653,8 +9341,8 @@ export declare const appType: Elysia<"", {
                                 createdAt?: Date | undefined;
                                 updatedAt?: Date | undefined;
                                 deletedAt?: Date | null | undefined;
-                                userId: string;
                                 amount: string;
+                                userId: string;
                                 expenseId: string;
                             } | null | undefined;
                             recurringExpenseRule?: {
@@ -9666,15 +9354,24 @@ export declare const appType: Elysia<"", {
                                 description?: string | null | undefined;
                                 groupId?: string | null | undefined;
                                 timezone?: string | undefined;
+                                latitude?: number | null | undefined;
+                                longitude?: number | null | undefined;
                                 splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
                                 interval?: number | undefined;
                                 endDate?: Date | null | undefined;
                                 lastGenerated?: Date | null | undefined;
+                                locationId?: string | null | undefined;
                                 categoryId?: string | null | undefined;
+                                location?: {
+                                    id: string;
+                                    label: string;
+                                    latitude: number;
+                                    longitude: number;
+                                } | null | undefined;
+                                amount: string;
                                 currencyId: string;
                                 creatorId: string;
                                 title: string;
-                                amount: string;
                                 paidById: string;
                                 frequency: "daily" | "weekly" | "monthly" | "yearly";
                                 startDate: Date;
@@ -9708,9 +9405,9 @@ export declare const appType: Elysia<"", {
                                 schemaVersion: number;
                                 diff: any;
                             } | null | undefined;
+                            entity: "recurring_expense_rules" | "group" | "expense" | "expense_share" | "payment" | "group_member" | "friendship" | "user" | "recurring_expense";
                             userId: string;
                             creatorId: string;
-                            entity: "recurring_expense_rules" | "group" | "expense" | "expense_share" | "payment" | "group_member" | "friendship" | "user" | "recurring_expense";
                             entityId: string;
                             summary: string;
                         }[];
@@ -9957,11 +9654,11 @@ export declare const appType: Elysia<"", {
             put: {
                 body: {
                     date?: string | undefined;
+                    amount?: string | undefined;
                     currencyId?: string | undefined;
                     description?: string | null | undefined;
                     groupId?: string | null | undefined;
                     timezone?: string | undefined;
-                    amount?: string | undefined;
                     importId?: string | null | undefined;
                     importSourceRow?: number | null | undefined;
                     fromUserId?: string | undefined;
@@ -9992,6 +9689,7 @@ export declare const appType: Elysia<"", {
                     401: "Unauthorized";
                     200: {
                         date: Date;
+                        amount: string;
                         id: string;
                         createdAt: Date;
                         updatedAt: Date;
@@ -10002,7 +9700,6 @@ export declare const appType: Elysia<"", {
                         groupId: string | null;
                         createdById: string;
                         timezone: string;
-                        amount: string;
                         exchangeRateSnapshotId: string | null;
                         importId: string | null;
                         importSourceRow: number | null;
@@ -10039,8 +9736,8 @@ export declare const appType: Elysia<"", {
                 importId?: string | null | undefined;
                 importSourceRow?: number | null | undefined;
                 date: string;
-                currencyId: string;
                 amount: string;
+                currencyId: string;
                 fromUserId: string;
                 toUserId: string;
             };
@@ -10051,6 +9748,7 @@ export declare const appType: Elysia<"", {
                 401: "Unauthorized";
                 200: {
                     date: Date;
+                    amount: string;
                     id: string;
                     createdAt: Date;
                     updatedAt: Date;
@@ -10061,7 +9759,6 @@ export declare const appType: Elysia<"", {
                     groupId: string | null;
                     createdById: string;
                     timezone: string;
-                    amount: string;
                     exchangeRateSnapshotId: string | null;
                     importId: string | null;
                     importSourceRow: number | null;
@@ -10071,6 +9768,7 @@ export declare const appType: Elysia<"", {
                     usedOptimalSettlement: boolean;
                 } | {
                     date: Date;
+                    amount: string;
                     id: string;
                     createdAt: Date;
                     updatedAt: Date;
@@ -10081,7 +9779,6 @@ export declare const appType: Elysia<"", {
                     groupId: string | null;
                     createdById: string;
                     timezone: string;
-                    amount: string;
                     exchangeRateSnapshotId: string | null;
                     importId: string | null;
                     importSourceRow: number | null;
@@ -10119,8 +9816,8 @@ export declare const appType: Elysia<"", {
                         importId?: string | null | undefined;
                         importSourceRow?: number | null | undefined;
                         date: string;
-                        currencyId: string;
                         amount: string;
+                        currencyId: string;
                         fromUserId: string;
                         toUserId: string;
                     };
@@ -10186,6 +9883,85 @@ export declare const appType: Elysia<"", {
         };
     };
 } & {
+    places: {};
+} & {
+    places: {
+        get: {
+            body: {};
+            params: {};
+            query: {
+                l?: number | undefined;
+                q?: string | undefined;
+            };
+            headers: {};
+            response: {
+                401: "Unauthorized";
+                200: {
+                    id: string;
+                    label: string;
+                    latitude: number;
+                    longitude: number;
+                }[];
+                400: string;
+                403: {
+                    code: string;
+                    message: string;
+                };
+                404: string;
+                422: {
+                    type: "validation";
+                    on: string;
+                    summary?: string;
+                    message?: string;
+                    found?: unknown;
+                    property?: string;
+                    expected?: string;
+                };
+            };
+        };
+    };
+} & {
+    places: {
+        nearby: {
+            get: {
+                body: {};
+                params: {};
+                query: {
+                    l?: number | undefined;
+                    radiusMeters?: number | undefined;
+                    latitude: number;
+                    longitude: number;
+                };
+                headers: {};
+                response: {
+                    401: "Unauthorized";
+                    200: {
+                        id: string;
+                        label: string;
+                        latitude: number;
+                        longitude: number;
+                        distanceMeters: number;
+                    }[];
+                    400: string;
+                    403: {
+                        code: string;
+                        message: string;
+                    };
+                    404: string;
+                    422: {
+                        type: "validation";
+                        on: string;
+                        summary?: string;
+                        message?: string;
+                        found?: unknown;
+                        property?: string;
+                        expected?: string;
+                    };
+                };
+            };
+        };
+    };
+} & {
     expenses: {};
 } & {
     expenses: {
@@ -10193,10 +9969,10 @@ export declare const appType: Elysia<"", {
             body: {};
             params: {};
             query: {
-                sort?: "date" | "amount" | undefined;
-                direction?: "asc" | "desc" | undefined;
                 l?: number | undefined;
                 cursor?: string | undefined;
+                sort?: "date" | "amount" | undefined;
+                direction?: "asc" | "desc" | undefined;
                 recurring?: boolean | undefined;
             };
             headers: {};
@@ -10213,18 +9989,27 @@ export declare const appType: Elysia<"", {
                         description?: string | null | undefined;
                         groupId?: string | null | undefined;
                         timezone?: string | undefined;
+                        latitude?: number | null | undefined;
+                        longitude?: number | null | undefined;
                         exchangeRateSnapshotId?: string | null | undefined;
                         friendshipId?: string | null | undefined;
                         splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
+                        locationId?: string | null | undefined;
                         categoryId?: string | null | undefined;
                         recurringExpenseRuleId?: string | null | undefined;
                         importId?: string | null | undefined;
                         importSourceRow?: number | null | undefined;
+                        location?: {
+                            id: string;
+                            label: string;
+                            latitude: number;
+                            longitude: number;
+                        } | null | undefined;
                         date: Date;
+                        amount: string;
                         currencyId: string;
                         createdById: string;
                         title: string;
-                        amount: string;
                         paidById: string;
                         group: {
                             id?: string | undefined;
@@ -10259,8 +10044,8 @@ export declare const appType: Elysia<"", {
                             createdAt?: Date | undefined;
                             updatedAt?: Date | undefined;
                             deletedAt?: Date | null | undefined;
-                            userId: string;
                             amount: string;
+                            userId: string;
                             expenseId: string;
                         } | null;
                         paidByUser: {
@@ -10286,15 +10071,24 @@ export declare const appType: Elysia<"", {
                             description?: string | null | undefined;
                             groupId?: string | null | undefined;
                             timezone?: string | undefined;
+                            latitude?: number | null | undefined;
+                            longitude?: number | null | undefined;
                             splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
                             interval?: number | undefined;
                             endDate?: Date | null | undefined;
                             lastGenerated?: Date | null | undefined;
+                            locationId?: string | null | undefined;
                             categoryId?: string | null | undefined;
+                            location?: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null | undefined;
+                            amount: string;
                             currencyId: string;
                             creatorId: string;
                             title: string;
-                            amount: string;
                             paidById: string;
                             frequency: "daily" | "weekly" | "monthly" | "yearly";
                             startDate: Date;
@@ -10304,10 +10098,12 @@ export declare const appType: Elysia<"", {
                     hasMore: boolean;
                 };
                 400: string;
-                403: {
+                403: string | object | {
                     code: string;
                     message: string;
                 };
+                404: string | object;
+                409: string | object;
                 422: {
                     type: "validation";
                     on: string;
@@ -10317,6 +10113,7 @@ export declare const appType: Elysia<"", {
                     property?: string;
                     expected?: string;
                 };
+                429: string | object;
             };
         };
     };
@@ -10328,27 +10125,89 @@ export declare const appType: Elysia<"", {
                 description?: string | null | undefined;
                 groupId?: string | null | undefined;
                 timezone?: string | undefined;
+                latitude?: number | null | undefined;
+                longitude?: number | null | undefined;
                 friendshipId?: string | null | undefined;
                 splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
+                locationId?: string | null | undefined;
                 categoryId?: string | null | undefined;
                 recurringExpenseRuleId?: string | null | undefined;
                 importId?: string | null | undefined;
                 importSourceRow?: number | null | undefined;
                 date: string;
+                amount: string;
                 currencyId: string;
                 title: string;
-                amount: string;
                 paidById: string;
                 splits: {
-                    userId: string;
                     amount: string;
+                    userId: string;
                 }[];
             };
             params: {};
             query: {};
             headers: {};
             response: {
-                [x: number]: string;
+                401: "Unauthorized";
+                200: {
+                    shares: {
+                        amount: string;
+                        id: string;
+                        createdAt: Date;
+                        updatedAt: Date;
+                        deletedAt: Date | null;
+                        userId: string;
+                        expenseId: string;
+                    }[];
+                    location: {
+                        id: string;
+                        label: string;
+                        latitude: number;
+                        longitude: number;
+                    } | null;
+                    id: string;
+                    title: string;
+                    description: string | null;
+                    amount: string;
+                    currencyId: string;
+                    exchangeRateToBase: string;
+                    exchangeRateSnapshotId: string | null;
+                    paidById: string;
+                    groupId: string | null;
+                    friendshipId: string | null;
+                    date: Date;
+                    timezone: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    createdById: string;
+                    deletedAt: Date | null;
+                    splitType: "custom" | "equal" | "percentage" | "shares";
+                    recurringExpenseRuleId: string | null;
+                    image: string | null;
+                    latitude: number | null;
+                    longitude: number | null;
+                    locationId: string | null;
+                    categoryId: string | null;
+                    importId: string | null;
+                    importSourceRow: number | null;
+                };
+                400: string | object;
+                403: string | object | {
+                    code: string;
+                    message: string;
+                };
+                404: string | object;
+                409: string | object;
+                422: {
+                    type: "validation";
+                    on: string;
+                    summary?: string;
+                    message?: string;
+                    found?: unknown;
+                    property?: string;
+                    expected?: string;
+                };
+                429: string | object;
             };
         };
     };
@@ -10361,27 +10220,48 @@ export declare const appType: Elysia<"", {
                     description?: string | null | undefined;
                     groupId?: string | null | undefined;
                     timezone?: string | undefined;
+                    latitude?: number | null | undefined;
+                    longitude?: number | null | undefined;
                     friendshipId?: string | null | undefined;
                     splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
+                    locationId?: string | null | undefined;
                     categoryId?: string | null | undefined;
                     recurringExpenseRuleId?: string | null | undefined;
                     importId?: string | null | undefined;
                     importSourceRow?: number | null | undefined;
                     date: string;
+                    amount: string;
                     currencyId: string;
                     title: string;
-                    amount: string;
                     paidById: string;
                     splits: {
-                        userId: string;
                         amount: string;
+                        userId: string;
                     }[];
                 }[];
                 params: {};
                 query: {};
                 headers: {};
                 response: {
-                    [x: number]: string;
+                    401: "Unauthorized";
+                    200: "OK";
+                    400: string | object;
+                    403: string | object | {
+                        code: string;
+                        message: string;
+                    };
+                    404: string | object;
+                    409: string | object;
+                    422: {
+                        type: "validation";
+                        on: string;
+                        summary?: string;
+                        message?: string;
+                        found?: unknown;
+                        property?: string;
+                        expected?: string;
+                    };
+                    429: string | object;
                 };
             };
         };
@@ -10399,11 +10279,13 @@ export declare const appType: Elysia<"", {
                 response: {
                     401: "Unauthorized";
                     200: string;
-                    400: "No image file provided";
-                    403: {
+                    400: string | object;
+                    403: string | object | {
                         code: string;
                         message: string;
                     };
+                    404: string | object;
+                    409: string | object;
                     422: {
                         type: "validation";
                         on: string;
@@ -10413,6 +10295,7 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: string | object;
                 };
             };
         };
@@ -10450,6 +10333,7 @@ export declare const appType: Elysia<"", {
                         400: string;
                         403: string;
                         404: string;
+                        409: string | object;
                         422: {
                             type: "validation";
                             on: string;
@@ -10459,6 +10343,7 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: string | object;
                     };
                 };
             };
@@ -10492,6 +10377,12 @@ export declare const appType: Elysia<"", {
                             updatedAt: Date;
                             deletedAt: Date | null;
                         }[];
+                        location: {
+                            id: string;
+                            label: string;
+                            latitude: number;
+                            longitude: number;
+                        } | null;
                         paidByUser: {
                             id: string;
                             name: string;
@@ -10541,6 +10432,12 @@ export declare const appType: Elysia<"", {
                             createdAt: Date;
                         } | null;
                         recurrence: {
+                            location: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null;
                             id: string;
                             paidById: string;
                             creatorId: string;
@@ -10560,6 +10457,9 @@ export declare const appType: Elysia<"", {
                             createdAt: Date;
                             updatedAt: Date;
                             deletedAt: Date | null;
+                            latitude: number | null;
+                            longitude: number | null;
+                            locationId: string | null;
                             categoryId: string | null;
                         } | null;
                         id: string;
@@ -10581,15 +10481,20 @@ export declare const appType: Elysia<"", {
                         splitType: "custom" | "equal" | "percentage" | "shares";
                         recurringExpenseRuleId: string | null;
                         image: string | null;
+                        latitude: number | null;
+                        longitude: number | null;
+                        locationId: string | null;
                         categoryId: string | null;
                         importId: string | null;
                         importSourceRow: number | null;
                     };
-                    403: "Forbidden" | {
+                    400: string | object;
+                    403: string | object | {
                         code: string;
                         message: string;
                     };
-                    404: "Expense not found";
+                    404: string | object;
+                    409: string | object;
                     422: {
                         type: "validation";
                         on: string;
@@ -10599,6 +10504,7 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: string | object;
                 };
             };
         };
@@ -10609,16 +10515,19 @@ export declare const appType: Elysia<"", {
             put: {
                 body: {
                     date?: string | undefined;
+                    amount?: string | undefined;
                     image?: string | null | undefined;
                     currencyId?: string | undefined;
                     description?: string | null | undefined;
                     groupId?: string | null | undefined;
                     timezone?: string | undefined;
+                    latitude?: number | null | undefined;
+                    longitude?: number | null | undefined;
                     title?: string | undefined;
-                    amount?: string | undefined;
                     paidById?: string | undefined;
                     friendshipId?: string | null | undefined;
                     splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
+                    locationId?: string | null | undefined;
                     categoryId?: string | null | undefined;
                     recurringExpenseRuleId?: string | null | undefined;
                     importId?: string | null | undefined;
@@ -10629,8 +10538,8 @@ export declare const appType: Elysia<"", {
                         interval: number;
                     } | undefined;
                     splits?: {
-                        userId: string;
                         amount: string;
+                        userId: string;
                     }[] | undefined;
                 };
                 params: {
@@ -10639,24 +10548,14 @@ export declare const appType: Elysia<"", {
                 query: {};
                 headers: {};
                 response: {
-                    [x: string]: any;
-                };
-            };
-        };
-    };
-} & {
-    expenses: {
-        ":id": {
-            delete: {
-                body: {};
-                params: {
-                    id: string;
-                };
-                query: {};
-                headers: {};
-                response: {
                     401: "Unauthorized";
                     200: {
+                        location: {
+                            id: string;
+                            label: string;
+                            latitude: number;
+                            longitude: number;
+                        } | null;
                         id: string;
                         title: string;
                         description: string | null;
@@ -10676,15 +10575,52 @@ export declare const appType: Elysia<"", {
                         splitType: "custom" | "equal" | "percentage" | "shares";
                         recurringExpenseRuleId: string | null;
                         image: string | null;
+                        latitude: number | null;
+                        longitude: number | null;
+                        locationId: string | null;
+                        categoryId: string | null;
+                        importId: string | null;
+                        importSourceRow: number | null;
+                    } & {
+                        location: {
+                            id: string;
+                            label: string;
+                            latitude: number;
+                            longitude: number;
+                        } | null;
+                        id: string;
+                        title: string;
+                        description: string | null;
+                        amount: string;
+                        currencyId: string;
+                        exchangeRateToBase: string;
+                        exchangeRateSnapshotId: string | null;
+                        paidById: string;
+                        groupId: string | null;
+                        friendshipId: string | null;
+                        date: Date;
+                        timezone: string;
+                        createdAt: Date;
+                        updatedAt: Date;
+                        createdById: string;
+                        deletedAt: Date | null;
+                        splitType: "custom" | "equal" | "percentage" | "shares";
+                        recurringExpenseRuleId: string | null;
+                        image: string | null;
+                        latitude: number | null;
+                        longitude: number | null;
+                        locationId: string | null;
                         categoryId: string | null;
                         importId: string | null;
                         importSourceRow: number | null;
                     };
-                    403: "Forbidden" | {
+                    400: string | object;
+                    403: string | object | {
                         code: string;
                         message: string;
                     };
-                    404: "Not Found";
+                    404: string | object;
+                    409: string | object;
                     422: {
                         type: "validation";
                         on: string;
@@ -10694,6 +10630,73 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: string | object;
+                };
+            };
+        };
+    };
+} & {
+    expenses: {
+        ":id": {
+            delete: {
+                body: {};
+                params: {
+                    id: string;
+                };
+                query: {};
+                headers: {};
+                response: {
+                    401: "Unauthorized";
+                    200: {
+                        location: {
+                            id: string;
+                            label: string;
+                            latitude: number;
+                            longitude: number;
+                        } | null;
+                        id: string;
+                        title: string;
+                        description: string | null;
+                        amount: string;
+                        currencyId: string;
+                        exchangeRateToBase: string;
+                        exchangeRateSnapshotId: string | null;
+                        paidById: string;
+                        groupId: string | null;
+                        friendshipId: string | null;
+                        date: Date;
+                        timezone: string;
+                        createdAt: Date;
+                        updatedAt: Date;
+                        createdById: string;
+                        deletedAt: Date | null;
+                        splitType: "custom" | "equal" | "percentage" | "shares";
+                        recurringExpenseRuleId: string | null;
+                        image: string | null;
+                        latitude: number | null;
+                        longitude: number | null;
+                        locationId: string | null;
+                        categoryId: string | null;
+                        importId: string | null;
+                        importSourceRow: number | null;
+                    };
+                    400: string | object;
+                    403: string | object | {
+                        code: string;
+                        message: string;
+                    };
+                    404: string | object;
+                    409: string | object;
+                    422: {
+                        type: "validation";
+                        on: string;
+                        summary?: string;
+                        message?: string;
+                        found?: unknown;
+                        property?: string;
+                        expected?: string;
+                    };
+                    429: string | object;
                 };
             };
         };
@@ -10716,6 +10719,12 @@ export declare const appType: Elysia<"", {
                     401: "Unauthorized";
                     200: {
                         nextOccurrence: Date | null;
+                        location: {
+                            id: string;
+                            label: string;
+                            latitude: number;
+                            longitude: number;
+                        } | null;
                         totalOccurrences: number;
                         id: string;
                         paidById: string;
@@ -10736,12 +10745,18 @@ export declare const appType: Elysia<"", {
                         createdAt: Date;
                         updatedAt: Date;
                         deletedAt: Date | null;
+                        latitude: number | null;
+                        longitude: number | null;
+                        locationId: string | null;
                         categoryId: string | null;
                     }[];
-                    403: {
+                    400: string | object;
+                    403: string | object | {
                         code: string;
                         message: string;
                     };
+                    404: string | object;
+                    409: string | object;
                     422: {
                         type: "validation";
                         on: string;
@@ -10751,6 +10766,7 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: string | object;
                 };
             };
         };
@@ -10767,20 +10783,23 @@ export declare const appType: Elysia<"", {
                     description?: string | null | undefined;
                     groupId?: string | null | undefined;
                     timezone?: string | undefined;
+                    latitude?: number | null | undefined;
+                    longitude?: number | null | undefined;
                     splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
                     endDate?: string | undefined;
                     lastGenerated?: Date | null | undefined;
+                    locationId?: string | null | undefined;
                     categoryId?: string | null | undefined;
+                    amount: string;
                     currencyId: string;
                     title: string;
-                    amount: string;
                     paidById: string;
                     frequency: "daily" | "weekly" | "monthly" | "yearly";
                     interval: number;
                     startDate: string;
                     splits: {
-                        userId: string;
                         amount: string;
+                        userId: string;
                     }[];
                 };
                 params: {};
@@ -10789,12 +10808,13 @@ export declare const appType: Elysia<"", {
                 response: {
                     401: "Unauthorized";
                     201: "Created";
-                    400: string;
-                    403: {
+                    400: string | object;
+                    403: string | object | {
                         code: string;
                         message: string;
-                    } | "You are not a member of this group" | "Payer must be a group member" | "All users in splitDetails must be group members" | "All participants must be accepted friends with the creator" | "You must be part of this recurring expense";
-                    404: "Currency not found";
+                    };
+                    404: string | object;
+                    409: string | object;
                     422: {
                         type: "validation";
                         on: string;
@@ -10804,16 +10824,7 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
-                    429: {
-                        code: typeof import("./lib/billing").FEATURE_QUOTA_EXCEEDED;
-                        featureKey: string;
-                        plan: "free" | "gold";
-                        used: number;
-                        limit: number;
-                        remaining: number;
-                        resetsAt: Date | null;
-                        upgradeRequired?: true | undefined;
-                    };
+                    429: string | object;
                 };
             };
         };
@@ -10828,7 +10839,11 @@ export declare const appType: Elysia<"", {
                     query: {};
                     headers: {};
                     response: {
-                        403: "Unauthorized" | "Forbidden";
+                        400: string | object;
+                        403: string | object;
+                        404: string | object;
+                        409: string | object;
+                        429: string | object;
                     };
                 };
             };
@@ -10860,11 +10875,13 @@ export declare const appType: Elysia<"", {
                                 } | null;
                                 createdAt: Date;
                             }[];
-                            403: "Forbidden" | {
+                            400: string | object;
+                            403: string | object | {
                                 code: string;
                                 message: string;
                             };
-                            404: "Recurring expense history not found";
+                            404: string | object;
+                            409: string | object;
                             422: {
                                 type: "validation";
                                 on: string;
@@ -10874,6 +10891,7 @@ export declare const appType: Elysia<"", {
                                 property?: string;
                                 expected?: string;
                             };
+                            429: string | object;
                         };
                     };
                 };
@@ -10919,6 +10937,12 @@ export declare const appType: Elysia<"", {
                                     updatedAt: Date;
                                     deletedAt: Date | null;
                                 }[];
+                                location: {
+                                    id: string;
+                                    label: string;
+                                    latitude: number;
+                                    longitude: number;
+                                } | null;
                                 paidByUser: {
                                     id: string;
                                     name: string;
@@ -10966,6 +10990,12 @@ export declare const appType: Elysia<"", {
                                     createdAt: Date;
                                 } | null;
                                 recurrence: {
+                                    location: {
+                                        id: string;
+                                        label: string;
+                                        latitude: number;
+                                        longitude: number;
+                                    } | null;
                                     id: string;
                                     paidById: string;
                                     creatorId: string;
@@ -10985,6 +11015,9 @@ export declare const appType: Elysia<"", {
                                     createdAt: Date;
                                     updatedAt: Date;
                                     deletedAt: Date | null;
+                                    latitude: number | null;
+                                    longitude: number | null;
+                                    locationId: string | null;
                                     categoryId: string | null;
                                 } | null;
                                 id: string;
@@ -11006,10 +11039,19 @@ export declare const appType: Elysia<"", {
                                 splitType: "custom" | "equal" | "percentage" | "shares";
                                 recurringExpenseRuleId: string | null;
                                 image: string | null;
+                                latitude: number | null;
+                                longitude: number | null;
+                                locationId: string | null;
                                 categoryId: string | null;
                                 importId: string | null;
                                 importSourceRow: number | null;
                             }[];
+                            location: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null;
                             id: string;
                             paidById: string;
                             creatorId: string;
@@ -11029,13 +11071,18 @@ export declare const appType: Elysia<"", {
                             createdAt: Date;
                             updatedAt: Date;
                             deletedAt: Date | null;
+                            latitude: number | null;
+                            longitude: number | null;
+                            locationId: string | null;
                             categoryId: string | null;
                         };
-                        403: "Forbidden" | {
+                        400: string | object;
+                        403: string | object | {
                             code: string;
                             message: string;
                         };
-                        404: "Recurring expense not found";
+                        404: string | object;
+                        409: string | object;
                         422: {
                             type: "validation";
                             on: string;
@@ -11045,6 +11092,7 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: string | object;
                     };
                 };
             };
@@ -11057,6 +11105,7 @@ export declare const appType: Elysia<"", {
                 put: {
                     body: {
                         active?: boolean | undefined;
+                        amount?: string | undefined;
                         createdAt?: Date | undefined;
                         updatedAt?: Date | undefined;
                         currencyId?: string | undefined;
@@ -11064,8 +11113,9 @@ export declare const appType: Elysia<"", {
                         description?: string | null | undefined;
                         groupId?: string | null | undefined;
                         timezone?: string | undefined;
+                        latitude?: number | null | undefined;
+                        longitude?: number | null | undefined;
                         title?: string | undefined;
-                        amount?: string | undefined;
                         paidById?: string | undefined;
                         splitType?: "custom" | "equal" | "percentage" | "shares" | undefined;
                         frequency?: "daily" | "weekly" | "monthly" | "yearly" | undefined;
@@ -11073,10 +11123,11 @@ export declare const appType: Elysia<"", {
                         startDate?: string | undefined;
                         endDate?: string | undefined;
                         lastGenerated?: Date | null | undefined;
+                        locationId?: string | null | undefined;
                         categoryId?: string | null | undefined;
                         splits?: {
-                            userId: string;
                             amount: string;
+                            userId: string;
                         }[] | undefined;
                     };
                     params: {
@@ -11087,6 +11138,12 @@ export declare const appType: Elysia<"", {
                     response: {
                         401: "Unauthorized";
                         200: {
+                            location: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null;
                             id: string;
                             paidById: string;
                             creatorId: string;
@@ -11106,14 +11163,48 @@ export declare const appType: Elysia<"", {
                             createdAt: Date;
                             updatedAt: Date;
                             deletedAt: Date | null;
+                            latitude: number | null;
+                            longitude: number | null;
+                            locationId: string | null;
+                            categoryId: string | null;
+                        } & {
+                            location: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null;
+                            id: string;
+                            paidById: string;
+                            creatorId: string;
+                            groupId: string | null;
+                            title: string;
+                            description: string | null;
+                            amount: string;
+                            currencyId: string;
+                            frequency: "daily" | "weekly" | "monthly" | "yearly";
+                            interval: number;
+                            startDate: Date;
+                            endDate: Date | null;
+                            timezone: string;
+                            lastGenerated: Date | null;
+                            active: boolean;
+                            splitType: "custom" | "equal" | "percentage" | "shares";
+                            createdAt: Date;
+                            updatedAt: Date;
+                            deletedAt: Date | null;
+                            latitude: number | null;
+                            longitude: number | null;
+                            locationId: string | null;
                             categoryId: string | null;
                         };
-                        400: string;
-                        403: "Forbidden" | {
+                        400: string | object;
+                        403: string | object | {
                             code: string;
                             message: string;
-                        } | "You are not a member of this group" | "Payer must be a group member" | "All users in splitDetails must be group members" | "All participants must be accepted friends with the creator" | "You must be part of this recurring expense";
-                        404: "Currency not found" | "Not Found";
+                        };
+                        404: string | object;
+                        409: string | object;
                         422: {
                             type: "validation";
                             on: string;
@@ -11123,6 +11214,7 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: string | object;
                     };
                 };
             };
@@ -11142,6 +11234,12 @@ export declare const appType: Elysia<"", {
                     response: {
                         401: "Unauthorized";
                         200: {
+                            location: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null;
                             id: string;
                             paidById: string;
                             creatorId: string;
@@ -11161,13 +11259,18 @@ export declare const appType: Elysia<"", {
                             createdAt: Date;
                             updatedAt: Date;
                             deletedAt: Date | null;
+                            latitude: number | null;
+                            longitude: number | null;
+                            locationId: string | null;
                             categoryId: string | null;
                         };
-                        403: "Forbidden" | {
+                        400: string | object;
+                        403: string | object | {
                             code: string;
                             message: string;
                         };
-                        404: "Not Found" | "Recurring expense not found";
+                        404: string | object;
+                        409: string | object;
                         422: {
                             type: "validation";
                             on: string;
@@ -11177,6 +11280,7 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: string | object;
                     };
                 };
             };
@@ -11190,10 +11294,10 @@ export declare const appType: Elysia<"", {
             body: {};
             params: {};
             query: {
-                archived?: boolean | undefined;
-                sort?: import("./lib/groups").GROUP_SORT | undefined;
                 l?: number | undefined;
                 cursor?: string | undefined;
+                sort?: import("./lib/groups").GROUP_SORT | undefined;
+                archived?: boolean | undefined;
             };
             headers: {};
             response: {
@@ -11256,10 +11360,10 @@ export declare const appType: Elysia<"", {
                 body: {};
                 params: {};
                 query: {
-                    archived?: boolean | undefined;
-                    sort?: import("./lib/groups").GROUP_SORT | undefined;
-                    p?: number | undefined;
                     l?: number | undefined;
+                    sort?: import("./lib/groups").GROUP_SORT | undefined;
+                    archived?: boolean | undefined;
+                    p?: number | undefined;
                 };
                 headers: {};
                 response: {
@@ -11318,9 +11422,9 @@ export declare const appType: Elysia<"", {
                 body: {};
                 params: {};
                 query: {
+                    l?: number | undefined;
                     archived?: boolean | undefined;
                     p?: number | undefined;
-                    l?: number | undefined;
                     q: string;
                 };
                 headers: {};
@@ -11913,11 +12017,11 @@ export declare const appType: Elysia<"", {
                         id: string;
                     };
                     query: {
-                        type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
+                        l?: number | undefined;
+                        cursor?: string | undefined;
                         sort?: "date" | "amount" | undefined;
                         direction?: "asc" | "desc" | undefined;
-                        p?: number | undefined;
-                        l?: number | undefined;
+                        type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
                         categoryIds?: string[] | undefined;
                         paidByIds?: string[] | undefined;
                         participantIds?: string[] | undefined;
@@ -11926,236 +12030,14 @@ export declare const appType: Elysia<"", {
                     headers: {};
                     response: {
                         401: "Unauthorized";
-                        200: (({
-                            paidByUser: {
-                                id: string;
-                                name: string;
-                                email: string | null;
-                                emailVerified: boolean;
-                                image: string | null;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                username: string | null;
-                                displayUsername: string | null;
-                                bio: string | null;
-                                isGuest: boolean;
-                                managedBy: string | null;
-                                currencyId: string | null;
-                                inviteToken: string | null;
-                                role: string | null;
-                                banned: boolean | null;
-                                banReason: string | null;
-                                banExpires: Date | null;
-                                lastLoginMethod: string | null;
-                                profileCompletedAt: Date | null;
-                                deletedAt: Date | null;
-                                guestState: "managed" | "archived" | "merged" | null;
-                                guestClaimedAt: Date | null;
-                                guestArchivedAt: Date | null;
-                                guestMergedAt: Date | null;
-                                mergedIntoUserId: string | null;
-                            };
-                            currency: {
-                                id: string;
-                                name: string;
-                                code: string;
-                                symbol: string | null;
-                                exchangeRateToBase: string;
-                                updatedAt: Date;
-                                decimals: number;
-                                type: "fiat" | "crypto";
-                            };
-                            share: {
-                                id: string;
-                                expenseId: string;
-                                userId: string;
-                                amount: string;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                deletedAt: Date | null;
-                            } | null;
-                            category: {
-                                id: string;
-                                key: string | null;
-                                name: string;
-                                icon: string | null;
-                                order: number | null;
-                                createdAt: Date;
-                            } | null;
-                            recurrence: {
-                                id: string;
-                                paidById: string;
-                                creatorId: string;
-                                groupId: string | null;
-                                title: string;
-                                description: string | null;
-                                amount: string;
-                                currencyId: string;
-                                frequency: "daily" | "weekly" | "monthly" | "yearly";
-                                interval: number;
-                                startDate: Date;
-                                endDate: Date | null;
-                                timezone: string;
-                                lastGenerated: Date | null;
-                                active: boolean;
-                                splitType: "custom" | "equal" | "percentage" | "shares";
-                                createdAt: Date;
-                                updatedAt: Date;
-                                deletedAt: Date | null;
-                                categoryId: string | null;
-                            } | null;
-                            group: {
-                                id: string;
-                                name: string;
-                                description: string | null;
-                                image: string | null;
-                                creatorId: string;
-                                currencyId: string;
-                                emoji: string | null;
-                                color: string | null;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                deletedAt: Date | null;
-                                token: string | null;
-                                useOptimalSettlement: boolean;
-                                defaultSplitType: "equal" | "percentage";
-                                type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
-                                memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
-                            };
-                            id: string;
-                            title: string;
-                            description: string | null;
-                            amount: string;
-                            currencyId: string;
-                            exchangeRateToBase: string;
-                            exchangeRateSnapshotId: string | null;
-                            paidById: string;
-                            groupId: string | null;
-                            friendshipId: string | null;
-                            date: Date;
-                            timezone: string;
-                            createdAt: Date;
-                            updatedAt: Date;
-                            createdById: string;
-                            deletedAt: Date | null;
-                            splitType: "custom" | "equal" | "percentage" | "shares";
-                            recurringExpenseRuleId: string | null;
-                            image: string | null;
-                            categoryId: string | null;
-                            importId: string | null;
-                            importSourceRow: number | null;
-                        } & {
-                            entity: import("./lib/activities").ACTIVITY_ENTITY.expense;
-                            date: Date;
-                        }) | ({
-                            fromUser: {
-                                id: string;
-                                name: string;
-                                image: string | null;
-                                username: string | null;
-                            };
-                            toUser: {
-                                id: string;
-                                name: string;
-                                image: string | null;
-                                username: string | null;
-                            };
-                            currency: {
-                                id: string;
-                                name: string;
-                                code: string;
-                                symbol: string | null;
-                                exchangeRateToBase: string;
-                                updatedAt: Date;
-                                decimals: number;
-                                type: "fiat" | "crypto";
-                            };
-                            group: {
-                                id: string;
-                                name: string;
-                                description: string | null;
-                                image: string | null;
-                                creatorId: string;
-                                currencyId: string;
-                                emoji: string | null;
-                                color: string | null;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                deletedAt: Date | null;
-                                token: string | null;
-                                useOptimalSettlement: boolean;
-                                defaultSplitType: "equal" | "percentage";
-                                type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
-                                memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
-                            };
-                            id: string;
-                            fromUserId: string;
-                            toUserId: string;
-                            amount: string;
-                            currencyId: string;
-                            exchangeRateToBase: string;
-                            exchangeRateSnapshotId: string | null;
-                            date: Date;
-                            timezone: string;
-                            description: string | null;
-                            createdAt: Date;
-                            updatedAt: Date;
-                            groupId: string | null;
-                            createdById: string;
-                            deletedAt: Date | null;
-                            isSettlement: boolean;
-                            usedOptimalSettlement: boolean;
-                            importId: string | null;
-                            importSourceRow: number | null;
-                        } & {
-                            entity: import("./lib/activities").ACTIVITY_ENTITY.payment;
-                            date: Date;
-                        }))[];
-                        403: "Forbidden" | {
-                            code: string;
-                            message: string;
-                        };
-                        404: "Not Found";
-                        422: {
-                            type: "validation";
-                            on: string;
-                            summary?: string;
-                            message?: string;
-                            found?: unknown;
-                            property?: string;
-                            expected?: string;
-                        };
-                    };
-                };
-            };
-        };
-    };
-} & {
-    groups: {
-        ":id": {
-            activities: {
-                search: {
-                    get: {
-                        body: {};
-                        params: {
-                            id: string;
-                        };
-                        query: {
-                            type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
-                            sort?: "date" | "amount" | undefined;
-                            direction?: "asc" | "desc" | undefined;
-                            p?: number | undefined;
-                            l?: number | undefined;
-                            categoryIds?: string[] | undefined;
-                            paidByIds?: string[] | undefined;
-                            participantIds?: string[] | undefined;
-                            creatorIds?: string[] | undefined;
-                            q: string;
-                        };
-                        headers: {};
-                        response: {
-                            401: "Unauthorized";
-                            200: (({
+                        200: {
+                            items: (({
+                                location: {
+                                    id: string;
+                                    label: string;
+                                    latitude: number;
+                                    longitude: number;
+                                } | null;
                                 paidByUser: {
                                     id: string;
                                     name: string;
@@ -12212,6 +12094,12 @@ export declare const appType: Elysia<"", {
                                     createdAt: Date;
                                 } | null;
                                 recurrence: {
+                                    location: {
+                                        id: string;
+                                        label: string;
+                                        latitude: number;
+                                        longitude: number;
+                                    } | null;
                                     id: string;
                                     paidById: string;
                                     creatorId: string;
@@ -12231,6 +12119,9 @@ export declare const appType: Elysia<"", {
                                     createdAt: Date;
                                     updatedAt: Date;
                                     deletedAt: Date | null;
+                                    latitude: number | null;
+                                    longitude: number | null;
+                                    locationId: string | null;
                                     categoryId: string | null;
                                 } | null;
                                 group: {
@@ -12270,6 +12161,9 @@ export declare const appType: Elysia<"", {
                                 splitType: "custom" | "equal" | "percentage" | "shares";
                                 recurringExpenseRuleId: string | null;
                                 image: string | null;
+                                latitude: number | null;
+                                longitude: number | null;
+                                locationId: string | null;
                                 categoryId: string | null;
                                 importId: string | null;
                                 importSourceRow: number | null;
@@ -12340,6 +12234,262 @@ export declare const appType: Elysia<"", {
                                 entity: import("./lib/activities").ACTIVITY_ENTITY.payment;
                                 date: Date;
                             }))[];
+                            nextCursor: string | null;
+                            hasMore: boolean;
+                        };
+                        400: string;
+                        403: "Forbidden" | {
+                            code: string;
+                            message: string;
+                        };
+                        404: "Not Found";
+                        422: {
+                            type: "validation";
+                            on: string;
+                            summary?: string;
+                            message?: string;
+                            found?: unknown;
+                            property?: string;
+                            expected?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+} & {
+    groups: {
+        ":id": {
+            activities: {
+                search: {
+                    get: {
+                        body: {};
+                        params: {
+                            id: string;
+                        };
+                        query: {
+                            l?: number | undefined;
+                            cursor?: string | undefined;
+                            sort?: "date" | "amount" | undefined;
+                            direction?: "asc" | "desc" | undefined;
+                            type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
+                            categoryIds?: string[] | undefined;
+                            paidByIds?: string[] | undefined;
+                            participantIds?: string[] | undefined;
+                            creatorIds?: string[] | undefined;
+                            q: string;
+                        };
+                        headers: {};
+                        response: {
+                            401: "Unauthorized";
+                            200: {
+                                items: (({
+                                    location: {
+                                        id: string;
+                                        label: string;
+                                        latitude: number;
+                                        longitude: number;
+                                    } | null;
+                                    paidByUser: {
+                                        id: string;
+                                        name: string;
+                                        email: string | null;
+                                        emailVerified: boolean;
+                                        image: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        username: string | null;
+                                        displayUsername: string | null;
+                                        bio: string | null;
+                                        isGuest: boolean;
+                                        managedBy: string | null;
+                                        currencyId: string | null;
+                                        inviteToken: string | null;
+                                        role: string | null;
+                                        banned: boolean | null;
+                                        banReason: string | null;
+                                        banExpires: Date | null;
+                                        lastLoginMethod: string | null;
+                                        profileCompletedAt: Date | null;
+                                        deletedAt: Date | null;
+                                        guestState: "managed" | "archived" | "merged" | null;
+                                        guestClaimedAt: Date | null;
+                                        guestArchivedAt: Date | null;
+                                        guestMergedAt: Date | null;
+                                        mergedIntoUserId: string | null;
+                                    };
+                                    currency: {
+                                        id: string;
+                                        name: string;
+                                        code: string;
+                                        symbol: string | null;
+                                        exchangeRateToBase: string;
+                                        updatedAt: Date;
+                                        decimals: number;
+                                        type: "fiat" | "crypto";
+                                    };
+                                    share: {
+                                        id: string;
+                                        expenseId: string;
+                                        userId: string;
+                                        amount: string;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                    } | null;
+                                    category: {
+                                        id: string;
+                                        key: string | null;
+                                        name: string;
+                                        icon: string | null;
+                                        order: number | null;
+                                        createdAt: Date;
+                                    } | null;
+                                    recurrence: {
+                                        location: {
+                                            id: string;
+                                            label: string;
+                                            latitude: number;
+                                            longitude: number;
+                                        } | null;
+                                        id: string;
+                                        paidById: string;
+                                        creatorId: string;
+                                        groupId: string | null;
+                                        title: string;
+                                        description: string | null;
+                                        amount: string;
+                                        currencyId: string;
+                                        frequency: "daily" | "weekly" | "monthly" | "yearly";
+                                        interval: number;
+                                        startDate: Date;
+                                        endDate: Date | null;
+                                        timezone: string;
+                                        lastGenerated: Date | null;
+                                        active: boolean;
+                                        splitType: "custom" | "equal" | "percentage" | "shares";
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        latitude: number | null;
+                                        longitude: number | null;
+                                        locationId: string | null;
+                                        categoryId: string | null;
+                                    } | null;
+                                    group: {
+                                        id: string;
+                                        name: string;
+                                        description: string | null;
+                                        image: string | null;
+                                        creatorId: string;
+                                        currencyId: string;
+                                        emoji: string | null;
+                                        color: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        token: string | null;
+                                        useOptimalSettlement: boolean;
+                                        defaultSplitType: "equal" | "percentage";
+                                        type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                        memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                                    };
+                                    id: string;
+                                    title: string;
+                                    description: string | null;
+                                    amount: string;
+                                    currencyId: string;
+                                    exchangeRateToBase: string;
+                                    exchangeRateSnapshotId: string | null;
+                                    paidById: string;
+                                    groupId: string | null;
+                                    friendshipId: string | null;
+                                    date: Date;
+                                    timezone: string;
+                                    createdAt: Date;
+                                    updatedAt: Date;
+                                    createdById: string;
+                                    deletedAt: Date | null;
+                                    splitType: "custom" | "equal" | "percentage" | "shares";
+                                    recurringExpenseRuleId: string | null;
+                                    image: string | null;
+                                    latitude: number | null;
+                                    longitude: number | null;
+                                    locationId: string | null;
+                                    categoryId: string | null;
+                                    importId: string | null;
+                                    importSourceRow: number | null;
+                                } & {
+                                    entity: import("./lib/activities").ACTIVITY_ENTITY.expense;
+                                    date: Date;
+                                }) | ({
+                                    fromUser: {
+                                        id: string;
+                                        name: string;
+                                        image: string | null;
+                                        username: string | null;
+                                    };
+                                    toUser: {
+                                        id: string;
+                                        name: string;
+                                        image: string | null;
+                                        username: string | null;
+                                    };
+                                    currency: {
+                                        id: string;
+                                        name: string;
+                                        code: string;
+                                        symbol: string | null;
+                                        exchangeRateToBase: string;
+                                        updatedAt: Date;
+                                        decimals: number;
+                                        type: "fiat" | "crypto";
+                                    };
+                                    group: {
+                                        id: string;
+                                        name: string;
+                                        description: string | null;
+                                        image: string | null;
+                                        creatorId: string;
+                                        currencyId: string;
+                                        emoji: string | null;
+                                        color: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        token: string | null;
+                                        useOptimalSettlement: boolean;
+                                        defaultSplitType: "equal" | "percentage";
+                                        type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                        memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                                    };
+                                    id: string;
+                                    fromUserId: string;
+                                    toUserId: string;
+                                    amount: string;
+                                    currencyId: string;
+                                    exchangeRateToBase: string;
+                                    exchangeRateSnapshotId: string | null;
+                                    date: Date;
+                                    timezone: string;
+                                    description: string | null;
+                                    createdAt: Date;
+                                    updatedAt: Date;
+                                    groupId: string | null;
+                                    createdById: string;
+                                    deletedAt: Date | null;
+                                    isSettlement: boolean;
+                                    usedOptimalSettlement: boolean;
+                                    importId: string | null;
+                                    importSourceRow: number | null;
+                                } & {
+                                    entity: import("./lib/activities").ACTIVITY_ENTITY.payment;
+                                    date: Date;
+                                }))[];
+                                nextCursor: string | null;
+                                hasMore: boolean;
+                            };
+                            400: string;
                             403: "Forbidden" | {
                                 code: string;
                                 message: string;
@@ -12371,11 +12521,11 @@ export declare const appType: Elysia<"", {
                             id: string;
                         };
                         query: {
-                            type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
+                            l?: number | undefined;
+                            cursor?: string | undefined;
                             sort?: "date" | "amount" | undefined;
                             direction?: "asc" | "desc" | undefined;
-                            p?: number | undefined;
-                            l?: number | undefined;
+                            type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
                             categoryIds?: string[] | undefined;
                             paidByIds?: string[] | undefined;
                             participantIds?: string[] | undefined;
@@ -12384,191 +12534,214 @@ export declare const appType: Elysia<"", {
                         headers: {};
                         response: {
                             401: "Unauthorized";
-                            200: (({
-                                paidByUser: {
+                            200: {
+                                items: (({
+                                    location: {
+                                        id: string;
+                                        label: string;
+                                        latitude: number;
+                                        longitude: number;
+                                    } | null;
+                                    paidByUser: {
+                                        id: string;
+                                        name: string;
+                                        email: string | null;
+                                        emailVerified: boolean;
+                                        image: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        username: string | null;
+                                        displayUsername: string | null;
+                                        bio: string | null;
+                                        isGuest: boolean;
+                                        managedBy: string | null;
+                                        currencyId: string | null;
+                                        inviteToken: string | null;
+                                        role: string | null;
+                                        banned: boolean | null;
+                                        banReason: string | null;
+                                        banExpires: Date | null;
+                                        lastLoginMethod: string | null;
+                                        profileCompletedAt: Date | null;
+                                        deletedAt: Date | null;
+                                        guestState: "managed" | "archived" | "merged" | null;
+                                        guestClaimedAt: Date | null;
+                                        guestArchivedAt: Date | null;
+                                        guestMergedAt: Date | null;
+                                        mergedIntoUserId: string | null;
+                                    };
+                                    currency: {
+                                        id: string;
+                                        name: string;
+                                        code: string;
+                                        symbol: string | null;
+                                        exchangeRateToBase: string;
+                                        updatedAt: Date;
+                                        decimals: number;
+                                        type: "fiat" | "crypto";
+                                    };
+                                    share: {
+                                        id: string;
+                                        expenseId: string;
+                                        userId: string;
+                                        amount: string;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                    } | null;
+                                    category: {
+                                        id: string;
+                                        key: string | null;
+                                        name: string;
+                                        icon: string | null;
+                                        order: number | null;
+                                        createdAt: Date;
+                                    } | null;
+                                    recurrence: {
+                                        location: {
+                                            id: string;
+                                            label: string;
+                                            latitude: number;
+                                            longitude: number;
+                                        } | null;
+                                        id: string;
+                                        paidById: string;
+                                        creatorId: string;
+                                        groupId: string | null;
+                                        title: string;
+                                        description: string | null;
+                                        amount: string;
+                                        currencyId: string;
+                                        frequency: "daily" | "weekly" | "monthly" | "yearly";
+                                        interval: number;
+                                        startDate: Date;
+                                        endDate: Date | null;
+                                        timezone: string;
+                                        lastGenerated: Date | null;
+                                        active: boolean;
+                                        splitType: "custom" | "equal" | "percentage" | "shares";
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        latitude: number | null;
+                                        longitude: number | null;
+                                        locationId: string | null;
+                                        categoryId: string | null;
+                                    } | null;
+                                    group: {
+                                        id: string;
+                                        name: string;
+                                        description: string | null;
+                                        image: string | null;
+                                        creatorId: string;
+                                        currencyId: string;
+                                        emoji: string | null;
+                                        color: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        token: string | null;
+                                        useOptimalSettlement: boolean;
+                                        defaultSplitType: "equal" | "percentage";
+                                        type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                        memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                                    };
                                     id: string;
-                                    name: string;
-                                    email: string | null;
-                                    emailVerified: boolean;
-                                    image: string | null;
-                                    createdAt: Date;
-                                    updatedAt: Date;
-                                    username: string | null;
-                                    displayUsername: string | null;
-                                    bio: string | null;
-                                    isGuest: boolean;
-                                    managedBy: string | null;
-                                    currencyId: string | null;
-                                    inviteToken: string | null;
-                                    role: string | null;
-                                    banned: boolean | null;
-                                    banReason: string | null;
-                                    banExpires: Date | null;
-                                    lastLoginMethod: string | null;
-                                    profileCompletedAt: Date | null;
-                                    deletedAt: Date | null;
-                                    guestState: "managed" | "archived" | "merged" | null;
-                                    guestClaimedAt: Date | null;
-                                    guestArchivedAt: Date | null;
-                                    guestMergedAt: Date | null;
-                                    mergedIntoUserId: string | null;
-                                };
-                                currency: {
-                                    id: string;
-                                    name: string;
-                                    code: string;
-                                    symbol: string | null;
-                                    exchangeRateToBase: string;
-                                    updatedAt: Date;
-                                    decimals: number;
-                                    type: "fiat" | "crypto";
-                                };
-                                share: {
-                                    id: string;
-                                    expenseId: string;
-                                    userId: string;
-                                    amount: string;
-                                    createdAt: Date;
-                                    updatedAt: Date;
-                                    deletedAt: Date | null;
-                                } | null;
-                                category: {
-                                    id: string;
-                                    key: string | null;
-                                    name: string;
-                                    icon: string | null;
-                                    order: number | null;
-                                    createdAt: Date;
-                                } | null;
-                                recurrence: {
-                                    id: string;
-                                    paidById: string;
-                                    creatorId: string;
-                                    groupId: string | null;
                                     title: string;
                                     description: string | null;
                                     amount: string;
                                     currencyId: string;
-                                    frequency: "daily" | "weekly" | "monthly" | "yearly";
-                                    interval: number;
-                                    startDate: Date;
-                                    endDate: Date | null;
-                                    timezone: string;
-                                    lastGenerated: Date | null;
-                                    active: boolean;
-                                    splitType: "custom" | "equal" | "percentage" | "shares";
-                                    createdAt: Date;
-                                    updatedAt: Date;
-                                    deletedAt: Date | null;
-                                    categoryId: string | null;
-                                } | null;
-                                group: {
-                                    id: string;
-                                    name: string;
-                                    description: string | null;
-                                    image: string | null;
-                                    creatorId: string;
-                                    currencyId: string;
-                                    emoji: string | null;
-                                    color: string | null;
-                                    createdAt: Date;
-                                    updatedAt: Date;
-                                    deletedAt: Date | null;
-                                    token: string | null;
-                                    useOptimalSettlement: boolean;
-                                    defaultSplitType: "equal" | "percentage";
-                                    type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
-                                    memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
-                                };
-                                id: string;
-                                title: string;
-                                description: string | null;
-                                amount: string;
-                                currencyId: string;
-                                exchangeRateToBase: string;
-                                exchangeRateSnapshotId: string | null;
-                                paidById: string;
-                                groupId: string | null;
-                                friendshipId: string | null;
-                                date: Date;
-                                timezone: string;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                createdById: string;
-                                deletedAt: Date | null;
-                                splitType: "custom" | "equal" | "percentage" | "shares";
-                                recurringExpenseRuleId: string | null;
-                                image: string | null;
-                                categoryId: string | null;
-                                importId: string | null;
-                                importSourceRow: number | null;
-                            } & {
-                                entity: import("./lib/activities").ACTIVITY_ENTITY.expense;
-                                date: Date;
-                            }) | ({
-                                fromUser: {
-                                    id: string;
-                                    name: string;
-                                    image: string | null;
-                                    username: string | null;
-                                };
-                                toUser: {
-                                    id: string;
-                                    name: string;
-                                    image: string | null;
-                                    username: string | null;
-                                };
-                                currency: {
-                                    id: string;
-                                    name: string;
-                                    code: string;
-                                    symbol: string | null;
                                     exchangeRateToBase: string;
-                                    updatedAt: Date;
-                                    decimals: number;
-                                    type: "fiat" | "crypto";
-                                };
-                                group: {
-                                    id: string;
-                                    name: string;
-                                    description: string | null;
-                                    image: string | null;
-                                    creatorId: string;
-                                    currencyId: string;
-                                    emoji: string | null;
-                                    color: string | null;
+                                    exchangeRateSnapshotId: string | null;
+                                    paidById: string;
+                                    groupId: string | null;
+                                    friendshipId: string | null;
+                                    date: Date;
+                                    timezone: string;
                                     createdAt: Date;
                                     updatedAt: Date;
+                                    createdById: string;
                                     deletedAt: Date | null;
-                                    token: string | null;
-                                    useOptimalSettlement: boolean;
-                                    defaultSplitType: "equal" | "percentage";
-                                    type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
-                                    memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
-                                };
-                                id: string;
-                                fromUserId: string;
-                                toUserId: string;
-                                amount: string;
-                                currencyId: string;
-                                exchangeRateToBase: string;
-                                exchangeRateSnapshotId: string | null;
-                                date: Date;
-                                timezone: string;
-                                description: string | null;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                groupId: string | null;
-                                createdById: string;
-                                deletedAt: Date | null;
-                                isSettlement: boolean;
-                                usedOptimalSettlement: boolean;
-                                importId: string | null;
-                                importSourceRow: number | null;
-                            } & {
-                                entity: import("./lib/activities").ACTIVITY_ENTITY.payment;
-                                date: Date;
-                            }))[];
+                                    splitType: "custom" | "equal" | "percentage" | "shares";
+                                    recurringExpenseRuleId: string | null;
+                                    image: string | null;
+                                    latitude: number | null;
+                                    longitude: number | null;
+                                    locationId: string | null;
+                                    categoryId: string | null;
+                                    importId: string | null;
+                                    importSourceRow: number | null;
+                                } & {
+                                    entity: import("./lib/activities").ACTIVITY_ENTITY.expense;
+                                    date: Date;
+                                }) | ({
+                                    fromUser: {
+                                        id: string;
+                                        name: string;
+                                        image: string | null;
+                                        username: string | null;
+                                    };
+                                    toUser: {
+                                        id: string;
+                                        name: string;
+                                        image: string | null;
+                                        username: string | null;
+                                    };
+                                    currency: {
+                                        id: string;
+                                        name: string;
+                                        code: string;
+                                        symbol: string | null;
+                                        exchangeRateToBase: string;
+                                        updatedAt: Date;
+                                        decimals: number;
+                                        type: "fiat" | "crypto";
+                                    };
+                                    group: {
+                                        id: string;
+                                        name: string;
+                                        description: string | null;
+                                        image: string | null;
+                                        creatorId: string;
+                                        currencyId: string;
+                                        emoji: string | null;
+                                        color: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        token: string | null;
+                                        useOptimalSettlement: boolean;
+                                        defaultSplitType: "equal" | "percentage";
+                                        type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                        memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                                    };
+                                    id: string;
+                                    fromUserId: string;
+                                    toUserId: string;
+                                    amount: string;
+                                    currencyId: string;
+                                    exchangeRateToBase: string;
+                                    exchangeRateSnapshotId: string | null;
+                                    date: Date;
+                                    timezone: string;
+                                    description: string | null;
+                                    createdAt: Date;
+                                    updatedAt: Date;
+                                    groupId: string | null;
+                                    createdById: string;
+                                    deletedAt: Date | null;
+                                    isSettlement: boolean;
+                                    usedOptimalSettlement: boolean;
+                                    importId: string | null;
+                                    importSourceRow: number | null;
+                                } & {
+                                    entity: import("./lib/activities").ACTIVITY_ENTITY.payment;
+                                    date: Date;
+                                }))[];
+                                nextCursor: string | null;
+                                hasMore: boolean;
+                            };
+                            400: string;
                             403: "Forbidden" | {
                                 code: string;
                                 message: string;
@@ -12600,11 +12773,11 @@ export declare const appType: Elysia<"", {
                             id: string;
                         };
                         query: {
-                            type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
+                            l?: number | undefined;
+                            cursor?: string | undefined;
                             sort?: "date" | "amount" | undefined;
                             direction?: "asc" | "desc" | undefined;
-                            p?: number | undefined;
-                            l?: number | undefined;
+                            type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
                             categoryIds?: string[] | undefined;
                             paidByIds?: string[] | undefined;
                             participantIds?: string[] | undefined;
@@ -12613,191 +12786,214 @@ export declare const appType: Elysia<"", {
                         headers: {};
                         response: {
                             401: "Unauthorized";
-                            200: (({
-                                paidByUser: {
+                            200: {
+                                items: (({
+                                    location: {
+                                        id: string;
+                                        label: string;
+                                        latitude: number;
+                                        longitude: number;
+                                    } | null;
+                                    paidByUser: {
+                                        id: string;
+                                        name: string;
+                                        email: string | null;
+                                        emailVerified: boolean;
+                                        image: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        username: string | null;
+                                        displayUsername: string | null;
+                                        bio: string | null;
+                                        isGuest: boolean;
+                                        managedBy: string | null;
+                                        currencyId: string | null;
+                                        inviteToken: string | null;
+                                        role: string | null;
+                                        banned: boolean | null;
+                                        banReason: string | null;
+                                        banExpires: Date | null;
+                                        lastLoginMethod: string | null;
+                                        profileCompletedAt: Date | null;
+                                        deletedAt: Date | null;
+                                        guestState: "managed" | "archived" | "merged" | null;
+                                        guestClaimedAt: Date | null;
+                                        guestArchivedAt: Date | null;
+                                        guestMergedAt: Date | null;
+                                        mergedIntoUserId: string | null;
+                                    };
+                                    currency: {
+                                        id: string;
+                                        name: string;
+                                        code: string;
+                                        symbol: string | null;
+                                        exchangeRateToBase: string;
+                                        updatedAt: Date;
+                                        decimals: number;
+                                        type: "fiat" | "crypto";
+                                    };
+                                    share: {
+                                        id: string;
+                                        expenseId: string;
+                                        userId: string;
+                                        amount: string;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                    } | null;
+                                    category: {
+                                        id: string;
+                                        key: string | null;
+                                        name: string;
+                                        icon: string | null;
+                                        order: number | null;
+                                        createdAt: Date;
+                                    } | null;
+                                    recurrence: {
+                                        location: {
+                                            id: string;
+                                            label: string;
+                                            latitude: number;
+                                            longitude: number;
+                                        } | null;
+                                        id: string;
+                                        paidById: string;
+                                        creatorId: string;
+                                        groupId: string | null;
+                                        title: string;
+                                        description: string | null;
+                                        amount: string;
+                                        currencyId: string;
+                                        frequency: "daily" | "weekly" | "monthly" | "yearly";
+                                        interval: number;
+                                        startDate: Date;
+                                        endDate: Date | null;
+                                        timezone: string;
+                                        lastGenerated: Date | null;
+                                        active: boolean;
+                                        splitType: "custom" | "equal" | "percentage" | "shares";
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        latitude: number | null;
+                                        longitude: number | null;
+                                        locationId: string | null;
+                                        categoryId: string | null;
+                                    } | null;
+                                    group: {
+                                        id: string;
+                                        name: string;
+                                        description: string | null;
+                                        image: string | null;
+                                        creatorId: string;
+                                        currencyId: string;
+                                        emoji: string | null;
+                                        color: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        token: string | null;
+                                        useOptimalSettlement: boolean;
+                                        defaultSplitType: "equal" | "percentage";
+                                        type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                        memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                                    };
                                     id: string;
-                                    name: string;
-                                    email: string | null;
-                                    emailVerified: boolean;
-                                    image: string | null;
-                                    createdAt: Date;
-                                    updatedAt: Date;
-                                    username: string | null;
-                                    displayUsername: string | null;
-                                    bio: string | null;
-                                    isGuest: boolean;
-                                    managedBy: string | null;
-                                    currencyId: string | null;
-                                    inviteToken: string | null;
-                                    role: string | null;
-                                    banned: boolean | null;
-                                    banReason: string | null;
-                                    banExpires: Date | null;
-                                    lastLoginMethod: string | null;
-                                    profileCompletedAt: Date | null;
-                                    deletedAt: Date | null;
-                                    guestState: "managed" | "archived" | "merged" | null;
-                                    guestClaimedAt: Date | null;
-                                    guestArchivedAt: Date | null;
-                                    guestMergedAt: Date | null;
-                                    mergedIntoUserId: string | null;
-                                };
-                                currency: {
-                                    id: string;
-                                    name: string;
-                                    code: string;
-                                    symbol: string | null;
-                                    exchangeRateToBase: string;
-                                    updatedAt: Date;
-                                    decimals: number;
-                                    type: "fiat" | "crypto";
-                                };
-                                share: {
-                                    id: string;
-                                    expenseId: string;
-                                    userId: string;
-                                    amount: string;
-                                    createdAt: Date;
-                                    updatedAt: Date;
-                                    deletedAt: Date | null;
-                                } | null;
-                                category: {
-                                    id: string;
-                                    key: string | null;
-                                    name: string;
-                                    icon: string | null;
-                                    order: number | null;
-                                    createdAt: Date;
-                                } | null;
-                                recurrence: {
-                                    id: string;
-                                    paidById: string;
-                                    creatorId: string;
-                                    groupId: string | null;
                                     title: string;
                                     description: string | null;
                                     amount: string;
                                     currencyId: string;
-                                    frequency: "daily" | "weekly" | "monthly" | "yearly";
-                                    interval: number;
-                                    startDate: Date;
-                                    endDate: Date | null;
-                                    timezone: string;
-                                    lastGenerated: Date | null;
-                                    active: boolean;
-                                    splitType: "custom" | "equal" | "percentage" | "shares";
-                                    createdAt: Date;
-                                    updatedAt: Date;
-                                    deletedAt: Date | null;
-                                    categoryId: string | null;
-                                } | null;
-                                group: {
-                                    id: string;
-                                    name: string;
-                                    description: string | null;
-                                    image: string | null;
-                                    creatorId: string;
-                                    currencyId: string;
-                                    emoji: string | null;
-                                    color: string | null;
-                                    createdAt: Date;
-                                    updatedAt: Date;
-                                    deletedAt: Date | null;
-                                    token: string | null;
-                                    useOptimalSettlement: boolean;
-                                    defaultSplitType: "equal" | "percentage";
-                                    type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
-                                    memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
-                                };
-                                id: string;
-                                title: string;
-                                description: string | null;
-                                amount: string;
-                                currencyId: string;
-                                exchangeRateToBase: string;
-                                exchangeRateSnapshotId: string | null;
-                                paidById: string;
-                                groupId: string | null;
-                                friendshipId: string | null;
-                                date: Date;
-                                timezone: string;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                createdById: string;
-                                deletedAt: Date | null;
-                                splitType: "custom" | "equal" | "percentage" | "shares";
-                                recurringExpenseRuleId: string | null;
-                                image: string | null;
-                                categoryId: string | null;
-                                importId: string | null;
-                                importSourceRow: number | null;
-                            } & {
-                                entity: import("./lib/activities").ACTIVITY_ENTITY.expense;
-                                date: Date;
-                            }) | ({
-                                fromUser: {
-                                    id: string;
-                                    name: string;
-                                    image: string | null;
-                                    username: string | null;
-                                };
-                                toUser: {
-                                    id: string;
-                                    name: string;
-                                    image: string | null;
-                                    username: string | null;
-                                };
-                                currency: {
-                                    id: string;
-                                    name: string;
-                                    code: string;
-                                    symbol: string | null;
                                     exchangeRateToBase: string;
-                                    updatedAt: Date;
-                                    decimals: number;
-                                    type: "fiat" | "crypto";
-                                };
-                                group: {
-                                    id: string;
-                                    name: string;
-                                    description: string | null;
-                                    image: string | null;
-                                    creatorId: string;
-                                    currencyId: string;
-                                    emoji: string | null;
-                                    color: string | null;
+                                    exchangeRateSnapshotId: string | null;
+                                    paidById: string;
+                                    groupId: string | null;
+                                    friendshipId: string | null;
+                                    date: Date;
+                                    timezone: string;
                                     createdAt: Date;
                                     updatedAt: Date;
+                                    createdById: string;
                                     deletedAt: Date | null;
-                                    token: string | null;
-                                    useOptimalSettlement: boolean;
-                                    defaultSplitType: "equal" | "percentage";
-                                    type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
-                                    memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
-                                };
-                                id: string;
-                                fromUserId: string;
-                                toUserId: string;
-                                amount: string;
-                                currencyId: string;
-                                exchangeRateToBase: string;
-                                exchangeRateSnapshotId: string | null;
-                                date: Date;
-                                timezone: string;
-                                description: string | null;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                groupId: string | null;
-                                createdById: string;
-                                deletedAt: Date | null;
-                                isSettlement: boolean;
-                                usedOptimalSettlement: boolean;
-                                importId: string | null;
-                                importSourceRow: number | null;
-                            } & {
-                                entity: import("./lib/activities").ACTIVITY_ENTITY.payment;
-                                date: Date;
-                            }))[];
+                                    splitType: "custom" | "equal" | "percentage" | "shares";
+                                    recurringExpenseRuleId: string | null;
+                                    image: string | null;
+                                    latitude: number | null;
+                                    longitude: number | null;
+                                    locationId: string | null;
+                                    categoryId: string | null;
+                                    importId: string | null;
+                                    importSourceRow: number | null;
+                                } & {
+                                    entity: import("./lib/activities").ACTIVITY_ENTITY.expense;
+                                    date: Date;
+                                }) | ({
+                                    fromUser: {
+                                        id: string;
+                                        name: string;
+                                        image: string | null;
+                                        username: string | null;
+                                    };
+                                    toUser: {
+                                        id: string;
+                                        name: string;
+                                        image: string | null;
+                                        username: string | null;
+                                    };
+                                    currency: {
+                                        id: string;
+                                        name: string;
+                                        code: string;
+                                        symbol: string | null;
+                                        exchangeRateToBase: string;
+                                        updatedAt: Date;
+                                        decimals: number;
+                                        type: "fiat" | "crypto";
+                                    };
+                                    group: {
+                                        id: string;
+                                        name: string;
+                                        description: string | null;
+                                        image: string | null;
+                                        creatorId: string;
+                                        currencyId: string;
+                                        emoji: string | null;
+                                        color: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        token: string | null;
+                                        useOptimalSettlement: boolean;
+                                        defaultSplitType: "equal" | "percentage";
+                                        type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                        memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                                    };
+                                    id: string;
+                                    fromUserId: string;
+                                    toUserId: string;
+                                    amount: string;
+                                    currencyId: string;
+                                    exchangeRateToBase: string;
+                                    exchangeRateSnapshotId: string | null;
+                                    date: Date;
+                                    timezone: string;
+                                    description: string | null;
+                                    createdAt: Date;
+                                    updatedAt: Date;
+                                    groupId: string | null;
+                                    createdById: string;
+                                    deletedAt: Date | null;
+                                    isSettlement: boolean;
+                                    usedOptimalSettlement: boolean;
+                                    importId: string | null;
+                                    importSourceRow: number | null;
+                                } & {
+                                    entity: import("./lib/activities").ACTIVITY_ENTITY.payment;
+                                    date: Date;
+                                }))[];
+                                nextCursor: string | null;
+                                hasMore: boolean;
+                            };
+                            400: string;
                             403: "Forbidden" | {
                                 code: string;
                                 message: string;
@@ -13238,6 +13434,12 @@ export declare const appType: Elysia<"", {
                     response: {
                         401: "Unauthorized";
                         200: {
+                            location: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null;
                             paidByUser: {
                                 id: string;
                                 name: string;
@@ -13294,6 +13496,12 @@ export declare const appType: Elysia<"", {
                                 createdAt: Date;
                             } | null;
                             recurrence: {
+                                location: {
+                                    id: string;
+                                    label: string;
+                                    latitude: number;
+                                    longitude: number;
+                                } | null;
                                 id: string;
                                 paidById: string;
                                 creatorId: string;
@@ -13313,6 +13521,9 @@ export declare const appType: Elysia<"", {
                                 createdAt: Date;
                                 updatedAt: Date;
                                 deletedAt: Date | null;
+                                latitude: number | null;
+                                longitude: number | null;
+                                locationId: string | null;
                                 categoryId: string | null;
                             } | null;
                             group: {
@@ -13352,6 +13563,9 @@ export declare const appType: Elysia<"", {
                             splitType: "custom" | "equal" | "percentage" | "shares";
                             recurringExpenseRuleId: string | null;
                             image: string | null;
+                            latitude: number | null;
+                            longitude: number | null;
+                            locationId: string | null;
                             categoryId: string | null;
                             importId: string | null;
                             importSourceRow: number | null;
@@ -13390,6 +13604,12 @@ export declare const appType: Elysia<"", {
                         response: {
                             401: "Unauthorized";
                             200: ({
+                                location: {
+                                    id: string;
+                                    label: string;
+                                    latitude: number;
+                                    longitude: number;
+                                } | null;
                                 id: string;
                                 paidById: string;
                                 creatorId: string;
@@ -13409,6 +13629,9 @@ export declare const appType: Elysia<"", {
                                 createdAt: Date;
                                 updatedAt: Date;
                                 deletedAt: Date | null;
+                                latitude: number | null;
+                                longitude: number | null;
+                                locationId: string | null;
                                 categoryId: string | null;
                             } & {
                                 timezone?: string | null;
@@ -13731,10 +13954,10 @@ export declare const appType: Elysia<"", {
             body: {};
             params: {};
             query: {
-                filter?: import("./lib/friendships").FRIENDSHIP_FILTER | undefined;
-                sort?: import("./lib/friendships").FRIENDSHIP_SORT | undefined;
                 l?: number | undefined;
                 cursor?: string | undefined;
+                sort?: import("./lib/friendships").FRIENDSHIP_SORT | undefined;
+                filter?: import("./lib/friendships").FRIENDSHIP_FILTER | undefined;
             };
             headers: {};
             response: {
@@ -13803,9 +14026,9 @@ export declare const appType: Elysia<"", {
                 body: {};
                 params: {};
                 query: {
+                    l?: number | undefined;
                     sort?: import("./lib/friendships").FRIENDSHIP_SORT | undefined;
                     p?: number | undefined;
-                    l?: number | undefined;
                 };
                 headers: {};
                 response: {
@@ -13870,8 +14093,8 @@ export declare const appType: Elysia<"", {
                 body: {};
                 params: {};
                 query: {
-                    p?: number | undefined;
                     l?: number | undefined;
+                    p?: number | undefined;
                     q: string;
                 };
                 headers: {};
@@ -14108,227 +14331,31 @@ export declare const appType: Elysia<"", {
                         id: string;
                     };
                     query: {
+                        l?: number | undefined;
+                        cursor?: string | undefined;
+                        sort?: "date" | "amount" | undefined;
+                        direction?: "asc" | "desc" | undefined;
                         type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
                         groupId?: string | undefined;
                         paidById?: string | undefined;
                         categoryId?: string | undefined;
                         group?: "all" | "group" | "non_group" | undefined;
-                        sort?: "date" | "amount" | undefined;
-                        direction?: "asc" | "desc" | undefined;
-                        p?: number | undefined;
-                        l?: number | undefined;
+                        categoryIds?: string[] | undefined;
+                        paidByIds?: string[] | undefined;
+                        participantIds?: string[] | undefined;
+                        creatorIds?: string[] | undefined;
                     };
                     headers: {};
                     response: {
                         401: "Unauthorized";
-                        200: (({
-                            paidByUser: {
-                                id: string;
-                                name: string;
-                                image: string | null;
-                                username: string | null;
-                            };
-                            share: {
-                                id: string;
-                                expenseId: string;
-                                userId: string;
-                                amount: string;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                deletedAt: Date | null;
-                            };
-                            currency: {
-                                id: string;
-                                name: string;
-                                code: string;
-                                symbol: string | null;
-                                exchangeRateToBase: string;
-                                updatedAt: Date;
-                                decimals: number;
-                                type: "fiat" | "crypto";
-                            };
-                            category: {
-                                id: string;
-                                key: string | null;
-                                name: string;
-                                icon: string | null;
-                                order: number | null;
-                                createdAt: Date;
-                            } | null;
-                            recurrence: {
-                                id: string;
-                                paidById: string;
-                                creatorId: string;
-                                groupId: string | null;
-                                title: string;
-                                description: string | null;
-                                amount: string;
-                                currencyId: string;
-                                frequency: "daily" | "weekly" | "monthly" | "yearly";
-                                interval: number;
-                                startDate: Date;
-                                endDate: Date | null;
-                                timezone: string;
-                                lastGenerated: Date | null;
-                                active: boolean;
-                                splitType: "custom" | "equal" | "percentage" | "shares";
-                                createdAt: Date;
-                                updatedAt: Date;
-                                deletedAt: Date | null;
-                                categoryId: string | null;
-                            } | null;
-                            group: {
-                                id: string;
-                                name: string;
-                                description: string | null;
-                                image: string | null;
-                                creatorId: string;
-                                currencyId: string;
-                                emoji: string | null;
-                                color: string | null;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                deletedAt: Date | null;
-                                token: string | null;
-                                useOptimalSettlement: boolean;
-                                defaultSplitType: "equal" | "percentage";
-                                type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
-                                memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
-                            } | null;
-                            id: string;
-                            title: string;
-                            description: string | null;
-                            amount: string;
-                            currencyId: string;
-                            exchangeRateToBase: string;
-                            exchangeRateSnapshotId: string | null;
-                            paidById: string;
-                            groupId: string | null;
-                            friendshipId: string | null;
-                            date: Date;
-                            timezone: string;
-                            createdAt: Date;
-                            updatedAt: Date;
-                            createdById: string;
-                            deletedAt: Date | null;
-                            splitType: "custom" | "equal" | "percentage" | "shares";
-                            recurringExpenseRuleId: string | null;
-                            image: string | null;
-                            categoryId: string | null;
-                            importId: string | null;
-                            importSourceRow: number | null;
-                        } & {
-                            entity: import("./lib/activities").ACTIVITY_ENTITY.expense;
-                            date: Date;
-                        }) | ({
-                            fromUser: {
-                                id: string;
-                                name: string;
-                                image: string | null;
-                                username: string | null;
-                            };
-                            toUser: {
-                                id: string;
-                                name: string;
-                                image: string | null;
-                                username: string | null;
-                            };
-                            currency: {
-                                id: string;
-                                name: string;
-                                code: string;
-                                symbol: string | null;
-                                exchangeRateToBase: string;
-                                updatedAt: Date;
-                                decimals: number;
-                                type: "fiat" | "crypto";
-                            };
-                            group: {
-                                id: string;
-                                name: string;
-                                description: string | null;
-                                image: string | null;
-                                creatorId: string;
-                                currencyId: string;
-                                emoji: string | null;
-                                color: string | null;
-                                createdAt: Date;
-                                updatedAt: Date;
-                                deletedAt: Date | null;
-                                token: string | null;
-                                useOptimalSettlement: boolean;
-                                defaultSplitType: "equal" | "percentage";
-                                type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
-                                memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
-                            } | null;
-                            id: string;
-                            fromUserId: string;
-                            toUserId: string;
-                            amount: string;
-                            currencyId: string;
-                            exchangeRateToBase: string;
-                            exchangeRateSnapshotId: string | null;
-                            date: Date;
-                            timezone: string;
-                            description: string | null;
-                            createdAt: Date;
-                            updatedAt: Date;
-                            groupId: string | null;
-                            createdById: string;
-                            deletedAt: Date | null;
-                            isSettlement: boolean;
-                            usedOptimalSettlement: boolean;
-                            importId: string | null;
-                            importSourceRow: number | null;
-                        } & {
-                            entity: import("./lib/activities").ACTIVITY_ENTITY.payment;
-                            date: Date;
-                        }))[];
-                        403: "Forbidden" | {
-                            code: string;
-                            message: string;
-                        };
-                        404: "Not Found";
-                        422: {
-                            type: "validation";
-                            on: string;
-                            summary?: string;
-                            message?: string;
-                            found?: unknown;
-                            property?: string;
-                            expected?: string;
-                        };
-                    };
-                };
-            };
-        };
-    };
-} & {
-    friends: {
-        ":id": {
-            activities: {
-                search: {
-                    get: {
-                        body: {};
-                        params: {
-                            id: string;
-                        };
-                        query: {
-                            type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
-                            groupId?: string | undefined;
-                            paidById?: string | undefined;
-                            categoryId?: string | undefined;
-                            group?: "all" | "group" | "non_group" | undefined;
-                            sort?: "date" | "amount" | undefined;
-                            direction?: "asc" | "desc" | undefined;
-                            p?: number | undefined;
-                            l?: number | undefined;
-                            q: string;
-                        };
-                        headers: {};
-                        response: {
-                            401: "Unauthorized";
-                            200: (({
+                        200: {
+                            items: (({
+                                location: {
+                                    id: string;
+                                    label: string;
+                                    latitude: number;
+                                    longitude: number;
+                                } | null;
                                 paidByUser: {
                                     id: string;
                                     name: string;
@@ -14363,6 +14390,12 @@ export declare const appType: Elysia<"", {
                                     createdAt: Date;
                                 } | null;
                                 recurrence: {
+                                    location: {
+                                        id: string;
+                                        label: string;
+                                        latitude: number;
+                                        longitude: number;
+                                    } | null;
                                     id: string;
                                     paidById: string;
                                     creatorId: string;
@@ -14382,6 +14415,9 @@ export declare const appType: Elysia<"", {
                                     createdAt: Date;
                                     updatedAt: Date;
                                     deletedAt: Date | null;
+                                    latitude: number | null;
+                                    longitude: number | null;
+                                    locationId: string | null;
                                     categoryId: string | null;
                                 } | null;
                                 group: {
@@ -14421,6 +14457,9 @@ export declare const appType: Elysia<"", {
                                 splitType: "custom" | "equal" | "percentage" | "shares";
                                 recurringExpenseRuleId: string | null;
                                 image: string | null;
+                                latitude: number | null;
+                                longitude: number | null;
+                                locationId: string | null;
                                 categoryId: string | null;
                                 importId: string | null;
                                 importSourceRow: number | null;
@@ -14491,6 +14530,244 @@ export declare const appType: Elysia<"", {
                                 entity: import("./lib/activities").ACTIVITY_ENTITY.payment;
                                 date: Date;
                             }))[];
+                            nextCursor: string | null;
+                            hasMore: boolean;
+                        };
+                        400: string;
+                        403: "Forbidden" | {
+                            code: string;
+                            message: string;
+                        };
+                        404: "Not Found";
+                        422: {
+                            type: "validation";
+                            on: string;
+                            summary?: string;
+                            message?: string;
+                            found?: unknown;
+                            property?: string;
+                            expected?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+} & {
+    friends: {
+        ":id": {
+            activities: {
+                search: {
+                    get: {
+                        body: {};
+                        params: {
+                            id: string;
+                        };
+                        query: {
+                            l?: number | undefined;
+                            cursor?: string | undefined;
+                            sort?: "date" | "amount" | undefined;
+                            direction?: "asc" | "desc" | undefined;
+                            type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
+                            groupId?: string | undefined;
+                            paidById?: string | undefined;
+                            categoryId?: string | undefined;
+                            group?: "all" | "group" | "non_group" | undefined;
+                            categoryIds?: string[] | undefined;
+                            paidByIds?: string[] | undefined;
+                            participantIds?: string[] | undefined;
+                            creatorIds?: string[] | undefined;
+                            q: string;
+                        };
+                        headers: {};
+                        response: {
+                            401: "Unauthorized";
+                            200: {
+                                items: (({
+                                    location: {
+                                        id: string;
+                                        label: string;
+                                        latitude: number;
+                                        longitude: number;
+                                    } | null;
+                                    paidByUser: {
+                                        id: string;
+                                        name: string;
+                                        image: string | null;
+                                        username: string | null;
+                                    };
+                                    share: {
+                                        id: string;
+                                        expenseId: string;
+                                        userId: string;
+                                        amount: string;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                    };
+                                    currency: {
+                                        id: string;
+                                        name: string;
+                                        code: string;
+                                        symbol: string | null;
+                                        exchangeRateToBase: string;
+                                        updatedAt: Date;
+                                        decimals: number;
+                                        type: "fiat" | "crypto";
+                                    };
+                                    category: {
+                                        id: string;
+                                        key: string | null;
+                                        name: string;
+                                        icon: string | null;
+                                        order: number | null;
+                                        createdAt: Date;
+                                    } | null;
+                                    recurrence: {
+                                        location: {
+                                            id: string;
+                                            label: string;
+                                            latitude: number;
+                                            longitude: number;
+                                        } | null;
+                                        id: string;
+                                        paidById: string;
+                                        creatorId: string;
+                                        groupId: string | null;
+                                        title: string;
+                                        description: string | null;
+                                        amount: string;
+                                        currencyId: string;
+                                        frequency: "daily" | "weekly" | "monthly" | "yearly";
+                                        interval: number;
+                                        startDate: Date;
+                                        endDate: Date | null;
+                                        timezone: string;
+                                        lastGenerated: Date | null;
+                                        active: boolean;
+                                        splitType: "custom" | "equal" | "percentage" | "shares";
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        latitude: number | null;
+                                        longitude: number | null;
+                                        locationId: string | null;
+                                        categoryId: string | null;
+                                    } | null;
+                                    group: {
+                                        id: string;
+                                        name: string;
+                                        description: string | null;
+                                        image: string | null;
+                                        creatorId: string;
+                                        currencyId: string;
+                                        emoji: string | null;
+                                        color: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        token: string | null;
+                                        useOptimalSettlement: boolean;
+                                        defaultSplitType: "equal" | "percentage";
+                                        type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                        memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                                    } | null;
+                                    id: string;
+                                    title: string;
+                                    description: string | null;
+                                    amount: string;
+                                    currencyId: string;
+                                    exchangeRateToBase: string;
+                                    exchangeRateSnapshotId: string | null;
+                                    paidById: string;
+                                    groupId: string | null;
+                                    friendshipId: string | null;
+                                    date: Date;
+                                    timezone: string;
+                                    createdAt: Date;
+                                    updatedAt: Date;
+                                    createdById: string;
+                                    deletedAt: Date | null;
+                                    splitType: "custom" | "equal" | "percentage" | "shares";
+                                    recurringExpenseRuleId: string | null;
+                                    image: string | null;
+                                    latitude: number | null;
+                                    longitude: number | null;
+                                    locationId: string | null;
+                                    categoryId: string | null;
+                                    importId: string | null;
+                                    importSourceRow: number | null;
+                                } & {
+                                    entity: import("./lib/activities").ACTIVITY_ENTITY.expense;
+                                    date: Date;
+                                }) | ({
+                                    fromUser: {
+                                        id: string;
+                                        name: string;
+                                        image: string | null;
+                                        username: string | null;
+                                    };
+                                    toUser: {
+                                        id: string;
+                                        name: string;
+                                        image: string | null;
+                                        username: string | null;
+                                    };
+                                    currency: {
+                                        id: string;
+                                        name: string;
+                                        code: string;
+                                        symbol: string | null;
+                                        exchangeRateToBase: string;
+                                        updatedAt: Date;
+                                        decimals: number;
+                                        type: "fiat" | "crypto";
+                                    };
+                                    group: {
+                                        id: string;
+                                        name: string;
+                                        description: string | null;
+                                        image: string | null;
+                                        creatorId: string;
+                                        currencyId: string;
+                                        emoji: string | null;
+                                        color: string | null;
+                                        createdAt: Date;
+                                        updatedAt: Date;
+                                        deletedAt: Date | null;
+                                        token: string | null;
+                                        useOptimalSettlement: boolean;
+                                        defaultSplitType: "equal" | "percentage";
+                                        type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                        memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                                    } | null;
+                                    id: string;
+                                    fromUserId: string;
+                                    toUserId: string;
+                                    amount: string;
+                                    currencyId: string;
+                                    exchangeRateToBase: string;
+                                    exchangeRateSnapshotId: string | null;
+                                    date: Date;
+                                    timezone: string;
+                                    description: string | null;
+                                    createdAt: Date;
+                                    updatedAt: Date;
+                                    groupId: string | null;
+                                    createdById: string;
+                                    deletedAt: Date | null;
+                                    isSettlement: boolean;
+                                    usedOptimalSettlement: boolean;
+                                    importId: string | null;
+                                    importSourceRow: number | null;
+                                } & {
+                                    entity: import("./lib/activities").ACTIVITY_ENTITY.payment;
+                                    date: Date;
+                                }))[];
+                                nextCursor: string | null;
+                                hasMore: boolean;
+                            };
+                            400: string;
                             403: "Forbidden" | {
                                 code: string;
                                 message: string;
@@ -14653,8 +14930,8 @@ export declare const appType: Elysia<"", {
             body: {};
             params: {};
             query: {
-                p?: number | undefined;
                 l?: number | undefined;
+                p?: number | undefined;
             };
             headers: {};
             response: {
@@ -15874,92 +16151,132 @@ export declare const appType: Elysia<"", {
             get: {
                 body: {};
                 params: {};
-                query: {};
+                query: {
+                    l?: number | undefined;
+                    cursor?: string | undefined;
+                    sort?: "date" | "amount" | undefined;
+                    direction?: "asc" | "desc" | undefined;
+                    categoryId?: string | undefined;
+                    recurring?: boolean | undefined;
+                };
                 headers: {};
                 response: {
                     401: "Unauthorized";
                     200: {
-                        paidByUser: {
+                        items: {
+                            entity: import("./lib/activities").ACTIVITY_ENTITY.expense;
+                            location: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null;
+                            paidByUser: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            share: {
+                                id: string;
+                                expenseId: string;
+                                userId: string;
+                                amount: string;
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                            } | null;
+                            currency: {
+                                id: string;
+                                name: string;
+                                code: string;
+                                symbol: string | null;
+                                exchangeRateToBase: string;
+                                updatedAt: Date;
+                                decimals: number;
+                                type: "fiat" | "crypto";
+                            };
+                            category: {
+                                id: string;
+                                key: string | null;
+                                name: string;
+                                icon: string | null;
+                                order: number | null;
+                                createdAt: Date;
+                            } | null;
+                            recurrence: {
+                                location: {
+                                    id: string;
+                                    label: string;
+                                    latitude: number;
+                                    longitude: number;
+                                } | null;
+                                id: string;
+                                paidById: string;
+                                creatorId: string;
+                                groupId: string | null;
+                                title: string;
+                                description: string | null;
+                                amount: string;
+                                currencyId: string;
+                                frequency: "daily" | "weekly" | "monthly" | "yearly";
+                                interval: number;
+                                startDate: Date;
+                                endDate: Date | null;
+                                timezone: string;
+                                lastGenerated: Date | null;
+                                active: boolean;
+                                splitType: "custom" | "equal" | "percentage" | "shares";
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                                latitude: number | null;
+                                longitude: number | null;
+                                locationId: string | null;
+                                categoryId: string | null;
+                            } | null;
                             id: string;
-                            name: string;
-                            image: string | null;
-                            username: string | null;
-                        };
-                        share: {
-                            id: string;
-                            expenseId: string;
-                            userId: string;
-                            amount: string;
-                            createdAt: Date;
-                            updatedAt: Date;
-                            deletedAt: Date | null;
-                        } | null;
-                        currency: {
-                            id: string;
-                            name: string;
-                            code: string;
-                            symbol: string | null;
-                            exchangeRateToBase: string;
-                            updatedAt: Date;
-                            decimals: number;
-                            type: "fiat" | "crypto";
-                        };
-                        category: {
-                            id: string;
-                            key: string | null;
-                            name: string;
-                            icon: string | null;
-                            order: number | null;
-                            createdAt: Date;
-                        } | null;
-                        recurrence: {
-                            id: string;
-                            paidById: string;
-                            creatorId: string;
-                            groupId: string | null;
                             title: string;
                             description: string | null;
                             amount: string;
                             currencyId: string;
-                            frequency: "daily" | "weekly" | "monthly" | "yearly";
-                            interval: number;
-                            startDate: Date;
-                            endDate: Date | null;
+                            exchangeRateToBase: string;
+                            exchangeRateSnapshotId: string | null;
+                            paidById: string;
+                            groupId: string | null;
+                            friendshipId: string | null;
+                            date: Date;
                             timezone: string;
-                            lastGenerated: Date | null;
-                            active: boolean;
-                            splitType: "custom" | "equal" | "percentage" | "shares";
                             createdAt: Date;
                             updatedAt: Date;
+                            createdById: string;
                             deletedAt: Date | null;
+                            splitType: "custom" | "equal" | "percentage" | "shares";
+                            recurringExpenseRuleId: string | null;
+                            image: string | null;
+                            latitude: number | null;
+                            longitude: number | null;
+                            locationId: string | null;
                             categoryId: string | null;
-                        } | null;
-                        id: string;
-                        title: string;
-                        description: string | null;
-                        amount: string;
-                        currencyId: string;
-                        exchangeRateToBase: string;
-                        exchangeRateSnapshotId: string | null;
-                        paidById: string;
-                        groupId: string | null;
-                        friendshipId: string | null;
-                        date: Date;
-                        timezone: string;
-                        createdAt: Date;
-                        updatedAt: Date;
-                        createdById: string;
-                        deletedAt: Date | null;
-                        splitType: "custom" | "equal" | "percentage" | "shares";
-                        recurringExpenseRuleId: string | null;
-                        image: string | null;
-                        categoryId: string | null;
-                        importId: string | null;
-                        importSourceRow: number | null;
-                    }[];
+                            importId: string | null;
+                            importSourceRow: number | null;
+                        }[];
+                        nextCursor: string | null;
+                        hasMore: boolean;
+                    };
+                    400: string;
                     403: {
                         code: string;
                         message: string;
+                    };
+                    422: {
+                        type: "validation";
+                        on: string;
+                        summary?: string;
+                        message?: string;
+                        found?: unknown;
+                        property?: string;
+                        expected?: string;
                     };
                 };
             };

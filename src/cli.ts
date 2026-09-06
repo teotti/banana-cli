@@ -6,6 +6,7 @@ import {
   isListPresentation,
   pageWithLess,
 } from "./browser";
+import { createAuthRuntime, login, logout } from "./auth";
 import { balancePresenters, parseBalance } from "./commands/balance";
 import { currencyPresenters, parseCurrencies } from "./commands/currencies";
 import {
@@ -17,7 +18,7 @@ import { friendPresenters, parseFriends } from "./commands/friends";
 import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
-import { DEFAULT_API_URL, REQUEST_TIMEOUT_MS, request } from "./request";
+import { DEFAULT_API_URL, request } from "./request";
 import { asArray, asRecord } from "./shared";
 import {
   CliFailure,
@@ -32,6 +33,8 @@ import {
 const ROOT_HELP = `Usage: banana [--json | --raw] <command>
 
 Commands:
+  login                      Sign in with a browser and store credentials securely
+  logout                     Revoke and delete stored credentials
   me                         Show the authenticated user
   balance                    Show the aggregate balance
   balance users              Show balances by user
@@ -56,8 +59,13 @@ Output:
   --raw                      Print the complete API response as JSON
 
 Environment:
-  BANANASPLIT_TOKEN          Required bearer session token
-  BANANASPLIT_API_URL        API base URL (default: ${DEFAULT_API_URL})`;
+  BANANASPLIT_API_URL        API base URL (default: ${DEFAULT_API_URL})
+  BANANASPLIT_AUTH_URL       Auth base URL (default: API origin + /api)`;
+
+const AUTH_HELP: Record<"login" | "logout", string> = {
+  login: "Usage: banana login\n\nSign in through the browser and store renewable credentials securely.",
+  logout: "Usage: banana logout\n\nRevoke and delete the stored credentials.",
+};
 
 const COMMANDS: Record<string, CommandParser> = {
   balance: parseBalance,
@@ -103,6 +111,13 @@ function parseCommand(args: string[]) {
   }
   if (args[0] === "balances") args = ["balance", "users", ...args.slice(1)];
   const [name, ...rest] = args;
+  if (name === "login" || name === "logout") {
+    if (rest.length === 0) return { action: name, kind: "auth" as const };
+    if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
+      return { kind: "help" as const, text: AUTH_HELP[name] };
+    }
+    throw new CliFailure("usage", AUTH_HELP[name]);
+  }
   const parser = COMMANDS[name];
   if (!parser) throw new CliFailure("usage", ROOT_HELP);
   return parser(rest);
@@ -125,7 +140,8 @@ function serializeFailure(error: unknown, mode: OutputMode) {
     },
   });
   return {
-    exitCode: failure.type === "usage" ? 2 : 1,
+    exitCode:
+      failure.type === "cancelled" ? 130 : failure.type === "usage" ? 2 : 1,
     output:
       mode === "human"
         ? `Error: ${failure.message}`
@@ -155,6 +171,23 @@ export async function runCli(
     const command = parseCommand(output.args);
     if (command.kind === "help") {
       stdout(command.text);
+      return 0;
+    }
+    if (command.kind === "auth" && output.mode !== "human") {
+      throw new CliFailure(
+        "usage",
+        `--${output.mode} is not supported for banana ${command.action}`,
+      );
+    }
+
+    const env = runtime.env ?? process.env;
+    const requestRuntime = createAuthRuntime(runtime);
+    if (command.kind === "auth") {
+      if (command.action === "login") {
+        await login(requestRuntime, env, stdout, stderr);
+      } else {
+        await logout(requestRuntime, env, stdout);
+      }
       return 0;
     }
 
@@ -190,11 +223,6 @@ export async function runCli(
       command.query?.delete("l");
     }
 
-    const requestRuntime = {
-      fetch: runtime.fetch ?? globalThis.fetch,
-      timeoutMs: runtime.timeoutMs ?? REQUEST_TIMEOUT_MS,
-    };
-    const env = runtime.env ?? process.env;
     if (command.mergeExpense !== undefined) {
       const current = await request(
         {

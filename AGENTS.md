@@ -10,12 +10,12 @@ bun run banana <command>          # from the repo root
 bun run banana --help
 ```
 
-Auth comes from the environment, never from a stored credential:
+Auth comes from `banana login` and is stored through `Bun.secrets`, keyed by
+API origin. There is no plaintext or environment-token fallback.
 
-- `BANANASPLIT_TOKEN` — bearer session token, required. Expires after 90 days.
 - `BANANASPLIT_API_URL` — defaults to `https://api.bananasplit.net`.
-
-There is no login flow. `.env` is gitignored and holds the real token.
+- `BANANASPLIT_AUTH_URL` — optional complete `/api` auth base for split-origin
+  or loopback development.
 
 ## API contract
 

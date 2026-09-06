@@ -40,19 +40,37 @@ an existing installation is replaced.
 
 ## Setup
 
-Set your BananaSplit session token:
+Sign in through BananaSplit's device approval page:
 
 ```sh
-export BANANASPLIT_TOKEN="your-bearer-session-token"
-# Optional; defaults to production:
-export BANANASPLIT_API_URL="http://localhost:8080"
+banana login
 ```
+
+The CLI prints a short code and verification URL, then tries to open that URL
+in your browser. On SSH or a headless machine, open the printed URL on another
+device and confirm that the browser shows the same code. Credentials are stored
+only in the operating system credential store through `Bun.secrets`; there is
+no plaintext or environment-token fallback.
+
+To use a local loopback deployment:
+
+```sh
+export BANANASPLIT_API_URL="http://localhost:8080"
+# Optional when auth runs at a separate origin; include the complete /api base:
+export BANANASPLIT_AUTH_URL="http://localhost:8081/api"
+banana login
+```
+
+Non-loopback API, auth, and verification URLs must use HTTPS. Automated
+environments need a supported OS credential store populated through the same
+`banana login` flow.
 
 ## Usage
 
 Run `banana` from any directory:
 
 ```sh
+banana login
 banana me
 banana balance
 banana balances
@@ -64,6 +82,7 @@ banana groups activities GROUP_ID --search dinner
 banana expenses list
 banana expenses get EXPENSE_ID
 banana payments get PAYMENT_ID
+banana logout
 ```
 
 List expenses across the authenticated account, sorted by date or amount:
@@ -184,5 +203,7 @@ publishes use OIDC automatically.
 Configuration, network, API, and usage errors are written to stderr. Human
 commands print `Error: MESSAGE`, `--json` prints a structured error object, and
 `--raw` prints the API error body when available.
-Session tokens currently expire after 90 days; interactive login and stored
-credentials are not included in this first version.
+
+`banana logout` revokes the stored refresh token before deleting the local
+credential. The last access token may remain valid server-side for up to 15
+minutes, but it is removed locally and cannot be refreshed.

@@ -97,6 +97,7 @@ describe("BananaSplit CLI", () => {
       key("down");
       expect(screens.at(-1)).toContain("Loading more expenses…");
       key("down");
+      await Bun.sleep(0);
       expect(pageRequests).toBe(1);
       release();
       await Bun.sleep(0);

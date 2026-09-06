@@ -1,4 +1,4 @@
-export type ErrorType = "api" | "config" | "network" | "usage";
+export type ErrorType = "api" | "cancelled" | "config" | "network" | "usage";
 export type Environment = Record<string, string | undefined>;
 export type OutputWriter = (value: string) => void;
 export type OutputMode = "human" | "json" | "raw";
@@ -41,12 +41,21 @@ export type Fetch = (
   input: RequestInfo | URL,
   init?: RequestInit,
 ) => Promise<Response>;
+export type SecureStorage = Pick<typeof Bun.secrets, "get" | "set" | "delete">;
+export type Sleep = (
+  milliseconds: number,
+  signal: AbortSignal,
+) => Promise<void>;
 
 export interface CliRuntime {
   browser?: Browser;
   env?: Environment;
   fetch?: Fetch;
+  now?: () => number;
+  openUrl?: (url: string) => Promise<void>;
   pager?: Pager;
+  secrets?: SecureStorage;
+  sleep?: Sleep;
   stderr?: OutputWriter;
   stdout?: OutputWriter;
   timeoutMs?: number;
@@ -67,7 +76,12 @@ export type HelpCommand = {
   text: string;
 };
 
-export type ParsedCommand = HelpCommand | RequestCommand;
+export type AuthCommand = {
+  action: "login" | "logout";
+  kind: "auth";
+};
+
+export type ParsedCommand = AuthCommand | HelpCommand | RequestCommand;
 export type CommandParser = (args: string[]) => ParsedCommand;
 
 export type BrowserPresenter = {

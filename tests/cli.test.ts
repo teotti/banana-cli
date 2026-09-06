@@ -12,18 +12,18 @@ describe("BananaSplit CLI", () => {
     expect(stderr).toEqual([]);
   });
 
-  it("requires a bearer token before making a request", async () => {
+  it("requires a stored login before making a request", async () => {
     const { calls, runtime, stderr } = harness();
     runtime.env = {};
 
     expect(await runCli(["me"], runtime)).toBe(1);
     expect(await runCli(["me", "--raw"], runtime)).toBe(1);
     expect(calls).toHaveLength(0);
-    expect(stderr[0]).toBe("Error: BANANASPLIT_TOKEN is required");
+    expect(stderr[0]).toBe("Error: Not logged in. Run banana login.");
     expect(JSON.parse(stderr[1])).toEqual({
       error: {
         type: "config",
-        message: "BANANASPLIT_TOKEN is required",
+        message: "Not logged in. Run banana login.",
       },
     });
   });
@@ -101,7 +101,6 @@ describe("BananaSplit CLI", () => {
     const { calls, runtime, stderr } = harness();
     runtime.env = {
       BANANASPLIT_API_URL: "not a URL",
-      BANANASPLIT_TOKEN: TOKEN,
     };
 
     expect(await runCli(["me"], runtime)).toBe(1);
@@ -142,13 +141,15 @@ describe("BananaSplit CLI", () => {
     });
   });
 
-  it("preserves text API error messages in raw output", async () => {
+  it("refreshes rather than rendering a token-related 401", async () => {
     const { runtime, stderr } = harness(
       new Response("Unauthorized", { status: 401 }),
     );
 
     expect(await runCli(["me", "--raw"], runtime)).toBe(1);
-    expect(stderr[0]).toBe(JSON.stringify("Unauthorized"));
+    expect(JSON.parse(stderr[0]).error.message).toBe(
+      "Could not refresh login. Run banana login.",
+    );
   });
 
   it("uses the structured fallback for empty raw API errors", async () => {
