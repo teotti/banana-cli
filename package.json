@@ -1,10 +1,24 @@
 {
-  "name": "@bananasplit/cli",
+  "name": "@bananasplitapp/cli",
+  "description": "Command-line access to the BananaSplit API",
   "type": "module",
   "version": "0.1.0",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/teotti/banana-cli.git"
+  },
+  "files": [
+    "src"
+  ],
   "bin": {
     "banana": "./src/index.ts"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "banana": "bun run ./src/index.ts",

@@ -1,0 +1,245 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - name: Verify release version
+        shell: bash
+        run: |
+          set -eu
+          version="$(bun -p 'require("./package.json").version')"
+          [[ "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          test "$GITHUB_REF_NAME" = "v$version"
+      - run: bun test
+      - run: bun run typecheck
+      - run: sh -n install.sh
+
+  build:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: darwin-arm64
+            runner: macos-15
+            target: bun-darwin-arm64
+            binary: build/banana
+          - platform: darwin-x64
+            runner: macos-15-intel
+            target: bun-darwin-x64
+            binary: build/banana
+          - platform: linux-arm64
+            runner: ubuntu-24.04-arm
+            target: bun-linux-arm64
+            binary: build/banana
+          - platform: linux-x64
+            runner: ubuntu-24.04
+            target: bun-linux-x64-baseline
+            binary: build/banana
+          - platform: windows-arm64
+            runner: windows-11-arm
+            target: bun-windows-arm64
+            binary: build/banana.exe
+          - platform: windows-x64
+            runner: windows-2025
+            target: bun-windows-x64-baseline
+            binary: build/banana.exe
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - name: Build standalone executable
+        shell: bash
+        run: bun build ./src/index.ts --compile --target=${{ matrix.target }} --outfile=${{ matrix.binary }}
+      - name: Smoke test executable
+        shell: bash
+        run: |
+          ./${{ matrix.binary }} --help | grep -q "Usage: banana"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: ${{ matrix.binary }}
+          if-no-files-found: error
+
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v5
+        with:
+          path: raw
+      - name: Package release assets
+        shell: bash
+        run: |
+          set -eu
+          mkdir release
+          for platform in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            chmod 755 "raw/$platform/banana"
+            tar -czf "release/banana-$platform.tar.gz" -C "raw/$platform" banana
+            test "$(tar -tzf "release/banana-$platform.tar.gz")" = "banana"
+          done
+          for platform in windows-arm64 windows-x64; do
+            zip -j "release/banana-$platform.zip" "raw/$platform/banana.exe"
+            test "$(unzip -Z1 "release/banana-$platform.zip")" = "banana.exe"
+          done
+          cp install.sh install.ps1 release/
+          (cd release && sha256sum banana-* > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: release/*
+          if-no-files-found: error
+
+  installer-posix:
+    needs: package
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            archive: banana-linux-x64.tar.gz
+          - runner: macos-15
+            archive: banana-darwin-arm64.tar.gz
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v5
+        with:
+          name: release-assets
+          path: assets
+      - name: Test installer
+        shell: bash
+        run: |
+          set -eu
+          root="$RUNNER_TEMP/banana-installer"
+          install_dir="$RUNNER_TEMP/bin"
+          mkdir -p "$root/good"
+          cp assets/* "$root/good/"
+          cp -R "$root/good" "$root/bad"
+          printf corrupt >> "$root/bad/${{ matrix.archive }}"
+          python3 -m http.server 38123 --directory "$root" >/dev/null 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for _ in 1 2 3 4 5; do
+            curl -fsS http://127.0.0.1:38123/good/SHA256SUMS >/dev/null && break
+            sleep 1
+          done
+
+          BANANA_RELEASE_BASE_URL=http://127.0.0.1:38123/good BANANA_INSTALL_DIR="$install_dir" sh install.sh
+          "$install_dir/banana" --help | grep -q "Usage: banana"
+          printf broken > "$install_dir/banana"
+          BANANA_RELEASE_BASE_URL=http://127.0.0.1:38123/good BANANA_INSTALL_DIR="$install_dir" sh install.sh
+          "$install_dir/banana" --help | grep -q "Usage: banana"
+
+          if BANANA_RELEASE_BASE_URL=http://127.0.0.1:38123/bad BANANA_INSTALL_DIR="$install_dir" sh install.sh; then
+            echo "Installer accepted a bad checksum" >&2
+            exit 1
+          fi
+          "$install_dir/banana" --help | grep -q "Usage: banana"
+
+          mkdir "$root/fake-bin"
+          printf '#!/bin/sh\necho Plan9\n' > "$root/fake-bin/uname"
+          chmod 755 "$root/fake-bin/uname"
+          if PATH="$root/fake-bin:$PATH" sh install.sh; then
+            echo "Installer accepted an unsupported platform" >&2
+            exit 1
+          fi
+
+  installer-windows:
+    needs: package
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v5
+        with:
+          name: release-assets
+          path: assets
+      - name: Test installer
+        shell: pwsh
+        run: |
+          $Root = Join-Path $env:RUNNER_TEMP "banana-installer"
+          $Good = Join-Path $Root "good"
+          $Bad = Join-Path $Root "bad"
+          $InstallDir = Join-Path $env:RUNNER_TEMP "bin"
+          New-Item -ItemType Directory -Path $Good -Force | Out-Null
+          Copy-Item assets/* $Good
+          Copy-Item $Good $Bad -Recurse
+          Add-Content (Join-Path $Bad "banana-windows-x64.zip") "corrupt"
+          $Server = Start-Process python -ArgumentList "-m", "http.server", "38123", "--directory", $Root -PassThru
+          try {
+            for ($Attempt = 0; $Attempt -lt 5; $Attempt++) {
+              try {
+                Invoke-WebRequest "http://127.0.0.1:38123/good/SHA256SUMS" -UseBasicParsing | Out-Null
+                break
+              } catch {
+                Start-Sleep -Seconds 1
+              }
+            }
+
+            $env:BANANA_INSTALL_DIR = $InstallDir
+            $env:BANANA_RELEASE_BASE_URL = "http://127.0.0.1:38123/good"
+            & ./install.ps1
+            & (Join-Path $InstallDir "banana.exe") --help | Select-String "Usage: banana"
+            Set-Content (Join-Path $InstallDir "banana.exe") "broken"
+            & ./install.ps1
+            & (Join-Path $InstallDir "banana.exe") --help | Select-String "Usage: banana"
+
+            $env:BANANA_RELEASE_BASE_URL = "http://127.0.0.1:38123/bad"
+            $Failed = $false
+            try { & ./install.ps1 } catch { $Failed = $true }
+            if (-not $Failed) { throw "Installer accepted a bad checksum" }
+            & (Join-Path $InstallDir "banana.exe") --help | Select-String "Usage: banana"
+          } finally {
+            Stop-Process $Server -Force -ErrorAction SilentlyContinue
+          }
+
+  github-release:
+    needs: [installer-posix, installer-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: release-assets
+          path: release
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release create "$GITHUB_REF_NAME" release/* --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+
+  npm:
+    needs: [installer-posix, installer-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: npm install --global npm@latest
+      - name: Publish npm package
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

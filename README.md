@@ -2,14 +2,43 @@
 
 Standalone access to the BananaSplit API for people and shell-enabled agents.
 
-## Setup
+## Install
 
-Install [Bun](https://bun.sh), clone this repository, and install its
-dependencies:
+macOS and Linux (no Bun or Node required):
 
 ```sh
-bun install
+curl -fsSL https://github.com/teotti/banana-cli/releases/latest/download/install.sh | sh
 ```
+
+Windows PowerShell (no Bun or Node required):
+
+```powershell
+irm https://github.com/teotti/banana-cli/releases/latest/download/install.ps1 | iex
+```
+
+Or install the TypeScript package with [Bun](https://bun.sh):
+
+```sh
+bun install -g @bananasplitapp/cli
+```
+
+Set `BANANA_INSTALL_DIR` to choose a different destination. To install a
+specific standalone release instead of the latest:
+
+```sh
+curl -fsSL https://github.com/teotti/banana-cli/releases/latest/download/install.sh \
+  | BANANA_VERSION=v0.1.0 sh
+```
+
+```powershell
+$env:BANANA_VERSION = "v0.1.0"
+irm https://github.com/teotti/banana-cli/releases/latest/download/install.ps1 | iex
+```
+
+Release downloads are verified against the published SHA-256 checksums before
+an existing installation is replaced.
+
+## Setup
 
 Set your BananaSplit session token:
 
@@ -21,20 +50,20 @@ export BANANASPLIT_API_URL="http://localhost:8080"
 
 ## Usage
 
-Run from the repository root with `bun run banana`:
+Run `banana` from any directory:
 
 ```sh
-bun run banana me
-bun run banana balance
-bun run banana balances
-bun run banana currencies
-bun run banana friends
-bun run banana groups
-bun run banana groups members GROUP_ID
-bun run banana groups activities GROUP_ID --search dinner
-bun run banana expenses list
-bun run banana expenses get EXPENSE_ID
-bun run banana payments get PAYMENT_ID
+banana me
+banana balance
+banana balances
+banana currencies
+banana friends
+banana groups
+banana groups members GROUP_ID
+banana groups activities GROUP_ID --search dinner
+banana expenses list
+banana expenses get EXPENSE_ID
+banana payments get PAYMENT_ID
 ```
 
 List expenses across the authenticated account, sorted by date or amount:
@@ -117,12 +146,40 @@ more as you reach the end. Search filters all loaded expenses; press ↓ at the
 end (or when no items match) to load another page. If loading fails, press ↓
 to retry. Use `--limit N` to choose a page size.
 
-To expose `banana` on your path during local development:
+## Development
+
+Install Bun, clone this repository, then install dependencies and expose
+`banana` on your path:
 
 ```sh
+bun install
 bun link
 banana --help
 ```
+
+Run the checks with:
+
+```sh
+bun test
+bun run typecheck
+```
+
+## Releasing
+
+The repository must be public and the `@bananasplitapp` npm organization must
+exist before the first release. Store a temporary granular npm publishing
+token with bypass 2FA as the `NPM_TOKEN` repository secret, update the version
+in `package.json`, then push its matching stable tag:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The tag workflow tests all targets, publishes the GitHub release, and publishes
+the npm package. After the first npm release, configure `release.yml` as the
+package's trusted GitHub Actions publisher and remove `NPM_TOKEN`; subsequent
+publishes use OIDC automatically.
 
 Configuration, network, API, and usage errors are written to stderr. Human
 commands print `Error: MESSAGE`, `--json` prints a structured error object, and
