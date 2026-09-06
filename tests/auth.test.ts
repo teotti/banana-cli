@@ -453,7 +453,7 @@ describe("OAuth authentication", () => {
     };
     expect(await runCli(["logout"], success.runtime)).toBe(0);
     expect(events).toEqual(["fetch:/api/oauth2/revoke", "delete"]);
-    expect(success.stdout[0]).toContain("up to 15 minutes");
+    expect(success.stdout).toEqual(["Logged out."]);
 
     const failure = harness(async () => {
       throw new Error(`offline ${REFRESH_TOKEN}`);
