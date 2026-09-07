@@ -12,7 +12,8 @@ import {
 } from "../shared";
 import { CliFailure, type ParsedCommand, type Presenter } from "../types";
 
-const HELP = "Usage: banana balance [users]";
+const HELP = `USAGE
+  banana balance [users]`;
 
 export function parseBalance(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: HELP };

@@ -16,13 +16,15 @@ import {
 } from "../shared";
 import { CliFailure, type ParsedCommand, type Presenter } from "../types";
 
-const HELP = `Usage: banana payments add JSON
-   or: banana payments add --amount AMOUNT --currency-id ID
-                           --from-user-id ID --to-user-id ID
-                           --date YYYY-MM-DD|DD-MM-YYYY
-                           [--group-id ID] [--description TEXT]
-   or: banana payments get <payment-id>`;
-const GET_HELP = "Usage: banana payments get <payment-id>";
+const HELP = `USAGE
+  banana payments add JSON
+  banana payments add --amount AMOUNT --currency-id ID
+                      --from-user-id ID --to-user-id ID
+                      --date YYYY-MM-DD|DD-MM-YYYY
+                      [--group-id ID] [--description TEXT]
+  banana payments get <payment-id>`;
+const GET_HELP = `USAGE
+  banana payments get <payment-id>`;
 
 export function parsePayments(args: string[]): ParsedCommand {
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {

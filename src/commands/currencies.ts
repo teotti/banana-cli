@@ -9,7 +9,8 @@ import {
 } from "../shared";
 import type { ParsedCommand, Presenter } from "../types";
 
-const HELP = "Usage: banana currencies [list]";
+const HELP = `USAGE
+  banana currencies [list]`;
 
 export function parseCurrencies(args: string[]): ParsedCommand {
   if (args[0] === "list") args = args.slice(1);

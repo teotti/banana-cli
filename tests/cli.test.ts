@@ -8,7 +8,7 @@ describe("BananaSplit CLI", () => {
     runtime.env = {};
 
     expect(await runCli([], runtime)).toBe(0);
-    expect(stdout[0]).toContain("Usage: banana [--json | --raw] <command>");
+    expect(stdout[0]).toContain("banana [--json | --raw] <command>");
     expect(stderr).toEqual([]);
   });
 
@@ -352,7 +352,7 @@ describe("BananaSplit CLI", () => {
       await runCli(["groups", "activities", "--help"], runtime),
     ).toBe(0);
     expect(stdout[0]).toContain(
-      "Usage: banana groups activities <group-id> [options]",
+      "banana groups activities <group-id> [options]",
     );
     expect(calls).toHaveLength(0);
   });

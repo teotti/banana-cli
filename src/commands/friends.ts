@@ -19,14 +19,16 @@ import {
 } from "../shared";
 import { CliFailure, type ParsedCommand, type Presenter } from "../types";
 
-const HELP = `Usage: banana friends <command>
+const HELP = `USAGE
+  banana friends <command>
 
-Commands:
+COMMANDS
   list [--limit N] [--cursor CURSOR] [--sort balance|lastActivity]
        [--filter all|guests]`;
-const LIST_HELP = `Usage: banana friends list [options]
+const LIST_HELP = `USAGE
+  banana friends list [options]
 
-Options:
+OPTIONS
   --limit N                     (default: ${DEFAULT_LIST_LIMIT})
   --cursor CURSOR
   --sort balance|lastActivity
