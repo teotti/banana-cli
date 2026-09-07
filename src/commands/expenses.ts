@@ -23,27 +23,30 @@ import {
 } from "../shared";
 import { CliFailure, type ParsedCommand, type Presenter } from "../types";
 
-const HELP = `Usage: banana expenses list [--sort date|amount] [--direction asc|desc]
-                            [--limit N] [--cursor CURSOR]
-                            [--recurring | --no-recurring]
-   or: banana expenses add JSON
-   or: banana expenses add --title TEXT --amount AMOUNT
-                           --currency-id ID --paid-by-id ID
-                           --date YYYY-MM-DD|DD-MM-YYYY
-                           [--group-id ID] [--description TEXT]
-                           [--split-type equal|custom|percentage|shares]
-                           [--split USER_ID=AMOUNT]...
-   or: banana expenses get <expense-id>
-   or: banana expenses edit <expense-id> JSON
-   or: banana expenses edit <expense-id> [--title TEXT] [--amount AMOUNT]
-                           [--currency-id ID] [--paid-by-id ID] [--date DATE]
-                           [--description TEXT] [--group-id ID | --no-group]
-                           [--split-type equal|custom|percentage|shares]
-                           [--split USER_ID=AMOUNT]...`;
-const GET_HELP = "Usage: banana expenses get <expense-id>";
-const LIST_HELP = `Usage: banana expenses list [options]
+const HELP = `USAGE
+  banana expenses list [--sort date|amount] [--direction asc|desc]
+                       [--limit N] [--cursor CURSOR]
+                       [--recurring | --no-recurring]
+  banana expenses add JSON
+  banana expenses add --title TEXT --amount AMOUNT
+                      --currency-id ID --paid-by-id ID
+                      --date YYYY-MM-DD|DD-MM-YYYY
+                      [--group-id ID] [--description TEXT]
+                      [--split-type equal|custom|percentage|shares]
+                      [--split USER_ID=AMOUNT]...
+  banana expenses get <expense-id>
+  banana expenses edit <expense-id> JSON
+  banana expenses edit <expense-id> [--title TEXT] [--amount AMOUNT]
+                      [--currency-id ID] [--paid-by-id ID] [--date DATE]
+                      [--description TEXT] [--group-id ID | --no-group]
+                      [--split-type equal|custom|percentage|shares]
+                      [--split USER_ID=AMOUNT]...`;
+const GET_HELP = `USAGE
+  banana expenses get <expense-id>`;
+const LIST_HELP = `USAGE
+  banana expenses list [options]
 
-Options:
+OPTIONS
   --sort date|amount
   --direction asc|desc
   --limit N                     (default: ${DEFAULT_LIST_LIMIT}; API default in browser)
@@ -54,12 +57,13 @@ Options:
 Omit both recurring flags to include all expenses.
 In the browser, reaching the last item loads the next page automatically.
 Reuse the same options when requesting the next cursor.`;
-const EDIT_HELP = `Usage: banana expenses edit <expense-id> JSON
-   or: banana expenses edit <expense-id> [--title TEXT] [--amount AMOUNT]
-                           [--currency-id ID] [--paid-by-id ID] [--date DATE]
-                           [--description TEXT] [--group-id ID | --no-group]
-                           [--split-type equal|custom|percentage|shares]
-                           [--split USER_ID=AMOUNT]...
+const EDIT_HELP = `USAGE
+  banana expenses edit <expense-id> JSON
+  banana expenses edit <expense-id> [--title TEXT] [--amount AMOUNT]
+                      [--currency-id ID] [--paid-by-id ID] [--date DATE]
+                      [--description TEXT] [--group-id ID | --no-group]
+                      [--split-type equal|custom|percentage|shares]
+                      [--split USER_ID=AMOUNT]...
 
 Only the fields you pass change; everything else keeps its current value.`;
 

@@ -8,7 +8,8 @@ import {
 } from "../shared";
 import type { ParsedCommand, Presenter } from "../types";
 
-const HELP = "Usage: banana me";
+const HELP = `USAGE
+  banana me`;
 
 export function parseMe(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: HELP };

@@ -23,9 +23,10 @@ import {
 } from "../shared";
 import { CliFailure, type ParsedCommand, type Presenter } from "../types";
 
-const HELP = `Usage: banana groups <command>
+const HELP = `USAGE
+  banana groups <command>
 
-Commands:
+COMMANDS
   list [--limit N] [--cursor CURSOR] [--archived] [--sort balance|lastActivity]
   create JSON
   create --name TEXT --currency-id ID [--description TEXT]
@@ -36,25 +37,30 @@ Commands:
   activities <group-id> [--search QUERY] [--limit N] [--page N]
              [--type all|expenses|payments|recurring_expenses]
              [--sort date|amount] [--direction asc|desc]`;
-const LIST_HELP = `Usage: banana groups list [options]
+const LIST_HELP = `USAGE
+  banana groups list [options]
 
-Options:
+OPTIONS
   --limit N                     (default: ${DEFAULT_LIST_LIMIT})
   --cursor CURSOR
   --archived
   --sort balance|lastActivity`;
-const GET_HELP = "Usage: banana groups get <group-id>";
-const MEMBERS_HELP = "Usage: banana groups members <group-id>";
-const CREATE_HELP = `Usage: banana groups create JSON
-   or: banana groups create --name TEXT --currency-id ID [options]
+const GET_HELP = `USAGE
+  banana groups get <group-id>`;
+const MEMBERS_HELP = `USAGE
+  banana groups members <group-id>`;
+const CREATE_HELP = `USAGE
+  banana groups create JSON
+  banana groups create --name TEXT --currency-id ID [options]
 
-Options:
+OPTIONS
   --description TEXT
   --type vacation|roommates|couple|travel|party|other
   --member USER_ID              Repeat to add multiple members`;
-const ACTIVITIES_HELP = `Usage: banana groups activities <group-id> [options]
+const ACTIVITIES_HELP = `USAGE
+  banana groups activities <group-id> [options]
 
-Options:
+OPTIONS
   --search QUERY
   --limit N
   --page N

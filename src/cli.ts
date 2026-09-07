@@ -18,6 +18,7 @@ import { friendPresenters, parseFriends } from "./commands/friends";
 import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
+import { colorizeHelp } from "./help";
 import { DEFAULT_API_URL, request } from "./request";
 import { asArray, asRecord } from "./shared";
 import {
@@ -30,23 +31,17 @@ import {
   type RequestCommand,
 } from "./types";
 
-const ROOT_HELP = `Usage: banana [--json | --raw] <command>
+const ROOT_HELP = `Split expenses, settle balances, and manage groups on BananaSplit from your terminal.
 
-Commands:
-  login                      Sign in with a browser and store credentials securely
-  logout                     Revoke and delete stored credentials
-  me                         Show the authenticated user
+USAGE
+  banana [--json | --raw] <command>
+
+BALANCES
   balance                    Show the aggregate balance
   balance users              Show balances by user
   balances                   Show balances by user
-  currencies [list]          List currencies
-  friends [list]             List friends
-  groups [list]              List groups
-  groups create              Create a group
-  groups get <group-id>      Show a group
-  groups members <group-id>  List group members
-  groups activities <group-id>
-                             List group activities
+
+EXPENSES & PAYMENTS
   expenses list              List the authenticated user's expenses
   expenses add               Add an expense
   expenses get <expense-id>  Show an expense
@@ -54,17 +49,40 @@ Commands:
   payments add               Add a payment
   payments get <payment-id>  Show a payment
 
-Output:
+GROUPS & FRIENDS
+  groups [list]              List groups
+  groups create              Create a group
+  groups get <group-id>      Show a group
+  groups members <group-id>  List group members
+  groups activities <group-id>
+                             List group activities
+  friends [list]             List friends
+  currencies [list]          List currencies
+
+ACCOUNT
+  me                         Show the authenticated user
+  login                      Sign in with a browser and store credentials securely
+  logout                     Revoke and delete stored credentials
+
+OUTPUT
   --json                     Print curated operational JSON
   --raw                      Print the complete API response as JSON
 
-Environment:
+ENVIRONMENT
   BANANASPLIT_API_URL        API base URL (default: ${DEFAULT_API_URL})
-  BANANASPLIT_AUTH_URL       Auth base URL (default: API origin + /api)`;
+  BANANASPLIT_AUTH_URL       Auth base URL (default: API origin + /api)
+
+Run \`banana <command> --help\` for the options of a command.`;
 
 const AUTH_HELP: Record<"login" | "logout", string> = {
-  login: "Usage: banana login\n\nSign in through the browser and store renewable credentials securely.",
-  logout: "Usage: banana logout\n\nRevoke and delete the stored credentials.",
+  login: `USAGE
+  banana login
+
+Sign in through the browser and store renewable credentials securely.`,
+  logout: `USAGE
+  banana logout
+
+Revoke and delete the stored credentials.`,
 };
 
 const COMMANDS: Record<string, CommandParser> = {
@@ -144,7 +162,7 @@ function serializeFailure(error: unknown, mode: OutputMode) {
       failure.type === "cancelled" ? 130 : failure.type === "usage" ? 2 : 1,
     output:
       mode === "human"
-        ? `Error: ${failure.message}`
+        ? colorizeHelp(`Error: ${failure.message}`)
         : mode === "raw" &&
             failure.type === "api" &&
             failure.body !== undefined &&
@@ -170,7 +188,7 @@ export async function runCli(
     const output = parseOutputFlags(args);
     const command = parseCommand(output.args);
     if (command.kind === "help") {
-      stdout(command.text);
+      stdout(colorizeHelp(command.text));
       return 0;
     }
     if (command.kind === "auth" && output.mode !== "human") {
