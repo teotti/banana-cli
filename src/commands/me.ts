@@ -4,7 +4,6 @@ import {
   parseOptions,
   requirePositionals,
   wantsHelp,
-  yesNo,
 } from "../shared";
 import type { ParsedCommand, Presenter } from "../types";
 
@@ -37,7 +36,6 @@ export const mePresenters = {
         `Name: ${display(user.name)}`,
         `Email: ${display(user.email)}`,
         `Username: ${display(user.username)}`,
-        `Guest: ${yesNo(user.isGuest)}`,
         `Currency ID: ${display(user.currencyId)}`,
         `ID: ${display(user.id)}`,
       ].join("\n");
