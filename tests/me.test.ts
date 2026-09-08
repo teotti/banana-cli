@@ -25,7 +25,6 @@ describe("BananaSplit CLI", () => {
         "Name: Leonardo",
         "Email: leo@example.test",
         "Username: —",
-        "Guest: no",
         "Currency ID: currency-eur",
         "ID: user-1",
       ].join("\n"),
