@@ -8,6 +8,7 @@ import {
   type AccessCredential,
   type AuthRuntime,
 } from "./auth";
+import { userAgent } from "./shared";
 import {
   CliFailure,
   type Environment,
@@ -81,7 +82,7 @@ async function send(
         ...(command.body === undefined
           ? {}
           : { "content-type": "application/json" }),
-        "user-agent": "bananasplit-cli",
+        "user-agent": userAgent(env),
       },
       ...(command.method === undefined ? {} : { method: command.method }),
       ...(command.body === undefined

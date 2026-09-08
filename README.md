@@ -170,6 +170,31 @@ more as you reach the end. Search filters all loaded expenses; press ↓ at the
 end (or when no items match) to load another page. If loading fails, press ↓
 to retry. Use `--limit N` to choose a page size.
 
+## What we collect
+
+The CLI sends no analytics and opens no connection of its own. It talks only to
+the BananaSplit API, and nothing about your machine leaves it except the
+`User-Agent` header that every HTTP request carries:
+
+```
+bananasplit-cli/0.2.1 (darwin arm64; bun 1.3.9; tty)
+```
+
+That is the CLI version, your operating system and CPU architecture, the Bun
+version, and whether the command ran in an interactive terminal (`tty`), in
+continuous integration (`ci`, detected from `CI` and the usual provider
+variables), or with output redirected (`pipe`).
+
+We log those requests server-side and use them to see which commands people
+actually use and which ones fail, through PostHog as our analytics processor.
+The requests are tied to your account, because they are already authenticated
+with your credentials. Your expenses, group names, amounts, and command
+arguments are never used for analytics.
+
+There is no separate opt-out: the CLI is not doing the collecting, so switching
+it off would mean not calling the API at all. See the BananaSplit privacy
+policy for how request data is retained.
+
 ## Development
 
 Install Bun, clone this repository, then install dependencies and expose

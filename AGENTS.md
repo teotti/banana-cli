@@ -75,6 +75,29 @@ nullables (renders `—`), `humanAmount()`, `namedEntity()` for `Name · id`,
 Interactive TTYs get a searchable browser for list presentations; non-TTY falls
 back to plain cards. Keep both paths working.
 
+## Usage tracking
+
+There is **no client-side telemetry** and no analytics SDK. Usage is measured on
+the API side, from the request the CLI already makes. Do not add an event
+capture, a PostHog key, or a phone-home to this repo.
+
+What makes that work is the user-agent, built by `userAgent()` in
+`src/shared.ts` and sent on every API request (`src/request.ts`) and every OAuth
+request (`src/auth.ts`):
+
+```
+bananasplit-cli/0.2.1 (darwin arm64; bun 1.3.9; tty)
+```
+
+The last field is the run context: `ci` when `isCI()` matches (the generic `CI`
+variable or a known provider's), `tty` for an interactive terminal, `pipe`
+otherwise. **The API depends on this format** — changing it silently breaks the
+backend's parsing, so treat it as a contract and update both sides together.
+
+The blind spot is deliberate and worth remembering: anything that fails before a
+request is invisible to the backend. Usage errors (exit 2), `--help`, and
+offline or expired-login failures never reach the API at all.
+
 ## Testing
 
 Ask elevated permission to run tests outside the sandbox (for example, `bun test`).
