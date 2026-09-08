@@ -1,7 +1,41 @@
 import { parseArgs } from "node:util";
-import { CliFailure, type OptionConfig } from "./types";
+import { version as CLI_VERSION } from "../package.json";
+import { CliFailure, type Environment, type OptionConfig } from "./types";
 
 export const DEFAULT_LIST_LIMIT = 5;
+
+// The generic `CI` variable is the one most providers set, but not all of them,
+// so the well-known names are checked too.
+const CI_VARIABLES = [
+  "BUILDKITE",
+  "CIRCLECI",
+  "GITHUB_ACTIONS",
+  "GITLAB_CI",
+  "JENKINS_URL",
+  "TEAMCITY_VERSION",
+  "TF_BUILD",
+];
+
+function isSet(value: string | undefined) {
+  if (value === undefined) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized !== "" && normalized !== "0" && normalized !== "false";
+}
+
+export function isCI(env: Environment) {
+  return isSet(env.CI) || CI_VARIABLES.some((name) => isSet(env[name]));
+}
+
+// Every request already carries a user-agent, so this is where the API learns
+// what kind of run it is talking to without the CLI reporting anything itself.
+export function userAgent(env: Environment) {
+  const context = isCI(env)
+    ? "ci"
+    : process.stdout.isTTY === true
+      ? "tty"
+      : "pipe";
+  return `bananasplit-cli/${CLI_VERSION} (${process.platform} ${process.arch}; bun ${Bun.version}; ${context})`;
+}
 
 export function parseOptions(args: string[], options: OptionConfig = {}) {
   try {

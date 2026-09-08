@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { userAgent } from "./shared";
 import {
   CliFailure,
   type CliRuntime,
@@ -25,6 +26,7 @@ const LOCK_POLL_MS = 100;
 const NEVER_ABORTED = new AbortController().signal;
 
 export type AuthRuntime = {
+  env: Environment;
   fetch: Fetch;
   now: () => number;
   openUrl: (url: string) => Promise<void>;
@@ -154,6 +156,7 @@ async function defaultOpenUrl(url: string) {
 
 export function createAuthRuntime(runtime: CliRuntime): AuthRuntime {
   return {
+    env: runtime.env ?? process.env,
     fetch: runtime.fetch ?? globalThis.fetch,
     now: runtime.now ?? Date.now,
     openUrl: runtime.openUrl ?? defaultOpenUrl,
@@ -349,7 +352,7 @@ async function postForm(
       headers: {
         accept: "application/json",
         "content-type": "application/x-www-form-urlencoded",
-        "user-agent": "bananasplit-cli",
+        "user-agent": userAgent(runtime.env),
       },
       method: "POST",
       redirect: "error",
