@@ -192,8 +192,8 @@ with your credentials. Your expenses, group names, amounts, and command
 arguments are never used for analytics.
 
 There is no separate opt-out: the CLI is not doing the collecting, so switching
-it off would mean not calling the API at all. See the BananaSplit privacy
-policy for how request data is retained.
+it off would mean not calling the API at all. See the [BananaSplit privacy
+policy](https://bananasplit.net/en/privacy/) for how request data is retained.
 
 ## Development
 
