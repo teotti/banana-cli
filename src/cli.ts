@@ -30,6 +30,7 @@ import {
   type Presenter,
   type RequestCommand,
 } from "./types";
+import { updateCli } from "./update";
 
 const ROOT_HELP = `Split expenses, settle balances, and manage groups on BananaSplit from your terminal.
 
@@ -59,10 +60,11 @@ GROUPS & FRIENDS
   friends [list]             List friends
   currencies [list]          List currencies
 
-ACCOUNT
+ACCOUNT & CLI
   me                         Show the authenticated user
   login                      Sign in with a browser and store credentials securely
   logout                     Revoke and delete stored credentials
+  update                     Update the CLI to the latest stable release
 
 OUTPUT
   --json                     Print curated operational JSON
@@ -84,6 +86,11 @@ Sign in through the browser and store renewable credentials securely.`,
 
 Revoke and delete the stored credentials.`,
 };
+
+const UPDATE_HELP = `USAGE
+  banana update
+
+Update the CLI to the latest stable release.`;
 
 const COMMANDS: Record<string, CommandParser> = {
   balance: parseBalance,
@@ -129,6 +136,13 @@ function parseCommand(args: string[]) {
   }
   if (args[0] === "balances") args = ["balance", "users", ...args.slice(1)];
   const [name, ...rest] = args;
+  if (name === "update") {
+    if (rest.length === 0) return { kind: "update" as const };
+    if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
+      return { kind: "help" as const, text: UPDATE_HELP };
+    }
+    throw new CliFailure("usage", UPDATE_HELP);
+  }
   if (name === "login" || name === "logout") {
     if (rest.length === 0) return { action: name, kind: "auth" as const };
     if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
@@ -191,14 +205,23 @@ export async function runCli(
       stdout(colorizeHelp(command.text));
       return 0;
     }
-    if (command.kind === "auth" && output.mode !== "human") {
+    if (
+      (command.kind === "auth" || command.kind === "update") &&
+      output.mode !== "human"
+    ) {
       throw new CliFailure(
         "usage",
-        `--${output.mode} is not supported for banana ${command.action}`,
+        `--${output.mode} is not supported for banana ${
+          command.kind === "auth" ? command.action : "update"
+        }`,
       );
     }
 
     const env = runtime.env ?? process.env;
+    if (command.kind === "update") {
+      stdout(await (runtime.update ?? updateCli)());
+      return 0;
+    }
     const requestRuntime = createAuthRuntime(runtime);
     if (command.kind === "auth") {
       if (command.action === "login") {

@@ -59,6 +59,7 @@ export interface CliRuntime {
   stderr?: OutputWriter;
   stdout?: OutputWriter;
   timeoutMs?: number;
+  update?: () => Promise<string>;
 }
 
 export type RequestCommand = {

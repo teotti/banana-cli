@@ -57,14 +57,16 @@ try {
   New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
   Copy-Item (Join-Path $TempDir "banana.exe") (Join-Path $InstallDir "banana.exe") -Force
 
-  $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
-  $PathEntries = $UserPath -split ";" | Where-Object { $_ }
-  if ($InstallDir -notin $PathEntries) {
-    $NewUserPath = (($PathEntries + $InstallDir) -join ";")
-    [Environment]::SetEnvironmentVariable("Path", $NewUserPath, "User")
-  }
-  if ($InstallDir -notin ($env:Path -split ";")) {
-    $env:Path = "$env:Path;$InstallDir"
+  if (-not $env:BANANA_SKIP_PATH_UPDATE) {
+    $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    $PathEntries = $UserPath -split ";" | Where-Object { $_ }
+    if ($InstallDir -notin $PathEntries) {
+      $NewUserPath = (($PathEntries + $InstallDir) -join ";")
+      [Environment]::SetEnvironmentVariable("Path", $NewUserPath, "User")
+    }
+    if ($InstallDir -notin ($env:Path -split ";")) {
+      $env:Path = "$env:Path;$InstallDir"
+    }
   }
 
   Write-Host "Installed banana to $(Join-Path $InstallDir 'banana.exe')"

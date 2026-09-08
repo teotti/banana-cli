@@ -71,6 +71,7 @@ Run `banana` from any directory:
 
 ```sh
 banana login
+banana update
 banana me
 banana balance
 banana balances
@@ -84,6 +85,10 @@ banana expenses get EXPENSE_ID
 banana payments get PAYMENT_ID
 banana logout
 ```
+
+Run `banana update` to install the latest stable release. Standalone installs
+update in place; Bun package installs update through Bun's global package
+manager.
 
 List expenses across the authenticated account, sorted by date or amount:
 
