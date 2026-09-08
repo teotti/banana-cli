@@ -18,7 +18,7 @@ import { friendPresenters, parseFriends } from "./commands/friends";
 import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
-import { colorizeHelp } from "./help";
+import { colorizeHelp, helpHeader } from "./help";
 import { DEFAULT_API_URL, request } from "./request";
 import { asArray, asRecord } from "./shared";
 import {
@@ -32,9 +32,7 @@ import {
 } from "./types";
 import { updateCli } from "./update";
 
-const ROOT_HELP = `Split expenses, settle balances, and manage groups on BananaSplit from your terminal.
-
-USAGE
+const ROOT_HELP = `USAGE
   banana [--json | --raw] <command>
 
 BALANCES
@@ -132,7 +130,9 @@ function parseCommand(args: string[]) {
     args[0] === "-h" ||
     args[0] === "help"
   ) {
-    return { kind: "help" as const, text: ROOT_HELP };
+    return { kind: "help" as const, text: `${helpHeader()}
+
+${ROOT_HELP}` };
   }
   if (args[0] === "balances") args = ["balance", "users", ...args.slice(1)];
   const [name, ...rest] = args;
