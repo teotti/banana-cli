@@ -12,6 +12,51 @@ describe("BananaSplit CLI", () => {
     expect(stderr).toEqual([]);
   });
 
+  it("updates without authentication or an API request", async () => {
+    const { calls, runtime, stderr, stdout } = harness();
+    runtime.env = {};
+    runtime.update = async () => "Banana is up to date.";
+
+    expect(await runCli(["update"], runtime)).toBe(0);
+    expect(calls).toEqual([]);
+    expect(stdout).toEqual(["Banana is up to date."]);
+    expect(stderr).toEqual([]);
+  });
+
+  it("prints update help and rejects update arguments and output flags", async () => {
+    const { calls, runtime, stderr, stdout } = harness();
+    let updates = 0;
+    runtime.update = async () => {
+      updates += 1;
+      return "updated";
+    };
+
+    expect(await runCli(["update", "--help"], runtime)).toBe(0);
+    expect(stdout[0]).toBe(
+      "USAGE\n  banana update\n\nUpdate the CLI to the latest stable release.",
+    );
+    expect(await runCli(["update", "later"], runtime)).toBe(2);
+    expect(await runCli(["update", "--json"], runtime)).toBe(2);
+    expect(await runCli(["--raw", "update"], runtime)).toBe(2);
+    expect(stderr).toEqual([
+      "Error: USAGE\n  banana update\n\nUpdate the CLI to the latest stable release.",
+      "{\"error\":{\"type\":\"usage\",\"message\":\"--json is not supported for banana update\"}}",
+      "{\"error\":{\"type\":\"usage\",\"message\":\"--raw is not supported for banana update\"}}",
+    ]);
+    expect(updates).toBe(0);
+    expect(calls).toEqual([]);
+  });
+
+  it("reports updater launch failures", async () => {
+    const { runtime, stderr } = harness();
+    runtime.update = async () => {
+      throw new Error("Could not start updater");
+    };
+
+    expect(await runCli(["update"], runtime)).toBe(1);
+    expect(stderr).toEqual(["Error: Could not start updater"]);
+  });
+
   it("requires a stored login before making a request", async () => {
     const { calls, runtime, stderr } = harness();
     runtime.env = {};
