@@ -8,12 +8,22 @@ import {
   formatCard,
   humanAmount,
   numeric,
+  usageFailure,
   wantsHelp,
 } from "../shared";
-import { CliFailure, type ParsedCommand, type Presenter } from "../types";
+import { helpText } from "../help";
+import { type ParsedCommand, type Presenter } from "../types";
 
-const HELP = `USAGE
-  banana balance [users]`;
+const HELP = helpText({
+  summary: "Show what you owe and what you are owed.",
+  usage: ["banana balance [users]"],
+  commands: [
+    ["balance", "The totals across everyone you split with"],
+    ["balance users", "The same totals broken down per person"],
+  ],
+  notes: ["`banana balances` is a shortcut for `banana balance users`."],
+  examples: ["banana balance", "banana balances", "banana balance users --json"],
+});
 
 export function parseBalance(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: HELP };
@@ -27,7 +37,7 @@ export function parseBalance(args: string[]): ParsedCommand {
       presentation: "balance-users",
     };
   }
-  throw new CliFailure("usage", HELP);
+  throw usageFailure(`Unexpected argument: ${args[0]}`, HELP);
 }
 
 function cleanBalanceUsers(body: unknown) {

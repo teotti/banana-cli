@@ -18,63 +18,120 @@ import {
   repeatedStrings,
   requiredString,
   requirePositionals,
+  usageFailure,
   wantsHelp,
   yesNo,
 } from "../shared";
+import { helpText } from "../help";
 import { CliFailure, type ParsedCommand, type Presenter } from "../types";
 
-const HELP = `USAGE
-  banana expenses list [--sort date|amount] [--direction asc|desc]
-                       [--limit N] [--cursor CURSOR]
-                       [--recurring | --no-recurring]
-  banana expenses add JSON
-  banana expenses add --title TEXT --amount AMOUNT
-                      --currency-id ID --paid-by-id ID
-                      --date YYYY-MM-DD|DD-MM-YYYY
-                      [--group-id ID] [--description TEXT]
-                      [--split-type equal|custom|percentage|shares]
-                      [--split USER_ID=AMOUNT]...
-  banana expenses get <expense-id>
-  banana expenses edit <expense-id> JSON
-  banana expenses edit <expense-id> [--title TEXT] [--amount AMOUNT]
-                      [--currency-id ID] [--paid-by-id ID] [--date DATE]
-                      [--description TEXT] [--group-id ID | --no-group]
-                      [--split-type equal|custom|percentage|shares]
-                      [--split USER_ID=AMOUNT]...`;
-const GET_HELP = `USAGE
-  banana expenses get <expense-id>`;
-const LIST_HELP = `USAGE
-  banana expenses list [options]
+const SPLIT_TYPES = "equal|custom|percentage|shares";
+const ADD_HELP = helpText({
+  summary: "Add an expense and split it between people.",
+  usage: [
+    "banana expenses add --title TEXT --amount AMOUNT --currency-id ID",
+    "                    --paid-by-id ID --date DATE [flags]",
+    "banana expenses add JSON",
+  ],
+  options: [
+    ["--title TEXT", "What the expense was for (required)"],
+    ["--amount AMOUNT", "Total amount (required)"],
+    ["--currency-id ID", "Currency of the amount (required)"],
+    ["--paid-by-id ID", "User who paid (required)"],
+    ["--date DATE", "YYYY-MM-DD or DD-MM-YYYY (required)"],
+    ["--group-id ID", "Charge the expense to a group"],
+    ["--description TEXT", "Longer note"],
+    ["--split-type TYPE", SPLIT_TYPES],
+    ["--split USER_ID=AMOUNT", "One person's share; repeat for each split"],
+  ],
+  notes: [
+    "The splits must add up to --amount. Without --group-id at least one\n--split is required.",
+  ],
+  examples: [
+    'banana expenses add --title Dinner --amount 42 --currency-id <currency-id> \\',
+    "  --paid-by-id <user-id> --date 2026-09-09 --group-id <group-id>",
+    'banana expenses add --title Taxi --amount 20 --currency-id <currency-id> \\',
+    "  --paid-by-id <user-id> --date 09-09-2026 \\",
+    "  --split <user-id>=10 --split <user-id>=10",
+  ],
+});
+const HELP = helpText({
+  summary: "List, add, inspect and edit your expenses.",
+  usage: ["banana expenses <command> [flags]"],
+  commands: [
+    ["list", "List your expenses"],
+    ["add", "Add an expense"],
+    ["get <expense-id>", "Show one expense and its splits"],
+    ["edit <expense-id>", "Change fields of an expense"],
+  ],
+  examples: [
+    "banana expenses list --limit 10",
+    "banana expenses get <expense-id>",
+    "banana expenses edit <expense-id> --amount 45",
+  ],
+  learnMore: ["banana expenses <command> --help"],
+});
+const GET_HELP = helpText({
+  summary: "Show one expense with who paid and how it was split.",
+  usage: ["banana expenses get <expense-id>"],
+  examples: [
+    "banana expenses get <expense-id>",
+    "banana expenses get <expense-id> --json",
+  ],
+});
+const LIST_HELP = helpText({
+  summary: "List the expenses you are part of, newest first.",
+  usage: ["banana expenses list [flags]"],
+  options: [
+    ["--sort date|amount", "Order the list"],
+    ["--direction asc|desc", "Sort direction"],
+    ["--limit N", `Expenses to fetch (default: ${DEFAULT_LIST_LIMIT})`],
+    ["--cursor CURSOR", "Continue from a cursor returned by a previous page"],
+    ["--recurring", "Only recurring expenses"],
+    ["--no-recurring", "Only one-off expenses"],
+  ],
+  notes: [
+    "Omit both recurring flags to include all expenses.\nIn the browser, reaching the last item loads the next page automatically.\nReuse the same options when requesting the next cursor.",
+  ],
+  examples: [
+    "banana expenses list",
+    "banana expenses list --limit 20 --sort amount --direction desc",
+    "banana expenses list --no-recurring --json",
+  ],
+});
+const EDIT_HELP = helpText({
+  summary: "Change one or more fields of an expense.",
+  usage: [
+    "banana expenses edit <expense-id> [flags]",
+    "banana expenses edit <expense-id> JSON",
+  ],
+  options: [
+    ["--title TEXT", "What the expense was for"],
+    ["--amount AMOUNT", "Total amount"],
+    ["--currency-id ID", "Currency of the amount"],
+    ["--paid-by-id ID", "User who paid"],
+    ["--date DATE", "YYYY-MM-DD or DD-MM-YYYY"],
+    ["--description TEXT", "Longer note"],
+    ["--group-id ID", "Move the expense to a group"],
+    ["--no-group", "Detach the expense from its group"],
+    ["--split-type TYPE", SPLIT_TYPES],
+    ["--split USER_ID=AMOUNT", "One person's share; repeat for each split"],
+  ],
+  notes: [
+    "Only the fields you pass change; everything else keeps its current value.\nChanging --amount means passing splits that add up to the new total.",
+  ],
+  examples: [
+    "banana expenses edit <expense-id> --title Groceries",
+    "banana expenses edit <expense-id> --amount 45 --split <user-id>=45",
+    "banana expenses edit <expense-id> --no-group",
+  ],
+});
 
-OPTIONS
-  --sort date|amount
-  --direction asc|desc
-  --limit N                     (default: ${DEFAULT_LIST_LIMIT}; API default in browser)
-  --cursor CURSOR
-  --recurring                   Only recurring expenses
-  --no-recurring                Only non-recurring expenses
-
-Omit both recurring flags to include all expenses.
-In the browser, reaching the last item loads the next page automatically.
-Reuse the same options when requesting the next cursor.`;
-const EDIT_HELP = `USAGE
-  banana expenses edit <expense-id> JSON
-  banana expenses edit <expense-id> [--title TEXT] [--amount AMOUNT]
-                      [--currency-id ID] [--paid-by-id ID] [--date DATE]
-                      [--description TEXT] [--group-id ID | --no-group]
-                      [--split-type equal|custom|percentage|shares]
-                      [--split USER_ID=AMOUNT]...
-
-Only the fields you pass change; everything else keeps its current value.`;
-
-function parseSplits(value: unknown) {
+function parseSplits(value: unknown, usage: string) {
   return repeatedStrings(value).map((split) => {
     const separator = split.indexOf("=");
     if (separator < 1 || separator === split.length - 1) {
-      throw new CliFailure(
-        "usage",
-        `--split must use USER_ID=AMOUNT\n${HELP}`,
-      );
+      throw usageFailure("--split must use USER_ID=AMOUNT", usage);
     }
     return {
       userId: split.slice(0, separator),
@@ -91,7 +148,7 @@ export function parseExpenses(args: string[]): ParsedCommand {
   if (command === "list") return parseExpensesList(rest);
   if (command === "get") {
     if (wantsHelp(rest)) return { kind: "help", text: GET_HELP };
-    const { positionals } = parseOptions(rest);
+    const { positionals } = parseOptions(rest, {}, GET_HELP);
     requirePositionals(positionals, 1, GET_HELP);
     return {
       kind: "request",
@@ -100,21 +157,27 @@ export function parseExpenses(args: string[]): ParsedCommand {
     };
   }
   if (command === "edit") return parseExpensesEdit(rest);
-  if (command !== "add") throw new CliFailure("usage", HELP);
-  if (wantsHelp(rest)) return { kind: "help", text: HELP };
+  if (command !== "add") {
+    throw usageFailure(`Unknown command: expenses ${command}`, HELP);
+  }
+  if (wantsHelp(rest)) return { kind: "help", text: ADD_HELP };
 
-  const { positionals, values } = parseOptions(rest, {
-    amount: { type: "string" },
-    "currency-id": { type: "string" },
-    date: { type: "string" },
-    description: { type: "string" },
-    "group-id": { type: "string" },
-    "paid-by-id": { type: "string" },
-    split: { type: "string", multiple: true },
-    "split-type": { type: "string" },
-    title: { type: "string" },
-  });
-  const jsonBody = parseJsonBody(positionals, values, HELP);
+  const { positionals, values } = parseOptions(
+    rest,
+    {
+      amount: { type: "string" },
+      "currency-id": { type: "string" },
+      date: { type: "string" },
+      description: { type: "string" },
+      "group-id": { type: "string" },
+      "paid-by-id": { type: "string" },
+      split: { type: "string", multiple: true },
+      "split-type": { type: "string" },
+      title: { type: "string" },
+    },
+    ADD_HELP,
+  );
+  const jsonBody = parseJsonBody(positionals, values, ADD_HELP);
   if (jsonBody !== undefined) {
     return {
       kind: "request",
@@ -124,11 +187,11 @@ export function parseExpenses(args: string[]): ParsedCommand {
       body: jsonBody,
     };
   }
-  requirePositionals(positionals, 0, HELP);
+  requirePositionals(positionals, 0, ADD_HELP);
 
   const groupId = values["group-id"] as string | undefined;
   const description = values.description as string | undefined;
-  const splits = parseSplits(values.split);
+  const splits = parseSplits(values.split, ADD_HELP);
   const splitType = enumValue(values["split-type"], "--split-type", [
     "equal",
     "custom",
@@ -136,15 +199,15 @@ export function parseExpenses(args: string[]): ParsedCommand {
     "shares",
   ] as const);
   if (splits.length === 0 && groupId === undefined) {
-    throw new CliFailure(
-      "usage",
-      `At least one --split is required unless --group-id is provided\n${HELP}`,
+    throw usageFailure(
+      "At least one --split is required unless --group-id is provided",
+      ADD_HELP,
     );
   }
   if (splits.length === 0 && splitType !== undefined) {
-    throw new CliFailure(
-      "usage",
-      `At least one --split is required with --split-type\n${HELP}`,
+    throw usageFailure(
+      "At least one --split is required with --split-type",
+      ADD_HELP,
     );
   }
 
@@ -154,11 +217,15 @@ export function parseExpenses(args: string[]): ParsedCommand {
     path: "/expenses",
     presentation: "expense-created",
     body: {
-      title: requiredString(values.title, "--title", HELP),
-      amount: requiredString(values.amount, "--amount", HELP),
-      currencyId: requiredString(values["currency-id"], "--currency-id", HELP),
-      paidById: requiredString(values["paid-by-id"], "--paid-by-id", HELP),
-      date: isoDate(values.date, HELP),
+      title: requiredString(values.title, "--title", ADD_HELP),
+      amount: requiredString(values.amount, "--amount", ADD_HELP),
+      currencyId: requiredString(
+        values["currency-id"],
+        "--currency-id",
+        ADD_HELP,
+      ),
+      paidById: requiredString(values["paid-by-id"], "--paid-by-id", ADD_HELP),
+      date: isoDate(values.date, ADD_HELP),
       splits,
       ...(groupId === undefined ? {} : { groupId }),
       ...(description === undefined ? {} : { description }),
@@ -169,19 +236,23 @@ export function parseExpenses(args: string[]): ParsedCommand {
 
 function parseExpensesList(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: LIST_HELP };
-  const { positionals, values } = parseOptions(args, {
-    cursor: { type: "string" },
-    direction: { type: "string" },
-    limit: { type: "string" },
-    "no-recurring": { type: "boolean" },
-    recurring: { type: "boolean" },
-    sort: { type: "string" },
-  });
+  const { positionals, values } = parseOptions(
+    args,
+    {
+      cursor: { type: "string" },
+      direction: { type: "string" },
+      limit: { type: "string" },
+      "no-recurring": { type: "boolean" },
+      recurring: { type: "boolean" },
+      sort: { type: "string" },
+    },
+    LIST_HELP,
+  );
   requirePositionals(positionals, 0, LIST_HELP);
   if (values.recurring && values["no-recurring"]) {
-    throw new CliFailure(
-      "usage",
-      `--recurring and --no-recurring cannot be used together\n${LIST_HELP}`,
+    throw usageFailure(
+      "--recurring and --no-recurring cannot be used together",
+      LIST_HELP,
     );
   }
 
@@ -217,20 +288,24 @@ function parseExpensesList(args: string[]): ParsedCommand {
 
 function parseExpensesEdit(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: EDIT_HELP };
-  const { positionals, values } = parseOptions(args, {
-    amount: { type: "string" },
-    "currency-id": { type: "string" },
-    date: { type: "string" },
-    description: { type: "string" },
-    "group-id": { type: "string" },
-    "no-group": { type: "boolean" },
-    "paid-by-id": { type: "string" },
-    split: { type: "string", multiple: true },
-    "split-type": { type: "string" },
-    title: { type: "string" },
-  });
+  const { positionals, values } = parseOptions(
+    args,
+    {
+      amount: { type: "string" },
+      "currency-id": { type: "string" },
+      date: { type: "string" },
+      description: { type: "string" },
+      "group-id": { type: "string" },
+      "no-group": { type: "boolean" },
+      "paid-by-id": { type: "string" },
+      split: { type: "string", multiple: true },
+      "split-type": { type: "string" },
+      title: { type: "string" },
+    },
+    EDIT_HELP,
+  );
   if (positionals.length === 0) {
-    throw new CliFailure("usage", EDIT_HELP);
+    throw usageFailure("An expense id is required", EDIT_HELP);
   }
   const [id, ...rest] = positionals;
   const path = `/expenses/${encodeURIComponent(id)}`;
@@ -250,12 +325,12 @@ function parseExpensesEdit(args: string[]): ParsedCommand {
 
   const groupId = values["group-id"] as string | undefined;
   if (groupId !== undefined && values["no-group"] === true) {
-    throw new CliFailure(
-      "usage",
-      `--group-id and --no-group cannot be used together\n${EDIT_HELP}`,
+    throw usageFailure(
+      "--group-id and --no-group cannot be used together",
+      EDIT_HELP,
     );
   }
-  const splits = parseSplits(values.split);
+  const splits = parseSplits(values.split, EDIT_HELP);
   const splitType = enumValue(values["split-type"], "--split-type", [
     "equal",
     "custom",
@@ -283,10 +358,7 @@ function parseExpensesEdit(args: string[]): ParsedCommand {
     ...(splits.length === 0 ? {} : { splits }),
   };
   if (Object.keys(patch).length === 0) {
-    throw new CliFailure(
-      "usage",
-      `At least one field to change is required\n${EDIT_HELP}`,
-    );
+    throw usageFailure("At least one field to change is required", EDIT_HELP);
   }
 
   return {

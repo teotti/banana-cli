@@ -100,6 +100,9 @@ export type Presenter = {
 };
 
 export class CliFailure extends Error {
+  /** The help page to print under the message; usage errors carry one. */
+  help?: string;
+
   constructor(
     readonly type: ErrorType,
     message: string,

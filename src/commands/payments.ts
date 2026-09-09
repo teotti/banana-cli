@@ -11,20 +11,56 @@ import {
   parseOptions,
   requiredString,
   requirePositionals,
+  usageFailure,
   wantsHelp,
   yesNo,
 } from "../shared";
-import { CliFailure, type ParsedCommand, type Presenter } from "../types";
+import { helpText } from "../help";
+import { type ParsedCommand, type Presenter } from "../types";
 
-const HELP = `USAGE
-  banana payments add JSON
-  banana payments add --amount AMOUNT --currency-id ID
-                      --from-user-id ID --to-user-id ID
-                      --date YYYY-MM-DD|DD-MM-YYYY
-                      [--group-id ID] [--description TEXT]
-  banana payments get <payment-id>`;
-const GET_HELP = `USAGE
-  banana payments get <payment-id>`;
+const ADD_HELP = helpText({
+  summary: "Record a payment that settles part of a balance.",
+  usage: [
+    "banana payments add --amount AMOUNT --currency-id ID --from-user-id ID",
+    "                    --to-user-id ID --date DATE [flags]",
+    "banana payments add JSON",
+  ],
+  options: [
+    ["--amount AMOUNT", "Amount paid (required)"],
+    ["--currency-id ID", "Currency of the amount (required)"],
+    ["--from-user-id ID", "User who paid (required)"],
+    ["--to-user-id ID", "User who was paid (required)"],
+    ["--date DATE", "YYYY-MM-DD or DD-MM-YYYY (required)"],
+    ["--group-id ID", "Settle inside a group"],
+    ["--description TEXT", "Longer note"],
+  ],
+  examples: [
+    "banana payments add --amount 20 --currency-id <currency-id> \\",
+    "  --from-user-id <user-id> --to-user-id <user-id> --date 2026-09-09",
+  ],
+});
+const HELP = helpText({
+  summary: "Record and inspect payments between you and the people you split with.",
+  usage: ["banana payments <command> [flags]"],
+  commands: [
+    ["add", "Record a payment"],
+    ["get <payment-id>", "Show one payment"],
+  ],
+  examples: [
+    "banana payments get <payment-id>",
+    "banana payments add --amount 20 --currency-id <currency-id> \\",
+    "  --from-user-id <user-id> --to-user-id <user-id> --date 2026-09-09",
+  ],
+  learnMore: ["banana payments <command> --help"],
+});
+const GET_HELP = helpText({
+  summary: "Show one payment: who paid whom, how much, and when.",
+  usage: ["banana payments get <payment-id>"],
+  examples: [
+    "banana payments get <payment-id>",
+    "banana payments get <payment-id> --json",
+  ],
+});
 
 export function parsePayments(args: string[]): ParsedCommand {
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
@@ -33,7 +69,7 @@ export function parsePayments(args: string[]): ParsedCommand {
   const [command, ...rest] = args;
   if (command === "get") {
     if (wantsHelp(rest)) return { kind: "help", text: GET_HELP };
-    const { positionals } = parseOptions(rest);
+    const { positionals } = parseOptions(rest, {}, GET_HELP);
     requirePositionals(positionals, 1, GET_HELP);
     return {
       kind: "request",
@@ -41,19 +77,25 @@ export function parsePayments(args: string[]): ParsedCommand {
       presentation: "payment",
     };
   }
-  if (command !== "add") throw new CliFailure("usage", HELP);
-  if (wantsHelp(rest)) return { kind: "help", text: HELP };
+  if (command !== "add") {
+    throw usageFailure(`Unknown command: payments ${command}`, HELP);
+  }
+  if (wantsHelp(rest)) return { kind: "help", text: ADD_HELP };
 
-  const { positionals, values } = parseOptions(rest, {
-    amount: { type: "string" },
-    "currency-id": { type: "string" },
-    date: { type: "string" },
-    description: { type: "string" },
-    "from-user-id": { type: "string" },
-    "group-id": { type: "string" },
-    "to-user-id": { type: "string" },
-  });
-  const jsonBody = parseJsonBody(positionals, values, HELP);
+  const { positionals, values } = parseOptions(
+    rest,
+    {
+      amount: { type: "string" },
+      "currency-id": { type: "string" },
+      date: { type: "string" },
+      description: { type: "string" },
+      "from-user-id": { type: "string" },
+      "group-id": { type: "string" },
+      "to-user-id": { type: "string" },
+    },
+    ADD_HELP,
+  );
+  const jsonBody = parseJsonBody(positionals, values, ADD_HELP);
   if (jsonBody !== undefined) {
     return {
       kind: "request",
@@ -63,7 +105,7 @@ export function parsePayments(args: string[]): ParsedCommand {
       body: jsonBody,
     };
   }
-  requirePositionals(positionals, 0, HELP);
+  requirePositionals(positionals, 0, ADD_HELP);
 
   const groupId = values["group-id"] as string | undefined;
   const description = values.description as string | undefined;
@@ -73,11 +115,19 @@ export function parsePayments(args: string[]): ParsedCommand {
     path: "/payments",
     presentation: "payment-created",
     body: {
-      amount: requiredString(values.amount, "--amount", HELP),
-      currencyId: requiredString(values["currency-id"], "--currency-id", HELP),
-      fromUserId: requiredString(values["from-user-id"], "--from-user-id", HELP),
-      toUserId: requiredString(values["to-user-id"], "--to-user-id", HELP),
-      date: isoDate(values.date, HELP),
+      amount: requiredString(values.amount, "--amount", ADD_HELP),
+      currencyId: requiredString(
+        values["currency-id"],
+        "--currency-id",
+        ADD_HELP,
+      ),
+      fromUserId: requiredString(
+        values["from-user-id"],
+        "--from-user-id",
+        ADD_HELP,
+      ),
+      toUserId: requiredString(values["to-user-id"], "--to-user-id", ADD_HELP),
+      date: isoDate(values.date, ADD_HELP),
       ...(groupId === undefined ? {} : { groupId }),
       ...(description === undefined ? {} : { description }),
     },

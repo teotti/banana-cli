@@ -18,9 +18,9 @@ import { friendPresenters, parseFriends } from "./commands/friends";
 import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
-import { colorizeHelp, helpHeader } from "./help";
+import { colorizeHelp, errorText, helpHeader, helpText } from "./help";
 import { DEFAULT_API_URL, request } from "./request";
-import { asArray, asRecord } from "./shared";
+import { asArray, asRecord, usageFailure } from "./shared";
 import {
   CliFailure,
   type CliRuntime,
@@ -32,63 +32,91 @@ import {
 } from "./types";
 import { updateCli } from "./update";
 
-const ROOT_HELP = `USAGE
-  banana [--json | --raw] <command>
-
-BALANCES
-  balance                    Show the aggregate balance
-  balance users              Show balances by user
-  balances                   Show balances by user
-
-EXPENSES & PAYMENTS
-  expenses list              List the authenticated user's expenses
-  expenses add               Add an expense
-  expenses get <expense-id>  Show an expense
-  expenses edit <expense-id> Edit an expense
-  payments add               Add a payment
-  payments get <payment-id>  Show a payment
-
-GROUPS & FRIENDS
-  groups [list]              List groups
-  groups create              Create a group
-  groups get <group-id>      Show a group
-  groups members <group-id>  List group members
-  groups activities <group-id>
-                             List group activities
-  friends [list]             List friends
-  currencies [list]          List currencies
-
-ACCOUNT & CLI
-  me                         Show the authenticated user
-  login                      Sign in with a browser and store credentials securely
-  logout                     Revoke and delete stored credentials
-  update                     Update the CLI to the latest stable release
-
-OUTPUT
-  --json                     Print curated operational JSON
-  --raw                      Print the complete API response as JSON
-
-ENVIRONMENT
-  BANANASPLIT_API_URL        API base URL (default: ${DEFAULT_API_URL})
-  BANANASPLIT_AUTH_URL       Auth base URL (default: API origin + /api)
-
-Run \`banana <command> --help\` for the options of a command.`;
+const ROOT_HELP = helpText({
+  usage: ["banana <command> [--json | --raw]"],
+  sections: [
+    {
+      title: "BALANCES",
+      rows: [
+        ["balance", "Show the aggregate balance"],
+        ["balance users", "Show balances by user"],
+        ["balances", "Alias for `balance users`"],
+      ],
+    },
+    {
+      title: "EXPENSES & PAYMENTS",
+      rows: [
+        ["expenses list", "List the authenticated user's expenses"],
+        ["expenses add", "Add an expense"],
+        ["expenses get <expense-id>", "Show an expense"],
+        ["expenses edit <expense-id>", "Edit an expense"],
+        ["payments add", "Add a payment"],
+        ["payments get <payment-id>", "Show a payment"],
+      ],
+    },
+    {
+      title: "GROUPS & FRIENDS",
+      rows: [
+        ["groups [list]", "List groups"],
+        ["groups create", "Create a group"],
+        ["groups get <group-id>", "Show a group"],
+        ["groups members <group-id>", "List group members"],
+        ["groups activities <group-id>", "List group activities"],
+        ["friends [list]", "List friends"],
+        ["currencies [list]", "List currencies"],
+      ],
+    },
+    {
+      title: "ACCOUNT & CLI",
+      rows: [
+        ["me", "Show the authenticated user"],
+        ["login", "Sign in with a browser and store credentials securely"],
+        ["logout", "Revoke and delete stored credentials"],
+        ["update", "Update the CLI to the latest stable release"],
+      ],
+    },
+    {
+      title: "OUTPUT",
+      rows: [
+        ["--json", "Print curated operational JSON"],
+        ["--raw", "Print the complete API response as JSON"],
+      ],
+    },
+    {
+      title: "ENVIRONMENT",
+      rows: [
+        ["BANANASPLIT_API_URL", `API base URL (default: ${DEFAULT_API_URL})`],
+        ["BANANASPLIT_AUTH_URL", "Auth base URL (default: API origin + /api)"],
+      ],
+    },
+  ],
+  examples: [
+    "banana balance",
+    "banana expenses list --limit 10",
+    "banana groups list --sort balance",
+    "banana expenses get <expense-id> --json",
+  ],
+  learnMore: ["banana <command> --help"],
+});
 
 const AUTH_HELP: Record<"login" | "logout", string> = {
-  login: `USAGE
-  banana login
-
-Sign in through the browser and store renewable credentials securely.`,
-  logout: `USAGE
-  banana logout
-
-Revoke and delete the stored credentials.`,
+  login: helpText({
+    summary: "Sign in through the browser and store renewable credentials securely.",
+    usage: ["banana login"],
+    examples: ["banana login"],
+  }),
+  logout: helpText({
+    summary: "Revoke and delete the stored credentials.",
+    usage: ["banana logout"],
+    examples: ["banana logout"],
+  }),
 };
 
-const UPDATE_HELP = `USAGE
-  banana update
-
-Update the CLI to the latest stable release.`;
+const UPDATE_HELP = helpText({
+  summary: "Update the CLI to the latest stable release.",
+  usage: ["banana update"],
+  examples: ["banana update"],
+});
 
 const COMMANDS: Record<string, CommandParser> = {
   balance: parseBalance,
@@ -141,17 +169,17 @@ ${ROOT_HELP}` };
     if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
       return { kind: "help" as const, text: UPDATE_HELP };
     }
-    throw new CliFailure("usage", UPDATE_HELP);
+    throw usageFailure(`Unexpected argument: ${rest[0]}`, UPDATE_HELP);
   }
   if (name === "login" || name === "logout") {
     if (rest.length === 0) return { action: name, kind: "auth" as const };
     if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
       return { kind: "help" as const, text: AUTH_HELP[name] };
     }
-    throw new CliFailure("usage", AUTH_HELP[name]);
+    throw usageFailure(`Unexpected argument: ${rest[0]}`, AUTH_HELP[name]);
   }
   const parser = COMMANDS[name];
-  if (!parser) throw new CliFailure("usage", ROOT_HELP);
+  if (!parser) throw usageFailure(`Unknown command: ${name}`, ROOT_HELP);
   return parser(rest);
 }
 
@@ -176,7 +204,7 @@ function serializeFailure(error: unknown, mode: OutputMode) {
       failure.type === "cancelled" ? 130 : failure.type === "usage" ? 2 : 1,
     output:
       mode === "human"
-        ? colorizeHelp(`Error: ${failure.message}`)
+        ? errorText(failure.message, failure.help)
         : mode === "raw" &&
             failure.type === "api" &&
             failure.body !== undefined &&

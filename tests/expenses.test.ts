@@ -123,7 +123,7 @@ describe("BananaSplit CLI", () => {
       expect(await runCli(args, runtime)).toBe(0);
     }
     expect(stdout.every((text) => text.includes("expenses list"))).toBe(true);
-    expect(stdout[1]).toContain("expenses add");
+    expect(stdout[1]).toContain("add                Add an expense");
     expect(stdout[2]).toContain("--no-recurring");
     expect(calls).toHaveLength(0);
   });

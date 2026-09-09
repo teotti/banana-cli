@@ -14,34 +14,50 @@ import {
   parseOptions,
   positiveInteger,
   requirePositionals,
+  usageFailure,
   wantsHelp,
   yesNo,
 } from "../shared";
-import { CliFailure, type ParsedCommand, type Presenter } from "../types";
+import { helpText } from "../help";
+import { type ParsedCommand, type Presenter } from "../types";
 
-const HELP = `USAGE
-  banana friends <command>
-
-COMMANDS
-  list [--limit N] [--cursor CURSOR] [--sort balance|lastActivity]
-       [--filter all|guests]`;
-const LIST_HELP = `USAGE
-  banana friends list [options]
-
-OPTIONS
-  --limit N                     (default: ${DEFAULT_LIST_LIMIT})
-  --cursor CURSOR
-  --sort balance|lastActivity
-  --filter all|guests`;
+const LIST_HELP = helpText({
+  summary:
+    "List the people you split expenses with, and your balance with each.",
+  usage: ["banana friends list [flags]"],
+  options: [
+    ["--limit N", `Friends to fetch (default: ${DEFAULT_LIST_LIMIT})`],
+    ["--cursor CURSOR", "Continue from a cursor returned by a previous page"],
+    ["--sort balance|lastActivity", "Order the list"],
+    ["--filter all|guests", "Show everyone, or only guest accounts"],
+  ],
+  examples: [
+    "banana friends",
+    "banana friends list --limit 20",
+    "banana friends list --sort balance --json",
+  ],
+});
+const HELP = helpText({
+  summary: "List the people you split expenses with.",
+  usage: ["banana friends [list] [flags]"],
+  commands: [["list", "List friends and your balance with each"]],
+  notes: ["`banana friends` on its own runs `banana friends list`."],
+  examples: ["banana friends", "banana friends list --sort balance"],
+  learnMore: ["banana friends list --help"],
+});
 
 function parseFriendsList(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: LIST_HELP };
-  const { positionals, values } = parseOptions(args, {
-    cursor: { type: "string" },
-    filter: { type: "string" },
-    limit: { type: "string" },
-    sort: { type: "string" },
-  });
+  const { positionals, values } = parseOptions(
+    args,
+    {
+      cursor: { type: "string" },
+      filter: { type: "string" },
+      limit: { type: "string" },
+      sort: { type: "string" },
+    },
+    LIST_HELP,
+  );
   requirePositionals(positionals, 0, LIST_HELP);
 
   const query = new URLSearchParams();
@@ -77,7 +93,7 @@ export function parseFriends(args: string[]): ParsedCommand {
   }
   const [command, ...rest] = args;
   if (command === "list") return parseFriendsList(rest);
-  throw new CliFailure("usage", HELP);
+  throw usageFailure(`Unknown command: friends ${command}`, HELP);
 }
 
 function cleanFriendList(body: unknown) {

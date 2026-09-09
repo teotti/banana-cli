@@ -18,64 +18,110 @@ import {
   repeatedStrings,
   requiredString,
   requirePositionals,
+  usageFailure,
   wantsHelp,
   yesNo,
 } from "../shared";
-import { CliFailure, type ParsedCommand, type Presenter } from "../types";
+import { helpText } from "../help";
+import { type ParsedCommand, type Presenter } from "../types";
 
-const HELP = `USAGE
-  banana groups <command>
-
-COMMANDS
-  list [--limit N] [--cursor CURSOR] [--archived] [--sort balance|lastActivity]
-  create JSON
-  create --name TEXT --currency-id ID [--description TEXT]
-         [--type vacation|roommates|couple|travel|party|other]
-         [--member USER_ID]...
-  get <group-id>
-  members <group-id>
-  activities <group-id> [--search QUERY] [--limit N] [--page N]
-             [--type all|expenses|payments|recurring_expenses]
-             [--sort date|amount] [--direction asc|desc]`;
-const LIST_HELP = `USAGE
-  banana groups list [options]
-
-OPTIONS
-  --limit N                     (default: ${DEFAULT_LIST_LIMIT})
-  --cursor CURSOR
-  --archived
-  --sort balance|lastActivity`;
-const GET_HELP = `USAGE
-  banana groups get <group-id>`;
-const MEMBERS_HELP = `USAGE
-  banana groups members <group-id>`;
-const CREATE_HELP = `USAGE
-  banana groups create JSON
-  banana groups create --name TEXT --currency-id ID [options]
-
-OPTIONS
-  --description TEXT
-  --type vacation|roommates|couple|travel|party|other
-  --member USER_ID              Repeat to add multiple members`;
-const ACTIVITIES_HELP = `USAGE
-  banana groups activities <group-id> [options]
-
-OPTIONS
-  --search QUERY
-  --limit N
-  --page N
-  --type all|expenses|payments|recurring_expenses
-  --sort date|amount
-  --direction asc|desc`;
+const HELP = helpText({
+  summary: "Create groups and browse their members, balances and activity.",
+  usage: ["banana groups [list] [flags]", "banana groups <command> [flags]"],
+  commands: [
+    ["list", "List your groups and their balances"],
+    ["create", "Create a group"],
+    ["get <group-id>", "Show one group"],
+    ["members <group-id>", "List the members of a group"],
+    ["activities <group-id>", "List the expenses and payments in a group"],
+  ],
+  notes: ["`banana groups` on its own runs `banana groups list`."],
+  examples: [
+    "banana groups",
+    "banana groups get <group-id>",
+    "banana groups activities <group-id> --type expenses",
+  ],
+  learnMore: ["banana groups <command> --help"],
+});
+const LIST_HELP = helpText({
+  summary: "List your groups, newest activity first.",
+  usage: ["banana groups list [flags]"],
+  options: [
+    ["--limit N", `Groups to fetch (default: ${DEFAULT_LIST_LIMIT})`],
+    ["--cursor CURSOR", "Continue from a cursor returned by a previous page"],
+    ["--archived", "Include archived groups"],
+    ["--sort balance|lastActivity", "Order the list"],
+  ],
+  examples: [
+    "banana groups list",
+    "banana groups list --limit 20 --archived",
+    "banana groups list --sort balance --json",
+  ],
+});
+const GET_HELP = helpText({
+  summary: "Show one group with its currency, type and member count.",
+  usage: ["banana groups get <group-id>"],
+  examples: ["banana groups get <group-id>", "banana groups get <group-id> --json"],
+});
+const MEMBERS_HELP = helpText({
+  summary: "List the members of a group and what each one owes.",
+  usage: ["banana groups members <group-id>"],
+  examples: [
+    "banana groups members <group-id>",
+    "banana groups members <group-id> --json",
+  ],
+});
+const CREATE_HELP = helpText({
+  summary: "Create a group, optionally with its members.",
+  usage: [
+    "banana groups create --name TEXT --currency-id ID [flags]",
+    "banana groups create JSON",
+  ],
+  options: [
+    ["--name TEXT", "Group name (required)"],
+    ["--currency-id ID", "Currency the group settles in (required)"],
+    ["--description TEXT", "What the group is for"],
+    ["--type TYPE", "vacation|roommates|couple|travel|party|other"],
+    ["--member USER_ID", "Add a member; repeat for several"],
+  ],
+  notes: ["Run `banana currencies` for the ids --currency-id takes."],
+  examples: [
+    'banana groups create --name "Lisbon trip" --currency-id <currency-id>',
+    'banana groups create --name Flat --currency-id <currency-id> \\',
+    "  --type roommates --member <user-id>",
+    'banana groups create \'{"name":"Lisbon trip","currencyId":"<currency-id>"}\'',
+  ],
+});
+const ACTIVITIES_HELP = helpText({
+  summary: "List the expenses and payments recorded in a group.",
+  usage: ["banana groups activities <group-id> [flags]"],
+  options: [
+    ["--search QUERY", "Only activities matching a search"],
+    ["--limit N", "Activities per page"],
+    ["--page N", "Page to fetch, 1-based"],
+    ["--type TYPE", "all|expenses|payments|recurring_expenses"],
+    ["--sort date|amount", "Order the list"],
+    ["--direction asc|desc", "Sort direction"],
+  ],
+  examples: [
+    "banana groups activities <group-id>",
+    "banana groups activities <group-id> --type expenses --sort amount",
+    'banana groups activities <group-id> --search "dinner"',
+  ],
+});
 
 function parseGroupsList(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: LIST_HELP };
-  const { positionals, values } = parseOptions(args, {
-    archived: { type: "boolean" },
-    cursor: { type: "string" },
-    limit: { type: "string" },
-    sort: { type: "string" },
-  });
+  const { positionals, values } = parseOptions(
+    args,
+    {
+      archived: { type: "boolean" },
+      cursor: { type: "string" },
+      limit: { type: "string" },
+      sort: { type: "string" },
+    },
+    LIST_HELP,
+  );
   requirePositionals(positionals, 0, LIST_HELP);
 
   const query = new URLSearchParams();
@@ -101,13 +147,17 @@ function parseGroupsList(args: string[]): ParsedCommand {
 
 function parseGroupsCreate(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: CREATE_HELP };
-  const { positionals, values } = parseOptions(args, {
-    "currency-id": { type: "string" },
-    description: { type: "string" },
-    member: { type: "string", multiple: true },
-    name: { type: "string" },
-    type: { type: "string" },
-  });
+  const { positionals, values } = parseOptions(
+    args,
+    {
+      "currency-id": { type: "string" },
+      description: { type: "string" },
+      member: { type: "string", multiple: true },
+      name: { type: "string" },
+      type: { type: "string" },
+    },
+    CREATE_HELP,
+  );
   const jsonBody = parseJsonBody(positionals, values, CREATE_HELP);
   if (jsonBody !== undefined) {
     return {
@@ -151,14 +201,18 @@ function parseGroupsCreate(args: string[]): ParsedCommand {
 
 function parseGroupsActivities(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: ACTIVITIES_HELP };
-  const { positionals, values } = parseOptions(args, {
-    direction: { type: "string" },
-    limit: { type: "string" },
-    page: { type: "string" },
-    search: { type: "string" },
-    sort: { type: "string" },
-    type: { type: "string" },
-  });
+  const { positionals, values } = parseOptions(
+    args,
+    {
+      direction: { type: "string" },
+      limit: { type: "string" },
+      page: { type: "string" },
+      search: { type: "string" },
+      sort: { type: "string" },
+      type: { type: "string" },
+    },
+    ACTIVITIES_HELP,
+  );
   requirePositionals(positionals, 1, ACTIVITIES_HELP);
 
   const query = new URLSearchParams();
@@ -209,7 +263,7 @@ export function parseGroups(args: string[]): ParsedCommand {
   if (command === "get" || command === "members") {
     const help = command === "get" ? GET_HELP : MEMBERS_HELP;
     if (wantsHelp(rest)) return { kind: "help", text: help };
-    const { positionals } = parseOptions(rest);
+    const { positionals } = parseOptions(rest, {}, help);
     requirePositionals(positionals, 1, help);
     return {
       kind: "request",
@@ -219,7 +273,7 @@ export function parseGroups(args: string[]): ParsedCommand {
       presentation: command === "members" ? "members" : "group",
     };
   }
-  throw new CliFailure("usage", HELP);
+  throw usageFailure(`Unknown command: groups ${command}`, HELP);
 }
 
 function cleanGroupList(body: unknown) {
