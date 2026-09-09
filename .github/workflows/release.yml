@@ -70,7 +70,7 @@ jobs:
       - name: Smoke test executable
         shell: bash
         run: |
-          ./${{ matrix.binary }} --help | grep -Fq "banana [--json | --raw] <command>"
+          ./${{ matrix.binary }} --help | grep -Fq "banana <command> [--json | --raw]"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}
@@ -142,16 +142,16 @@ jobs:
           done
 
           BANANA_RELEASE_BASE_URL=http://127.0.0.1:38123/good BANANA_INSTALL_DIR="$install_dir" sh install.sh
-          "$install_dir/banana" --help | grep -Fq "banana [--json | --raw] <command>"
+          "$install_dir/banana" --help | grep -Fq "banana <command> [--json | --raw]"
           printf broken > "$install_dir/banana"
           BANANA_RELEASE_BASE_URL=http://127.0.0.1:38123/good BANANA_INSTALL_DIR="$install_dir" sh install.sh
-          "$install_dir/banana" --help | grep -Fq "banana [--json | --raw] <command>"
+          "$install_dir/banana" --help | grep -Fq "banana <command> [--json | --raw]"
 
           if BANANA_RELEASE_BASE_URL=http://127.0.0.1:38123/bad BANANA_INSTALL_DIR="$install_dir" sh install.sh; then
             echo "Installer accepted a bad checksum" >&2
             exit 1
           fi
-          "$install_dir/banana" --help | grep -Fq "banana [--json | --raw] <command>"
+          "$install_dir/banana" --help | grep -Fq "banana <command> [--json | --raw]"
 
           mkdir "$root/fake-bin"
           printf '#!/bin/sh\necho Plan9\n' > "$root/fake-bin/uname"
@@ -195,16 +195,16 @@ jobs:
             $env:BANANA_INSTALL_DIR = $InstallDir
             $env:BANANA_RELEASE_BASE_URL = "http://127.0.0.1:38123/good"
             & ./install.ps1
-            & (Join-Path $InstallDir "banana.exe") --help | Select-String -SimpleMatch "banana [--json | --raw] <command>"
+            & (Join-Path $InstallDir "banana.exe") --help | Select-String -SimpleMatch "banana <command> [--json | --raw]"
             Set-Content (Join-Path $InstallDir "banana.exe") "broken"
             & ./install.ps1
-            & (Join-Path $InstallDir "banana.exe") --help | Select-String -SimpleMatch "banana [--json | --raw] <command>"
+            & (Join-Path $InstallDir "banana.exe") --help | Select-String -SimpleMatch "banana <command> [--json | --raw]"
 
             $env:BANANA_RELEASE_BASE_URL = "http://127.0.0.1:38123/bad"
             $Failed = $false
             try { & ./install.ps1 } catch { $Failed = $true }
             if (-not $Failed) { throw "Installer accepted a bad checksum" }
-            & (Join-Path $InstallDir "banana.exe") --help | Select-String -SimpleMatch "banana [--json | --raw] <command>"
+            & (Join-Path $InstallDir "banana.exe") --help | Select-String -SimpleMatch "banana <command> [--json | --raw]"
           } finally {
             Stop-Process $Server -Force -ErrorAction SilentlyContinue
           }
