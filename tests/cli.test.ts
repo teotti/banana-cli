@@ -8,7 +8,7 @@ describe("BananaSplit CLI", () => {
     runtime.env = {};
 
     expect(await runCli([], runtime)).toBe(0);
-    expect(stdout[0]).toContain("banana [--json | --raw] <command>");
+    expect(stdout[0]).toContain("banana <command> [--json | --raw]");
     expect(stderr).toEqual([]);
   });
 
@@ -33,13 +33,13 @@ describe("BananaSplit CLI", () => {
 
     expect(await runCli(["update", "--help"], runtime)).toBe(0);
     expect(stdout[0]).toBe(
-      "USAGE\n  banana update\n\nUpdate the CLI to the latest stable release.",
+      "Update the CLI to the latest stable release.\n\nUSAGE\n  banana update\n\nEXAMPLES\n  banana update",
     );
     expect(await runCli(["update", "later"], runtime)).toBe(2);
     expect(await runCli(["update", "--json"], runtime)).toBe(2);
     expect(await runCli(["--raw", "update"], runtime)).toBe(2);
     expect(stderr).toEqual([
-      "Error: USAGE\n  banana update\n\nUpdate the CLI to the latest stable release.",
+      "Error: Unexpected argument: later\n\nUpdate the CLI to the latest stable release.\n\nUSAGE\n  banana update\n\nEXAMPLES\n  banana update",
       "{\"error\":{\"type\":\"usage\",\"message\":\"--json is not supported for banana update\"}}",
       "{\"error\":{\"type\":\"usage\",\"message\":\"--raw is not supported for banana update\"}}",
     ]);
@@ -390,6 +390,26 @@ describe("BananaSplit CLI", () => {
     }
   });
 
+  it("answers an unknown subcommand with the reason and the help page", async () => {
+    const { calls, runtime, stderr } = harness();
+
+    expect(await runCli(["groups", "bogus"], runtime)).toBe(2);
+    expect(stderr[0]).toStartWith("Error: Unknown command: groups bogus\n\n");
+    expect(stderr[0]).toContain("USAGE\n  banana groups [list] [flags]");
+    expect(stderr[0]).toContain("LEARN MORE");
+    expect(calls).toHaveLength(0);
+  });
+
+  it("keeps the JSON error to the message, without the help page", async () => {
+    const { runtime, stderr } = harness();
+
+    expect(await runCli(["--json", "groups", "bogus"], runtime)).toBe(2);
+    expect(JSON.parse(stderr[0]).error).toEqual({
+      type: "usage",
+      message: "Unknown command: groups bogus",
+    });
+  });
+
   it("prints command-level help", async () => {
     const { calls, runtime, stdout } = harness();
 
@@ -397,7 +417,7 @@ describe("BananaSplit CLI", () => {
       await runCli(["groups", "activities", "--help"], runtime),
     ).toBe(0);
     expect(stdout[0]).toContain(
-      "banana groups activities <group-id> [options]",
+      "banana groups activities <group-id> [flags]",
     );
     expect(calls).toHaveLength(0);
   });

@@ -37,13 +37,24 @@ export function userAgent(env: Environment) {
   return `bananasplit-cli/${CLI_VERSION} (${process.platform} ${process.arch}; bun ${Bun.version}; ${context})`;
 }
 
-export function parseOptions(args: string[], options: OptionConfig = {}) {
+/** A usage error: a one-line reason, with the command's help printed under it. */
+export function usageFailure(message: string, usage?: string) {
+  const failure = new CliFailure("usage", message);
+  failure.help = usage;
+  return failure;
+}
+
+export function parseOptions(
+  args: string[],
+  options: OptionConfig = {},
+  usage?: string,
+) {
   try {
     return parseArgs({ args, options, allowPositionals: true, strict: true });
   } catch (error) {
-    throw new CliFailure(
-      "usage",
+    throw usageFailure(
       error instanceof Error ? error.message : String(error),
+      usage,
     );
   }
 }
@@ -57,7 +68,13 @@ export function requirePositionals(
   count: number,
   usage: string,
 ) {
-  if (positionals.length !== count) throw new CliFailure("usage", usage);
+  if (positionals.length === count) return;
+  throw usageFailure(
+    positionals.length > count
+      ? `Unexpected argument: ${positionals[count]}`
+      : `Expected ${count} argument${count === 1 ? "" : "s"}, got ${positionals.length}`,
+    usage,
+  );
 }
 
 export function positiveInteger(value: unknown, name: string) {
@@ -71,7 +88,7 @@ export function positiveInteger(value: unknown, name: string) {
 
 export function requiredString(value: unknown, name: string, usage: string) {
   if (typeof value !== "string" || value.length === 0) {
-    throw new CliFailure("usage", `${name} is required\n${usage}`);
+    throw usageFailure(`${name} is required`, usage);
   }
   return value;
 }
@@ -92,10 +109,7 @@ export function isoDate(value: unknown, usage: string) {
     Number.isNaN(date.getTime()) ||
     date.toISOString().slice(0, 10) !== normalized
   ) {
-    throw new CliFailure(
-      "usage",
-      "--date must use YYYY-MM-DD or DD-MM-YYYY",
-    );
+    throw usageFailure("--date must use YYYY-MM-DD or DD-MM-YYYY", usage);
   }
   return date.toISOString();
 }
@@ -114,20 +128,17 @@ export function parseJsonBody(
 ) {
   if (positionals.length === 0) return undefined;
   if (positionals.length !== 1 || Object.keys(values).length !== 0) {
-    throw new CliFailure(
-      "usage",
-      `Pass one JSON object or use options, not both\n${usage}`,
-    );
+    throw usageFailure("Pass one JSON object or use options, not both", usage);
   }
 
   let body: unknown;
   try {
     body = JSON.parse(positionals[0]);
   } catch {
-    throw new CliFailure("usage", `JSON body must be a valid object\n${usage}`);
+    throw usageFailure("JSON body must be a valid object", usage);
   }
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    throw new CliFailure("usage", `JSON body must be a valid object\n${usage}`);
+    throw usageFailure("JSON body must be a valid object", usage);
   }
   return body;
 }

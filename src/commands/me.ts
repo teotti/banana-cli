@@ -5,14 +5,18 @@ import {
   requirePositionals,
   wantsHelp,
 } from "../shared";
+import { helpText } from "../help";
 import type { ParsedCommand, Presenter } from "../types";
 
-const HELP = `USAGE
-  banana me`;
+const HELP = helpText({
+  summary: "Show the signed-in BananaSplit user.",
+  usage: ["banana me [--json | --raw]"],
+  examples: ["banana me", "banana me --json"],
+});
 
 export function parseMe(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: HELP };
-  const { positionals } = parseOptions(args);
+  const { positionals } = parseOptions(args, {}, HELP);
   requirePositionals(positionals, 0, HELP);
   return { kind: "request", path: "/current-user", presentation: "user" };
 }

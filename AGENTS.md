@@ -67,6 +67,15 @@ command modules in `src/cli.ts`. Multi-step commands are wired in `runCli` —
 see `mergeExpenseBody` in `src/commands/expenses.ts` and the group members merge.
 Reuse helpers from `src/shared.ts`; interactive browsing lives in `src/browser.ts`.
 
+Help pages are data, not strings: each command builds one with `helpText()`
+from `src/help.ts` (`summary`, `usage`, `commands`, `options`, `notes`,
+`examples`, `learnMore`), which lays the sections out and aligns every table on
+the page to one column width. `colorizeHelp()` paints the section titles yellow
+and the example lines blue on a TTY. Usage errors carry both: throw
+`usageFailure(reason, HELP)` from `src/shared.ts` so the terminal shows a
+one-line reason with that command's help under it, while `--json` still reports
+the reason alone.
+
 Conventions: two-space indent, no semicolon-free style, `display()` for
 nullables (renders `—`), `humanAmount()`, `namedEntity()` for `Name · id`,
 `formatCard()` for numbered lists. Errors throw `CliFailure` with a type of
