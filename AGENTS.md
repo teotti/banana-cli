@@ -10,12 +10,33 @@ bun run banana <command>          # from the repo root
 bun run banana --help
 ```
 
-Auth comes from `banana login` and is stored through `Bun.secrets`, keyed by
-API origin. There is no plaintext or environment-token fallback.
+Auth comes from `banana login`, keyed by API origin. `src/secrets.ts` picks the
+backend: the macOS keychain, or a `0600` JSON file at
+`${XDG_DATA_HOME:-~/.local/share}/banana/credentials.json` everywhere else.
 
 - `BANANASPLIT_API_URL` — defaults to `https://api.bananasplit.net`.
 - `BANANASPLIT_AUTH_URL` — optional complete `/api` auth base for split-origin
   or loopback development.
+- `BANANASPLIT_NO_KEYCHAIN` — use the file store on macOS too.
+
+**The keychain is reached by spawning `/usr/bin/security`, not `Bun.secrets`,
+and that is load-bearing.** macOS grants keychain access per code signature and
+records the caller in the item's ACL. `Bun.secrets` makes the CLI itself the
+caller, so its signature lands in the ACL — and since `bun build --compile`
+ad-hoc signs with the generic identifier `a.out`, the ACL falls back to the
+binary's cdhash. Every `banana update` replaces the binary, changing that hash,
+so the next authenticated command blocked on a GUI keychain prompt that no
+agent or CI job can answer. `/usr/bin/security` is Apple-signed and never
+changes, so the ACL stays valid across updates.
+
+Measured on macOS 15: two ad-hoc builds with different cdhashes completed a
+full write/read/delete cycle through `/usr/bin/security` with no prompt, while
+an ad-hoc build calling `Bun.secrets` on an item it had not written blocked
+until it was killed. Signing releases with a Developer ID would also fix it,
+but costs $99/yr and is unnecessary. Don't reintroduce `Bun.secrets` here.
+
+`security` is given the secret on stdin (`-w` with no argument, value twice)
+rather than as an argument, which would expose it in the process list.
 
 ## API contract
 
