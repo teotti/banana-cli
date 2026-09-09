@@ -6,6 +6,7 @@ import {
   wantsHelp,
 } from "../shared";
 import { helpText } from "../help";
+import { fields, heading, section } from "../render";
 import type { ParsedCommand, Presenter } from "../types";
 
 const HELP = helpText({
@@ -36,13 +37,16 @@ export const mePresenters = {
     },
     format(body) {
       const user = asRecord(body);
-      return [
-        `Name: ${display(user.name)}`,
-        `Email: ${display(user.email)}`,
-        `Username: ${display(user.username)}`,
-        `Currency ID: ${display(user.currencyId)}`,
-        `ID: ${display(user.id)}`,
-      ].join("\n");
+      return section(
+        heading("Account"),
+        fields([
+          ["Name", display(user.name)],
+          ["Email", display(user.email)],
+          ["Username", display(user.username)],
+          ["ID", display(user.id), true],
+          ["Currency ID", display(user.currencyId), true],
+        ]),
+      );
     },
   },
 } satisfies Record<"user", Presenter>;

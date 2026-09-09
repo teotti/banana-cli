@@ -99,10 +99,12 @@ describe("BananaSplit CLI", () => {
 
     expect(await runCli(["payments", "get", "payment-1"], runtime)).toBe(0);
     expect(calls[0].url.pathname).toBe("/base/payments/payment-1");
-    expect(stdout[0]).toContain("From: Ana · user-2");
-    expect(stdout[0]).toContain("To: Leonardo · user-1");
-    expect(stdout[0]).toContain("Group: —");
-    expect(stdout[0]).toContain("Settlement: yes");
+    expect(stdout[0]).toContain("From:        Ana");
+    expect(stdout[0]).toContain("From ID:     user-2");
+    expect(stdout[0]).toContain("To:          Leonardo");
+    expect(stdout[0]).toContain("To ID:       user-1");
+    expect(stdout[0]).toContain("Group:       —");
+    expect(stdout[0]).toContain("Settlement:  yes");
   });
 
 });

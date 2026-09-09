@@ -24,8 +24,10 @@ describe("BananaSplit CLI", () => {
       "/base/currencies",
       "/base/currencies",
     ]);
-    expect(stdout[0]).toContain("1. Euro");
-    expect(stdout[0]).toContain("ID: currency-eur");
+    expect(stdout[0].split("\n")).toEqual([
+      "ID            Code  Name  Symbol  Type  Decimals  Rate to base",
+      "currency-eur  EUR   Euro  €       fiat         2             1",
+    ]);
     expect(JSON.parse(stdout[1])).toEqual(response);
   });
 

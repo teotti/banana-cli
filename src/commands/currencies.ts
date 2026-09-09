@@ -1,13 +1,13 @@
 import {
   asArray,
   asRecord,
-  display,
-  formatCard,
+  numeric,
   parseOptions,
   requirePositionals,
   wantsHelp,
 } from "../shared";
 import { helpText } from "../help";
+import { note, table } from "../render";
 import type { ParsedCommand, Presenter } from "../types";
 
 const HELP = helpText({
@@ -34,22 +34,30 @@ export const currencyPresenters = {
     clean: (body) => asArray(body),
     format(body) {
       const currencies = asArray(body);
-      if (!currencies.length) return "No currencies.";
-      return [
-        "Currencies",
-        ...currencies.map((value, index) => {
+      if (!currencies.length) return note("No currencies.");
+      return table(
+        [
+          { label: "ID", id: true },
+          { label: "Code" },
+          { label: "Name", max: 24 },
+          { label: "Symbol" },
+          { label: "Type" },
+          { label: "Decimals", align: "right" },
+          { label: "Rate to base", align: "right" },
+        ],
+        currencies.map((value) => {
           const currency = asRecord(value);
-          return formatCard(index, currency.name, [
-            `ID: ${display(currency.id)}`,
-            `Code: ${display(currency.code)}`,
-            `Symbol: ${display(currency.symbol)}`,
-            `Type: ${display(currency.type)}`,
-            `Decimals: ${display(currency.decimals)}`,
-            `Rate to base: ${display(currency.exchangeRateToBase)}`,
-            `Updated: ${display(currency.updatedAt)}`,
-          ]);
+          return [
+            currency.id,
+            currency.code,
+            currency.name,
+            currency.symbol,
+            currency.type,
+            currency.decimals,
+            numeric(currency.exchangeRateToBase),
+          ];
         }),
-      ].join("\n\n");
+      );
     },
   },
 } satisfies Record<"currency-list", Presenter>;

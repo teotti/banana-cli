@@ -8,9 +8,8 @@ import {
   display,
   encodedDetailId,
   enumValue,
-  formatCard,
   humanAmount,
-  namedEntity,
+  humanDate,
   numeric,
   parseJsonBody,
   parseOptions,
@@ -23,6 +22,7 @@ import {
   yesNo,
 } from "../shared";
 import { helpText } from "../help";
+import { type Field, fields, heading, note, section, table } from "../render";
 import { type ParsedCommand, type Presenter } from "../types";
 
 const HELP = helpText({
@@ -454,20 +454,23 @@ function cleanPaymentDetail(body: unknown) {
 
 function formatGroup(body: unknown) {
   const response = asRecord(body);
-  return [
-    `Name: ${display(response.name)}`,
-    `Description: ${display(response.description)}`,
-    `Type: ${display(response.type)}`,
-    `Currency: ${display(response.currency)}`,
-    `Balance: ${humanAmount(response.balance, response.currency)}`,
-    `Owed: ${humanAmount(response.totalOwed, response.currency)}`,
-    `Owing: ${humanAmount(response.totalOwing, response.currency)}`,
-    `Members: ${display(response.memberCount)}`,
-    `Default split: ${display(response.defaultSplitType)}`,
-    `Optimal settlement: ${yesNo(response.useOptimalSettlement)}`,
-    `Balance visibility: ${display(response.memberBalanceVisibility)}`,
-    `ID: ${display(response.id)}`,
-  ].join("\n");
+  return section(
+    heading("Group"),
+    fields([
+      ["Name", display(response.name)],
+      ["Description", display(response.description)],
+      ["Type", display(response.type)],
+      ["Currency", display(response.currency)],
+      ["Balance", humanAmount(response.balance, response.currency)],
+      ["Owed", humanAmount(response.totalOwed, response.currency)],
+      ["Owing", humanAmount(response.totalOwing, response.currency)],
+      ["Members", display(response.memberCount)],
+      ["Default split", display(response.defaultSplitType)],
+      ["Optimal settlement", yesNo(response.useOptimalSettlement)],
+      ["Balance visibility", display(response.memberBalanceVisibility)],
+      ["ID", display(response.id), true],
+    ]),
+  );
 }
 
 function activityDetailPath(item: Record<string, unknown>) {
@@ -478,54 +481,77 @@ function activityDetailPath(item: Record<string, unknown>) {
 function formatActivityDetail(item: Record<string, unknown>, body: unknown) {
   if (item.entity === "payment") {
     const payment = asRecord(cleanPaymentDetail(body));
-    return [
-      `Description: ${display(payment.description)}`,
-      `Amount: ${humanAmount(payment.amount, payment.currency)}`,
-      `From: ${namedEntity(payment.from)}`,
-      `To: ${namedEntity(payment.to)}`,
-      `Settlement: ${yesNo(payment.isSettlement)}`,
-      `Optimal settlement: ${yesNo(payment.usedOptimalSettlement)}`,
-      `Date: ${display(payment.date)}`,
-      `Timezone: ${display(payment.timezone)}`,
-      `Group: ${namedEntity(payment.group)}`,
-      `Created by: ${namedEntity(payment.creator)}`,
-      `ID: ${display(payment.id)}`,
-    ].join("\n");
+    const from = asRecord(payment.from);
+    const to = asRecord(payment.to);
+    return section(
+      heading("Payment"),
+      fields([
+        ["Description", display(payment.description)],
+        ["Amount", humanAmount(payment.amount, payment.currency)],
+        ["From", display(from.name)],
+        ["To", display(to.name)],
+        ["Settlement", yesNo(payment.isSettlement)],
+        ["Optimal settlement", yesNo(payment.usedOptimalSettlement)],
+        ["Date", humanDate(payment.date)],
+        ["Timezone", display(payment.timezone)],
+        ["Group", display(asRecord(payment.group).name)],
+        ["Created by", display(asRecord(payment.creator).name)],
+        ["ID", display(payment.id), true],
+        ["From ID", display(from.id), true],
+        ["To ID", display(to.id), true],
+        ["Group ID", display(asRecord(payment.group).id), true],
+      ]),
+    );
   }
 
   const expense = asRecord(cleanExpenseDetail(body));
   const recurrence = asRecord(expense.recurrence);
   const splits = asArray(expense.splits);
-  return [
-    `Description: ${display(expense.description)}`,
-    `Amount: ${humanAmount(expense.amount, expense.currency)}`,
-    `Paid by: ${namedEntity(expense.paidBy)}`,
-    `Category: ${display(expense.category)}`,
-    `Split: ${display(expense.splitType)}`,
-    `Recurring: ${yesNo(expense.isRecurring)}`,
-    ...(expense.recurrence == null
-      ? []
-      : [
-          `Recurrence frequency: ${display(recurrence.frequency)}`,
-          `Recurrence interval: ${display(recurrence.interval)}`,
-        ]),
-    `Date: ${display(expense.date)}`,
-    `Timezone: ${display(expense.timezone)}`,
-    `Group: ${namedEntity(expense.group)}`,
-    `Created by: ${namedEntity(expense.creator)}`,
-    `ID: ${display(expense.id)}`,
-    "",
-    "Splits",
-    ...(splits.length
-      ? splits.map((value) => {
-          const split = asRecord(value);
-          const user = asRecord(split.user);
-          return `${display(user.name ?? split.userId)}: ${humanAmount(split.amount, expense.currency)}${
-            split.userId ? ` · ${String(split.userId)}` : ""
-          }`;
-        })
-      : ["—"]),
-  ].join("\n");
+  const paidBy = asRecord(expense.paidBy);
+  const group = asRecord(expense.group);
+  return section(
+    heading("Expense"),
+    fields([
+      ["Description", display(expense.description)],
+      ["Amount", humanAmount(expense.amount, expense.currency)],
+      ["Paid by", display(paidBy.name)],
+      ["Category", display(expense.category)],
+      ["Split", display(expense.splitType)],
+      ["Recurring", yesNo(expense.isRecurring)],
+      ...(expense.recurrence == null
+        ? []
+        : ([
+            ["Recurrence frequency", display(recurrence.frequency)],
+            ["Recurrence interval", display(recurrence.interval)],
+          ] as Field[])),
+      ["Date", humanDate(expense.date)],
+      ["Timezone", display(expense.timezone)],
+      ["Group", display(group.name)],
+      ["Created by", display(asRecord(expense.creator).name)],
+      ["ID", display(expense.id), true],
+      ["Paid by ID", display(paidBy.id), true],
+      ["Group ID", display(group.id), true],
+    ]),
+    heading("Splits"),
+    splits.length
+      ? table(
+          [
+            { label: "User ID", id: true },
+            { label: "Name", max: 24 },
+            { label: "Amount", align: "right" },
+          ],
+          splits.map((value) => {
+            const split = asRecord(value);
+            const user = asRecord(split.user);
+            return [
+              split.userId,
+              user.name,
+              humanAmount(split.amount, expense.currency),
+            ];
+          }),
+        )
+      : note("This expense has no splits."),
+  );
 }
 
 export const groupPresenters = {
@@ -534,31 +560,36 @@ export const groupPresenters = {
     format(body) {
       const response = asRecord(body);
       const items = asArray(response.items);
-      const lines = items.length
-        ? [
-            "Groups",
-            ...items.map((value, index) => {
-              const group = asRecord(value);
-              return formatCard(index, group.name, [
-                `ID: ${display(group.id)}`,
-                `Type: ${display(group.type)}`,
-                `Description: ${display(group.description)}`,
-                `Balance: ${humanAmount(group.balance, group.currency)}`,
-                `Members: ${display(group.memberCount)}`,
-                `Last activity: ${display(group.mostRecentActivity)}`,
-              ]);
-            }),
-          ]
-        : ["No groups."];
-      lines.push(
-        response.hasMore && response.nextCursor
-          ? [
-              "More groups available.",
-              `Next page: banana groups list --cursor ${JSON.stringify(response.nextCursor)}`,
-            ].join("\n")
-          : "End of groups.",
+      return section(
+        items.length
+          ? table(
+              [
+                { label: "ID", id: true },
+                { label: "Name", max: 24 },
+                { label: "Type", max: 12 },
+                { label: "Members", align: "right" },
+                { label: "Balance", align: "right" },
+                { label: "Last activity" },
+              ],
+              items.map((value) => {
+                const group = asRecord(value);
+                return [
+                  group.id,
+                  group.name,
+                  group.type,
+                  group.memberCount,
+                  humanAmount(group.balance, group.currency),
+                  humanDate(group.mostRecentActivity),
+                ];
+              }),
+            )
+          : note("No groups."),
+        note(
+          response.hasMore && response.nextCursor
+            ? `More groups available. Next page: banana groups list --cursor ${JSON.stringify(response.nextCursor)}`
+            : "End of groups.",
+        ),
       );
-      return lines.join("\n\n");
     },
     browser: {
       detailPath(_command, item) {
@@ -577,22 +608,28 @@ export const groupPresenters = {
     clean: cleanMembers,
     format(body) {
       const items = asArray(body);
-      if (!items.length) return "No group members.";
-      return [
-        "Group members",
-        ...items.map((value, index) => {
+      if (!items.length) return note("No group members.");
+      return table(
+        [
+          { label: "User ID", id: true },
+          { label: "Name", max: 24 },
+          { label: "Role", max: 12 },
+          { label: "Guest" },
+          { label: "Default split", align: "right" },
+          { label: "Joined" },
+        ],
+        items.map((value) => {
           const member = asRecord(value);
-          return formatCard(index, member.name, [
-            `Role: ${display(member.role)}`,
-            `Guest: ${yesNo(member.isGuest)}`,
-            `Gold: ${yesNo(member.isGold)}`,
-            `Default split: ${display(member.defaultSplitPercentage)}`,
-            `Joined: ${display(member.joinedAt)}`,
-            `Member ID: ${display(member.id)}`,
-            `User ID: ${display(member.userId)}`,
-          ]);
+          return [
+            member.userId,
+            member.name,
+            member.role,
+            yesNo(member.isGuest),
+            member.defaultSplitPercentage,
+            humanDate(member.joinedAt),
+          ];
         }),
-      ].join("\n\n");
+      );
     },
     browser: {
       detailPath(command, item) {
@@ -600,19 +637,22 @@ export const groupPresenters = {
       },
       formatDetail(_item, body) {
         const member = asRecord(cleanMemberDetail(body));
-        return [
-          `Name: ${display(member.name)}`,
-          `Username: ${display(member.username)}`,
-          `Email: ${display(member.email)}`,
-          `Bio: ${display(member.bio)}`,
-          `Role: ${display(member.role)}`,
-          `Guest: ${yesNo(member.isGuest)}`,
-          `Gold: ${yesNo(member.isGold)}`,
-          `Default split: ${display(member.defaultSplitPercentage)}`,
-          `Joined: ${display(member.joinedAt)}`,
-          `Member ID: ${display(member.id)}`,
-          `User ID: ${display(member.userId)}`,
-        ].join("\n");
+        return section(
+          heading("Member"),
+          fields([
+            ["Name", display(member.name)],
+            ["Username", display(member.username)],
+            ["Email", display(member.email)],
+            ["Bio", display(member.bio)],
+            ["Role", display(member.role)],
+            ["Guest", yesNo(member.isGuest)],
+            ["Gold", yesNo(member.isGold)],
+            ["Default split", display(member.defaultSplitPercentage)],
+            ["Joined", humanDate(member.joinedAt)],
+            ["Member ID", display(member.id), true],
+            ["User ID", display(member.userId), true],
+          ]),
+        );
       },
     },
   },
@@ -620,43 +660,31 @@ export const groupPresenters = {
     clean: cleanActivities,
     format(body) {
       const items = asArray(body);
-      if (!items.length) return "No group activities.";
-      return [
-        "Group activities",
-        ...items.map((value, index) => {
+      if (!items.length) return note("No group activities.");
+      return table(
+        [
+          { label: "ID", id: true },
+          { label: "Date" },
+          { label: "Kind" },
+          { label: "Title", max: 24 },
+          { label: "Who", max: 20 },
+          { label: "Amount", align: "right" },
+        ],
+        items.map((value) => {
           const activity = asRecord(value);
-          if (activity.entity === "payment") {
-            const from = asRecord(activity.from);
-            const to = asRecord(activity.to);
-            return formatCard(
-              index,
-              `Payment: ${display(activity.description)}`,
-              [
-                `Amount: ${humanAmount(activity.amount, activity.currency)}`,
-                `From: ${display(from.name)}`,
-                `To: ${display(to.name)}`,
-                `Settlement: ${yesNo(activity.isSettlement)}`,
-                `Date: ${display(activity.date)}`,
-                `ID: ${display(activity.id)}`,
-              ],
-            );
-          }
-          const paidBy = asRecord(activity.paidBy);
-          return formatCard(
-            index,
-            `Expense: ${display(activity.title)}`,
-            [
-              `Amount: ${humanAmount(activity.amount, activity.currency)}`,
-              `Paid by: ${display(paidBy.name)}`,
-              `Category: ${display(activity.category)}`,
-              `Split: ${display(activity.splitType)}`,
-              `Recurring: ${yesNo(activity.isRecurring)}`,
-              `Date: ${display(activity.date)}`,
-              `ID: ${display(activity.id)}`,
-            ],
-          );
+          const payment = activity.entity === "payment";
+          return [
+            activity.id,
+            humanDate(activity.date),
+            payment ? "payment" : "expense",
+            payment ? activity.description : activity.title,
+            payment
+              ? `${display(asRecord(activity.from).name)} → ${display(asRecord(activity.to).name)}`
+              : asRecord(activity.paidBy).name,
+            humanAmount(activity.amount, activity.currency),
+          ];
         }),
-      ].join("\n\n");
+      );
     },
     browser: {
       detailPath(_command, item) {
@@ -669,16 +697,18 @@ export const groupPresenters = {
     clean: cleanCreatedGroup,
     format(body) {
       const response = asRecord(body);
-      return [
-        "Group created",
-        `Name: ${display(response.name)}`,
-        `Description: ${display(response.description)}`,
-        `Type: ${display(response.type)}`,
-        `Currency ID: ${display(response.currencyId)}`,
-        `Default split: ${display(response.defaultSplitType)}`,
-        `Balance visibility: ${display(response.memberBalanceVisibility)}`,
-        `ID: ${display(response.id)}`,
-      ].join("\n");
+      return section(
+        heading("Group created"),
+        fields([
+          ["Name", display(response.name)],
+          ["Description", display(response.description)],
+          ["Type", display(response.type)],
+          ["Default split", display(response.defaultSplitType)],
+          ["Balance visibility", display(response.memberBalanceVisibility)],
+          ["ID", display(response.id), true],
+          ["Currency ID", display(response.currencyId), true],
+        ]),
+      );
     },
   },
 } satisfies Record<

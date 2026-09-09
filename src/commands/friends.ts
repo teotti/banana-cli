@@ -8,8 +8,8 @@ import {
   display,
   encodedDetailId,
   enumValue,
-  formatCard,
   humanAmount,
+  humanDate,
   numeric,
   parseOptions,
   positiveInteger,
@@ -19,6 +19,7 @@ import {
   yesNo,
 } from "../shared";
 import { helpText } from "../help";
+import { fields, heading, note, section, table } from "../render";
 import { type ParsedCommand, type Presenter } from "../types";
 
 const LIST_HELP = helpText({
@@ -123,32 +124,34 @@ export const friendPresenters = {
     format(body) {
       const response = asRecord(body);
       const items = asArray(response.items);
-      const lines = items.length
-        ? [
-            "Friends",
-            ...items.map((value, index) => {
-              const friendship = asRecord(value);
-              const user = asRecord(friendship.user);
-              return formatCard(index, user.name, [
-                `Friendship ID: ${display(friendship.id)}`,
-                `User ID: ${display(user.id)}`,
-                `Balance: ${humanAmount(friendship.balance, friendship.currency)}`,
-                `Guest: ${yesNo(friendship.isGuest)}`,
-                `Gold: ${yesNo(friendship.isGold)}`,
-                `Last activity: ${display(friendship.mostRecentActivity)}`,
-              ]);
-            }),
-          ]
-        : ["No friends."];
-      lines.push(
-        response.hasMore && response.nextCursor
-          ? [
-              "More friends available.",
-              `Next page: banana friends list --cursor ${JSON.stringify(response.nextCursor)}`,
-            ].join("\n")
-          : "End of friends.",
+      return section(
+        items.length
+          ? table(
+              [
+                { label: "User ID", id: true },
+                { label: "Name", max: 24 },
+                { label: "Guest" },
+                { label: "Balance", align: "right" },
+                { label: "Last activity" },
+              ],
+              items.map((value) => {
+                const friendship = asRecord(value);
+                return [
+                  asRecord(friendship.user).id,
+                  asRecord(friendship.user).name,
+                  yesNo(friendship.isGuest),
+                  humanAmount(friendship.balance, friendship.currency),
+                  humanDate(friendship.mostRecentActivity),
+                ];
+              }),
+            )
+          : note("No friends."),
+        note(
+          response.hasMore && response.nextCursor
+            ? `More friends available. Next page: banana friends list --cursor ${JSON.stringify(response.nextCursor)}`
+            : "End of friends.",
+        ),
       );
-      return lines.join("\n\n");
     },
     browser: {
       detailPath(_command, item) {
@@ -157,17 +160,20 @@ export const friendPresenters = {
       formatDetail(item, body) {
         const friendship = asRecord(body);
         const user = asRecord(friendship.user);
-        return [
-          `Name: ${display(user.name)}`,
-          `Balance: ${humanAmount(item.balance, item.currency)}`,
-          `Guest: ${yesNo(user.isGuest)}`,
-          `Gold: ${yesNo(user.isGold)}`,
-          `Status: ${display(friendship.status)}`,
-          `Accepted: ${display(friendship.acceptedAt)}`,
-          `Last activity: ${display(item.mostRecentActivity)}`,
-          `User ID: ${display(user.id)}`,
-          `Friendship ID: ${display(friendship.id ?? item.id)}`,
-        ].join("\n");
+        return section(
+          heading("Friend"),
+          fields([
+            ["Name", display(user.name)],
+            ["Balance", humanAmount(item.balance, item.currency)],
+            ["Guest", yesNo(user.isGuest)],
+            ["Gold", yesNo(user.isGold)],
+            ["Status", display(friendship.status)],
+            ["Accepted", humanDate(friendship.acceptedAt)],
+            ["Last activity", humanDate(item.mostRecentActivity)],
+            ["User ID", display(user.id), true],
+            ["Friendship ID", display(friendship.id ?? item.id), true],
+          ]),
+        );
       },
     },
   },

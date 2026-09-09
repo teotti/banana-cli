@@ -200,24 +200,34 @@ export function display(value: unknown) {
     : String(value);
 }
 
-export function namedEntity(value: unknown) {
-  const entity = asRecord(value);
-  return `${display(entity.name)}${entity.id ? ` · ${String(entity.id)}` : ""}`;
+/**
+ * Amounts arrive as 18-decimal strings and come back out of arithmetic as
+ * floats, so both `"8.100000000000000000"` and `2397.5199999999995` have to
+ * read as money. Values too small to survive two decimals keep more of them.
+ */
+export function humanNumber(value: unknown) {
+  const parsed = numeric(value);
+  if (parsed === null) return display(value);
+  if (parsed !== 0 && Math.abs(parsed) < 0.01) {
+    return parsed.toFixed(8).replace(/0+$/, "").replace(/\.$/, "");
+  }
+  return parsed.toFixed(2);
 }
 
 export function humanAmount(amount: unknown, currency: unknown) {
-  return `${display(amount)}${currency ? ` ${String(currency)}` : ""}`;
+  if (numeric(amount) === null) return display(amount);
+  return `${humanNumber(amount)}${currency ? ` ${String(currency)}` : ""}`;
+}
+
+/** The day of an API timestamp; the time of day is never the point here. */
+export function humanDate(value: unknown) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)
+    ? value.slice(0, 10)
+    : display(value);
 }
 
 export function yesNo(value: unknown) {
   return value === true ? "yes" : "no";
-}
-
-export function formatCard(index: number, title: unknown, fields: string[]) {
-  return [
-    `${index + 1}. ${display(title)}`,
-    ...fields.map((field) => `   ${field}`),
-  ].join("\n");
 }
 
 export function encodedDetailId(value: unknown) {

@@ -7,10 +7,9 @@ import {
   display,
   encodedDetailId,
   enumValue,
-  formatCard,
   humanAmount,
+  humanDate,
   isoDate,
-  namedEntity,
   numeric,
   parseJsonBody,
   parseOptions,
@@ -20,9 +19,9 @@ import {
   requirePositionals,
   usageFailure,
   wantsHelp,
-  yesNo,
 } from "../shared";
 import { helpText } from "../help";
+import { fields, heading, note, section, table } from "../render";
 import { CliFailure, type ParsedCommand, type Presenter } from "../types";
 
 const SPLIT_TYPES = "equal|custom|percentage|shares";
@@ -490,30 +489,48 @@ function cleanExpense(body: unknown) {
   };
 }
 
+// Ids sit in their own rows at the bottom, where they line up and read as one
+// column instead of trailing off the end of the values above them.
 function formatExpense(body: unknown, title: string) {
   const response = asRecord(body);
   const splits = asArray(response.splits);
   const group = asRecord(response.group);
-  return [
-    title,
-    `Title: ${display(response.title)}`,
-    `Amount: ${humanAmount(response.amount, response.currency)}`,
-    `Paid by: ${namedEntity(response.paidBy)}`,
-    `Group: ${response.group ? namedEntity(group) : "—"}`,
-    `Category: ${display(response.category)}`,
-    `Description: ${display(response.description)}`,
-    `Date: ${display(response.date)}`,
-    `Split type: ${display(response.splitType)}`,
-    `ID: ${display(response.id)}`,
-    "",
-    "Splits",
-    ...(splits.length
-      ? splits.map((value) => {
-          const split = asRecord(value);
-          return `${namedEntity(split.user)}: ${humanAmount(split.amount, response.currency)}`;
-        })
-      : ["—"]),
-  ].join("\n");
+  const paidBy = asRecord(response.paidBy);
+  return section(
+    heading(title),
+    fields([
+      ["Title", display(response.title)],
+      ["Amount", humanAmount(response.amount, response.currency)],
+      ["Paid by", display(paidBy.name)],
+      ["Group", response.group ? display(group.name) : "—"],
+      ["Category", display(response.category)],
+      ["Description", display(response.description)],
+      ["Date", humanDate(response.date)],
+      ["Split type", display(response.splitType)],
+      ["ID", display(response.id), true],
+      ["Paid by ID", display(paidBy.id), true],
+      ["Group ID", response.group ? display(group.id) : "—", true],
+    ]),
+    heading("Splits"),
+    splits.length
+      ? table(
+          [
+            { label: "User ID", id: true },
+            { label: "Name", max: 24 },
+            { label: "Amount", align: "right" },
+          ],
+          splits.map((value) => {
+            const split = asRecord(value);
+            const user = asRecord(split.user);
+            return [
+              user.id,
+              user.name,
+              humanAmount(split.amount, response.currency),
+            ];
+          }),
+        )
+      : note("This expense has no splits."),
+  );
 }
 
 export const expensePresenters = {
@@ -538,38 +555,38 @@ export const expensePresenters = {
     format(body) {
       const response = asRecord(body);
       const items = asArray(response.items);
-      const lines = items.length
-        ? [
-            "Expenses",
-            ...items.map((value, index) => {
-              const expense = asRecord(value);
-              return formatCard(index, expense.title, [
-                `ID: ${display(expense.id)}`,
-                `Amount: ${humanAmount(expense.amount, expense.currency)}`,
-                `Your share: ${humanAmount(expense.share, expense.currency)}`,
-                `Paid by: ${namedEntity(expense.paidBy)}`,
-                `Group: ${expense.group ? namedEntity(expense.group) : "—"}`,
-                `Category: ${display(expense.category)}`,
-                `Date: ${display(expense.date)}`,
-                `Recurring: ${yesNo(expense.isRecurring)}`,
-              ]);
-            }),
-          ]
-        : ["No expenses."];
-      lines.push(
-        response.hasMore
-          ? [
-              "More expenses available.",
-              ...(response.nextCursor
-                ? [
-                    `Next cursor: ${JSON.stringify(response.nextCursor)}`,
-                    "Run banana expenses list with --cursor and the same options.",
-                  ]
-                : []),
-            ].join("\n")
-          : "End of expenses.",
+      return section(
+        items.length
+          ? table(
+              [
+                { label: "ID", id: true },
+                { label: "Date" },
+                { label: "Title", max: 24 },
+                { label: "Paid by", max: 16 },
+                { label: "Amount", align: "right" },
+                { label: "Your share", align: "right" },
+              ],
+              items.map((value) => {
+                const expense = asRecord(value);
+                return [
+                  expense.id,
+                  humanDate(expense.date),
+                  expense.title,
+                  asRecord(expense.paidBy).name,
+                  humanAmount(expense.amount, expense.currency),
+                  humanAmount(expense.share, expense.currency),
+                ];
+              }),
+            )
+          : note("No expenses."),
+        note(
+          response.hasMore
+            ? response.nextCursor
+              ? `More expenses available. Next page: banana expenses list --cursor ${JSON.stringify(response.nextCursor)}`
+              : "More expenses available."
+            : "End of expenses.",
+        ),
       );
-      return lines.join("\n\n");
     },
     browser: {
       detailPath(_command, item) {
@@ -593,24 +610,34 @@ export const expensePresenters = {
     format(body) {
       const response = asRecord(body);
       const splits = asArray(response.splits);
-      return [
-        "Expense created",
-        `Title: ${display(response.title)}`,
-        `Amount: ${humanAmount(response.amount, response.currencyId)}`,
-        `Paid by: ${display(response.paidById)}`,
-        `Group ID: ${display(response.groupId)}`,
-        `Date: ${display(response.date)}`,
-        `Split type: ${display(response.splitType)}`,
-        `ID: ${display(response.id)}`,
-        "",
-        "Splits",
-        ...(splits.length
-          ? splits.map((value) => {
-              const split = asRecord(value);
-              return `${display(split.userId)}: ${humanAmount(split.amount, response.currencyId)}`;
-            })
-          : ["—"]),
-      ].join("\n");
+      return section(
+        heading("Expense created"),
+        fields([
+          ["Title", display(response.title)],
+          ["Amount", humanAmount(response.amount, response.currencyId)],
+          ["Date", humanDate(response.date)],
+          ["Split type", display(response.splitType)],
+          ["ID", display(response.id), true],
+          ["Paid by ID", display(response.paidById), true],
+          ["Group ID", display(response.groupId), true],
+        ]),
+        heading("Splits"),
+        splits.length
+          ? table(
+              [
+                { label: "User ID", id: true },
+                { label: "Amount", align: "right" },
+              ],
+              splits.map((value) => {
+                const split = asRecord(value);
+                return [
+                  split.userId,
+                  humanAmount(split.amount, response.currencyId),
+                ];
+              }),
+            )
+          : note("This expense has no splits."),
+      );
     },
   },
 } satisfies Record<
