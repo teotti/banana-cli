@@ -34,9 +34,9 @@ describe("table", () => {
   it("paints the headings and the id column when colour is on", () => {
     const rendered = table(columns, [["e-1", "Taxi", "8.10 EUR"]], true);
 
-    expect(rendered).toContain("\x1b[1m\x1b[38;2;74;144;217mID ");
-    expect(rendered).toContain("\x1b[38;2;74;144;217me-1\x1b[0m");
-    expect(rendered).not.toContain("\x1b[38;2;74;144;217mTaxi");
+    expect(rendered).toContain("\x1b[1m\x1b[38;2;45;111;196mID ");
+    expect(rendered).toContain("\x1b[38;2;45;111;196me-1\x1b[0m");
+    expect(rendered).not.toContain("\x1b[38;2;45;111;196mTaxi");
   });
 });
 
@@ -46,7 +46,7 @@ describe("fields", () => {
       fields([["Name", "Ana"], ["Last activity", "2026-09-01"]], false).split("\n"),
     ).toEqual(["Name:          Ana", "Last activity: 2026-09-01"]);
     expect(fields([["ID", "user-1", true]], true)).toBe(
-      "\x1b[2mID:\x1b[0m \x1b[38;2;74;144;217muser-1\x1b[0m",
+      "\x1b[2mID:\x1b[0m \x1b[38;2;45;111;196muser-1\x1b[0m",
     );
   });
 });

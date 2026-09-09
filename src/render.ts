@@ -2,7 +2,8 @@ import { supportsColor } from "./help";
 import { display } from "./shared";
 
 const BOLD = "\x1b[1m";
-const BLUE = "\x1b[38;2;74;144;217m";
+// Dark enough to stay legible on a light terminal, which a bright blue is not.
+const BLUE = "\x1b[38;2;45;111;196m";
 const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";
 
