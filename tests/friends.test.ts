@@ -121,8 +121,8 @@ describe("BananaSplit CLI", () => {
     expect(rendered).toContain("friends");
     expect(rendered).toContain("Ana");
     expect(rendered).toContain("More friends are available");
-    expect(detail).toContain("Balance: 7 EUR");
-    expect(detail).toContain("Status: accepted");
+    expect(detail).toContain("Balance:       7.00 EUR");
+    expect(detail).toContain("Status:        accepted");
     expect(detail).toContain("Friendship ID: friendship/one");
     expect(stdout).toEqual([]);
   });

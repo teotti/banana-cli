@@ -5,13 +5,14 @@ import {
   currencyCode,
   display,
   encodedDetailId,
-  formatCard,
   humanAmount,
+  humanNumber,
   numeric,
   usageFailure,
   wantsHelp,
 } from "../shared";
 import { helpText } from "../help";
+import { fields, heading, note, section, table } from "../render";
 import { type ParsedCommand, type Presenter } from "../types";
 
 const HELP = helpText({
@@ -84,31 +85,38 @@ export const balancePresenters = {
     },
     format(body) {
       const response = asRecord(body);
-      return [
-        `Balance: ${display(response.balance)}`,
-        `Owed: ${display(response.totalOwed)}`,
-        `Owing: ${display(response.totalOwing)}`,
-      ].join("\n");
+      return fields([
+        ["Balance", humanNumber(response.balance)],
+        ["Owed", humanNumber(response.totalOwed)],
+        ["Owing", humanNumber(response.totalOwing)],
+      ]);
     },
   },
   "balance-users": {
     clean: cleanBalanceUsers,
     format(body) {
       const items = asArray(body);
-      if (!items.length) return "No user balances.";
-      return [
-        "User balances",
-        ...items.map((value, index) => {
+      if (!items.length) return note("No user balances.");
+      return table(
+        [
+          { label: "User ID", id: true },
+          { label: "Name", max: 24 },
+          { label: "Balance", align: "right" },
+          { label: "Owed", align: "right" },
+          { label: "Owing", align: "right" },
+        ],
+        items.map((value) => {
           const entry = asRecord(value);
           const user = asRecord(entry.user);
-          return formatCard(index, user.name, [
-            `User ID: ${display(user.id)}`,
-            `Balance: ${display(entry.balance)}`,
-            `Owed: ${display(entry.totalOwed)}`,
-            `Owing: ${display(entry.totalOwing)}`,
-          ]);
+          return [
+            user.id,
+            user.name,
+            humanNumber(entry.balance),
+            humanNumber(entry.totalOwed),
+            humanNumber(entry.totalOwing),
+          ];
         }),
-      ].join("\n\n");
+      );
     },
     browser: {
       detailPath(_command, item) {
@@ -117,22 +125,32 @@ export const balancePresenters = {
       formatDetail(item, body) {
         const detail = asRecord(cleanBalanceDetail(body, item));
         const breakdown = asArray(detail.breakdown);
-        return [
-          `Balance: ${humanAmount(detail.balance, detail.currency)}`,
-          `Owed: ${humanAmount(detail.totalOwed, detail.currency)}`,
-          `Owing: ${humanAmount(detail.totalOwing, detail.currency)}`,
-          `User ID: ${display(asRecord(detail.user).id)}`,
-          "",
-          "Balance breakdown",
-          ...(breakdown.length
-            ? breakdown.map((value) => {
-                const entry = asRecord(value);
-                return `${display(entry.groupName)}: ${humanAmount(entry.balance, detail.currency)}${
-                  entry.groupId ? ` · ${String(entry.groupId)}` : ""
-                }`;
-              })
-            : ["—"]),
-        ].join("\n");
+        return section(
+          fields([
+            ["Balance", humanAmount(detail.balance, detail.currency)],
+            ["Owed", humanAmount(detail.totalOwed, detail.currency)],
+            ["Owing", humanAmount(detail.totalOwing, detail.currency)],
+            ["User ID", display(asRecord(detail.user).id), true],
+          ]),
+          heading("Balance breakdown"),
+          breakdown.length
+            ? table(
+                [
+                  { label: "Group ID", id: true },
+                  { label: "Group", max: 24 },
+                  { label: "Balance", align: "right" },
+                ],
+                breakdown.map((value) => {
+                  const entry = asRecord(value);
+                  return [
+                    entry.groupId,
+                    entry.groupName,
+                    humanAmount(entry.balance, detail.currency),
+                  ];
+                }),
+              )
+            : note("No balances to break down."),
+        );
       },
     },
   },

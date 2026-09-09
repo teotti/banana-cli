@@ -2,10 +2,9 @@ import {
   asRecord,
   cleanUserSummary,
   display,
-  formatCard,
   humanAmount,
+  humanDate,
   isoDate,
-  namedEntity,
   numeric,
   parseJsonBody,
   parseOptions,
@@ -16,6 +15,7 @@ import {
   yesNo,
 } from "../shared";
 import { helpText } from "../help";
+import { fields, heading, note, section, table } from "../render";
 import { type ParsedCommand, type Presenter } from "../types";
 
 const ADD_HELP = helpText({
@@ -178,17 +178,24 @@ export const paymentPresenters = {
     format(body) {
       const response = asRecord(body);
       const group = asRecord(response.group);
-      return [
-        "Payment",
-        `Amount: ${humanAmount(response.amount, response.currency)}`,
-        `From: ${namedEntity(response.from)}`,
-        `To: ${namedEntity(response.to)}`,
-        `Group: ${response.group ? namedEntity(group) : "—"}`,
-        `Description: ${display(response.description)}`,
-        `Date: ${display(response.date)}`,
-        `Settlement: ${yesNo(response.isSettlement)}`,
-        `ID: ${display(response.id)}`,
-      ].join("\n");
+      const from = asRecord(response.from);
+      const to = asRecord(response.to);
+      return section(
+        heading("Payment"),
+        fields([
+          ["Amount", humanAmount(response.amount, response.currency)],
+          ["From", display(from.name)],
+          ["To", display(to.name)],
+          ["Group", response.group ? display(group.name) : "—"],
+          ["Description", display(response.description)],
+          ["Date", humanDate(response.date)],
+          ["Settlement", yesNo(response.isSettlement)],
+          ["ID", display(response.id), true],
+          ["From ID", display(from.id), true],
+          ["To ID", display(to.id), true],
+          ["Group ID", response.group ? display(group.id) : "—", true],
+        ]),
+      );
     },
   },
   "payment-created": {
@@ -199,21 +206,32 @@ export const paymentPresenters = {
     },
     format(body) {
       const payments = Array.isArray(body) ? body : [body];
-      return [
-        payments.length === 1
-          ? "Payment created"
-          : `${payments.length} payments created`,
-        ...payments.map((value, index) => {
-          const payment = asRecord(value);
-          return formatCard(index, payment.id, [
-            `Amount: ${humanAmount(payment.amount, payment.currencyId)}`,
-            `From: ${display(payment.fromUserId)}`,
-            `To: ${display(payment.toUserId)}`,
-            `Group ID: ${display(payment.groupId)}`,
-            `Date: ${display(payment.date)}`,
-          ]);
-        }),
-      ].join("\n\n");
+      return section(
+        heading(
+          payments.length === 1
+            ? "Payment created"
+            : `${payments.length} payments created`,
+        ),
+        table(
+          [
+            { label: "ID", id: true },
+            { label: "Date" },
+            { label: "From", id: true },
+            { label: "To", id: true },
+            { label: "Amount", align: "right" },
+          ],
+          payments.map((value) => {
+            const payment = asRecord(value);
+            return [
+              payment.id,
+              humanDate(payment.date),
+              payment.fromUserId,
+              payment.toUserId,
+              humanAmount(payment.amount, payment.currencyId),
+            ];
+          }),
+        ),
+      );
     },
   },
 } satisfies Record<"payment" | "payment-created", Presenter>;

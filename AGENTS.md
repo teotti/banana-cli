@@ -77,8 +77,11 @@ one-line reason with that command's help under it, while `--json` still reports
 the reason alone.
 
 Conventions: two-space indent, no semicolon-free style, `display()` for
-nullables (renders `—`), `humanAmount()`, `namedEntity()` for `Name · id`,
-`formatCard()` for numbered lists. Errors throw `CliFailure` with a type of
+nullables (renders `—`), `humanAmount()` and `humanNumber()` for money,
+`humanDate()` for timestamps. Human output is built from `src/render.ts`:
+`table()` for listings (blue headings, ids in blue, one column per field),
+`fields()` for detail blocks (`Label: value`, values aligned, ids last and
+blue), plus `heading()`, `note()` and `section()`. Errors throw `CliFailure` with a type of
 `usage` | `config` | `network` | `api`; usage errors exit 2, others 1.
 
 Interactive TTYs get a searchable browser for list presentations; non-TTY falls

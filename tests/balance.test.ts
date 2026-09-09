@@ -21,7 +21,7 @@ describe("BananaSplit CLI", () => {
 
     expect(await runCli(["balance"], aggregateHarness.runtime)).toBe(0);
     expect(aggregateHarness.stdout[0]).toBe(
-      "Balance: 9\nOwed: 12\nOwing: 3",
+      ["Balance: 9.00", "Owed:    12.00", "Owing:   3.00"].join("\n"),
     );
 
     const usersHarness = harness(
@@ -50,13 +50,8 @@ describe("BananaSplit CLI", () => {
     ).toBe(0);
     expect(usersHarness.stdout[1]).toBe(
       [
-        "User balances",
-        "",
-        "1. Ana",
-        "   User ID: user-2",
-        "   Balance: -5",
-        "   Owed: 0",
-        "   Owing: 5",
+        "User ID  Name  Balance  Owed  Owing",
+        "user-2   Ana     -5.00  0.00   5.00",
       ].join("\n"),
     );
   });

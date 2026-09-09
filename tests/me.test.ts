@@ -22,11 +22,13 @@ describe("BananaSplit CLI", () => {
     );
     expect(stdout).toEqual([
       [
-        "Name: Leonardo",
-        "Email: leo@example.test",
-        "Username: —",
+        "Account",
+        "",
+        "Name:        Leonardo",
+        "Email:       leo@example.test",
+        "Username:    —",
+        "ID:          user-1",
         "Currency ID: currency-eur",
-        "ID: user-1",
       ].join("\n"),
     ]);
     expect(stderr).toEqual([]);

@@ -66,13 +66,12 @@ describe("BananaSplit CLI", () => {
       hasMore: true, nextCursor: "cursor-2",
     });
     expect(await runCli(["expenses", "list"], runtime)).toBe(0);
-    for (const text of [
-      "Expenses", "1. Dinner", "ID: expense-1", "Amount: 42 EUR",
-      "Your share: 20 EUR", "Paid by: Leonardo · user-1",
-      "Group: Lisbon trip · group-1", "Category: Food",
-      "Date: 2026-09-01T00:00:00.000Z", "Recurring: yes",
-      'Next cursor: "cursor-2"', "--cursor and the same options",
-    ]) expect(stdout[1]).toContain(text);
+    expect(stdout[1].split("\n")).toEqual([
+      "ID         Date        Title   Paid by      Amount  Your share",
+      "expense-1  2026-09-01  Dinner  Leonardo  42.00 EUR   20.00 EUR",
+      "",
+      'More expenses available. Next page: banana expenses list --cursor "cursor-2"',
+    ]);
     expect(stdout[1]).not.toContain("private-group-token");
     expect(await runCli(["expenses", "list", "--raw"], runtime)).toBe(0);
     expect(JSON.parse(stdout[2])).toEqual(response);
@@ -96,9 +95,8 @@ describe("BananaSplit CLI", () => {
       share: null, isRecurring: false });
     expect(items[1]).toMatchObject({ share: 0, isRecurring: true });
     expect(await runCli(["expenses", "list"], runtime)).toBe(0);
-    expect(stdout[1]).toContain("Your share: — EUR");
-    expect(stdout[1]).toContain("Group: —");
-    expect(stdout[1]).toContain("Recurring: no");
+    expect(stdout[1]).toContain("8.10 EUR           —");
+    expect(stdout[1]).toContain("recurring  —     Rent   —        100.00 EUR");
     expect(stdout[1]).toContain("End of expenses.");
   });
 
@@ -275,11 +273,13 @@ describe("BananaSplit CLI", () => {
     expect(await runCli(["expenses", "get", "expense-1"], runtime)).toBe(0);
     expect(calls[0].url.pathname).toBe("/base/expenses/expense-1");
     expect(calls[0].init?.method).toBeUndefined();
-    expect(stdout[0]).toContain("Paid by: Leonardo · user-1");
-    expect(stdout[0]).toContain("Group: Lisbon trip · group-1");
-    expect(stdout[0]).toContain("Category: Food & Drinks");
-    expect(stdout[0]).toContain("Leonardo · user-1: 22 EUR");
-    expect(stdout[0]).toContain("Ana · user-2: 20 EUR");
+    expect(stdout[0]).toContain("Paid by:     Leonardo");
+    expect(stdout[0]).toContain("Paid by ID:  user-1");
+    expect(stdout[0]).toContain("Group:       Lisbon trip");
+    expect(stdout[0]).toContain("Group ID:    group-1");
+    expect(stdout[0]).toContain("Category:    Food & Drinks");
+    expect(stdout[0]).toContain("user-1   Leonardo  22.00 EUR");
+    expect(stdout[0]).toContain("user-2   Ana       20.00 EUR");
   });
 
   it("merges edited fields over the current expense before the PUT", async () => {

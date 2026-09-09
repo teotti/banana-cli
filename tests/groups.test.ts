@@ -89,18 +89,10 @@ describe("BananaSplit CLI", () => {
     expect(await runCli(["groups", "list"], runtime)).toBe(0);
     expect(stdout[1]).toBe(
       [
-        "Groups",
+        "ID       Name         Type    Members    Balance  Last activity",
+        "group-1  Lisbon trip  travel        2  12.50 EUR  2026-08-28",
         "",
-        "1. Lisbon trip",
-        "   ID: group-1",
-        "   Type: travel",
-        "   Description: —",
-        "   Balance: 12.5 EUR",
-        "   Members: 2",
-        "   Last activity: 2026-08-28T10:00:00.000Z",
-        "",
-        "More groups available.",
-        'Next page: banana groups list --cursor "cursor-2"',
+        'More groups available. Next page: banana groups list --cursor "cursor-2"',
       ].join("\n"),
     );
   });
@@ -148,7 +140,7 @@ describe("BananaSplit CLI", () => {
     expect(
       await runCli(["groups", "get", "group-1"], groupHarness.runtime),
     ).toBe(0);
-    expect(groupHarness.stdout[1]).toContain("Members: 2");
+    expect(groupHarness.stdout[1]).toContain("Members:            2");
 
     const membersHarness = harness(
       Response.json([
@@ -191,16 +183,8 @@ describe("BananaSplit CLI", () => {
     ).toBe(0);
     expect(membersHarness.stdout[1]).toBe(
       [
-        "Group members",
-        "",
-        "1. Leonardo",
-        "   Role: admin",
-        "   Guest: no",
-        "   Gold: yes",
-        "   Default split: —",
-        "   Joined: 2026-08-01T10:00:00.000Z",
-        "   Member ID: member-1",
-        "   User ID: user-1",
+        "User ID  Name      Role   Guest  Default split  Joined",
+        "user-1   Leonardo  admin  no                 —  2026-08-01",
       ].join("\n"),
     );
   });
@@ -324,24 +308,9 @@ describe("BananaSplit CLI", () => {
     ).toBe(0);
     expect(stdout[1]).toBe(
       [
-        "Group activities",
-        "",
-        "1. Expense: Dinner",
-        "   Amount: 42 EUR",
-        "   Paid by: Leonardo",
-        "   Category: Food",
-        "   Split: equal",
-        "   Recurring: yes",
-        "   Date: 2026-08-27T20:00:00.000Z",
-        "   ID: expense-1",
-        "",
-        "2. Payment: —",
-        "   Amount: 15 EUR",
-        "   From: Ana",
-        "   To: Leonardo",
-        "   Settlement: yes",
-        "   Date: 2026-08-28T09:00:00.000Z",
-        "   ID: payment-1",
+        "ID         Date        Kind     Title   Who                Amount",
+        "expense-1  2026-08-27  expense  Dinner  Leonardo        42.00 EUR",
+        "payment-1  2026-08-28  payment  —       Ana → Leonardo  15.00 EUR",
       ].join("\n"),
     );
   });
