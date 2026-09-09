@@ -14,7 +14,7 @@ export const DIM = "\x1b[2m";
 export const RESET = "\x1b[0m";
 
 /** Section titles, the wordmark, the browser's selection marker. */
-export const YELLOW = "\x1b[38;2;158;118;0m";
+export const YELLOW = "\x1b[38;2;176;138;0m";
 /** Column headings, ids, example commands. */
 export const BLUE = "\x1b[38;2;45;111;196m";
 /** The `Error:` label. */
@@ -24,9 +24,9 @@ export const GREEN = "\x1b[38;2;42;122;62m";
 
 /** The wordmark's gradient: ripe on top, browning at the bottom. */
 export const SHADES = [
-  "\x1b[38;2;196;146;18m",
-  "\x1b[38;2;184;136;16m",
-  "\x1b[38;2;172;126;14m",
-  "\x1b[38;2;160;115;12m",
-  "\x1b[38;2;148;104;10m",
+  "\x1b[38;2;202;156;18m",
+  "\x1b[38;2;192;148;16m",
+  "\x1b[38;2;182;140;14m",
+  "\x1b[38;2;172;130;12m",
+  "\x1b[38;2;162;120;10m",
 ];
