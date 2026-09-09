@@ -1,10 +1,5 @@
 import { version as CLI_VERSION } from "../package.json";
-
-const BOLD = "\x1b[1m";
-const YELLOW = "\x1b[38;2;224;196;0m";
-const BLUE = "\x1b[38;2;74;144;217m";
-const RED = "\x1b[38;2;208;72;72m";
-const RESET = "\x1b[0m";
+import { BLUE, BOLD, RED, RESET, SHADES, YELLOW } from "./colors";
 
 const SECTION = /^[A-Z][A-Z0-9 &'/-]*$/;
 
@@ -22,15 +17,6 @@ const GLYPHS: Record<string, string[]> = {
   I: ["█████", "  █  ", "  █  ", "  █  ", "█████"],
   T: ["█████", "  █  ", "  █  ", "  █  ", "  █  "],
 };
-
-// Ripe on top, browning at the bottom — the banner reads as a gradient.
-const SHADES = [
-  "\x1b[38;2;255;226;92m",
-  "\x1b[38;2;255;211;40m",
-  "\x1b[38;2;250;192;12m",
-  "\x1b[38;2;226;166;10m",
-  "\x1b[38;2;196;140;12m",
-];
 
 const WORD = "BANANASPLIT";
 const BANNER_WIDTH = WORD.length * 6 - 1;

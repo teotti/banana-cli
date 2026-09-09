@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { BOLD, DIM, GREEN, RESET, YELLOW } from "./colors";
 import { closeSync, openSync } from "node:fs";
 import { emitKeypressEvents } from "node:readline";
 import { asArray, asRecord, display } from "./shared";
@@ -12,11 +13,11 @@ import {
 
 const PAGER_PROMPT = "↑/↓ navigate · q quit";
 const ANSI = {
-  bold: "\x1b[1m",
-  yellow: "\x1b[38;2;255;228;0m",
-  dim: "\x1b[2m",
-  green: "\x1b[32m",
-  reset: "\x1b[0m",
+  bold: BOLD,
+  yellow: YELLOW,
+  dim: DIM,
+  green: GREEN,
+  reset: RESET,
 };
 
 type BrowserDetailState =

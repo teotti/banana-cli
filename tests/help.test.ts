@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { version } from "../package.json";
+import { BLUE, BOLD, YELLOW } from "../src/colors";
 import {
   banner,
   colorizeHelp,
@@ -38,7 +39,7 @@ describe("colorizeHelp", () => {
   it("paints section titles and leaves the rest alone", () => {
     const rendered = colorizeHelp("USAGE\n  banana me", true);
 
-    expect(rendered).toContain("\x1b[1m\x1b[38;2;224;196;0mUSAGE\x1b[0m");
+    expect(rendered).toContain(`${BOLD}${YELLOW}USAGE\x1b[0m`);
     expect(rendered).toContain("\n  banana me");
     expect(colorizeHelp("USAGE", false)).toBe("USAGE");
   });
@@ -49,7 +50,7 @@ describe("colorizeHelp", () => {
       true,
     );
 
-    expect(rendered).toContain("\x1b[38;2;74;144;217m  banana me\x1b[0m");
+    expect(rendered).toContain(`${BLUE}  banana me\x1b[0m`);
     expect(rendered).toEndWith("\n  banana me --help");
   });
 });
