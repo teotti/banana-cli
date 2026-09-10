@@ -308,15 +308,19 @@ describe("BananaSplit CLI", () => {
       },
       {
         args: ["groups", "activities", "group-1"],
-        response: [
-          {
-            entity: "expense",
-            id: "expense-1",
-            title: "Dinner",
-            amount: 42,
-            currency: { code: "EUR" },
-          },
-        ],
+        response: {
+          items: [
+            {
+              entity: "expense",
+              id: "expense-1",
+              title: "Dinner",
+              amount: 42,
+              currency: { code: "EUR" },
+            },
+          ],
+          hasMore: false,
+          nextCursor: null,
+        },
         heading: "ID         Date  Kind     Title",
       },
     ];
@@ -405,18 +409,21 @@ describe("BananaSplit CLI", () => {
 
     const activities = renderCollectionBrowser(
       "activities",
-      [
-        { entity: "expense", id: "expense-1", title: "Dinner" },
-        {
-          entity: "payment",
-          id: "payment-1",
-          description: "Payback",
-          amount: 15,
-          currency: "EUR",
-          from: { name: "Ana" },
-          to: { name: "Leonardo" },
-        },
-      ],
+      {
+        items: [
+          { entity: "expense", id: "expense-1", title: "Dinner" },
+          {
+            entity: "payment",
+            id: "payment-1",
+            description: "Payback",
+            amount: 15,
+            currency: "EUR",
+            from: { name: "Ana" },
+            to: { name: "Leonardo" },
+          },
+        ],
+        hasMore: false,
+      },
       "ana",
     );
     expect(activities).toContain("1/2");
@@ -501,6 +508,155 @@ describe("BananaSplit CLI", () => {
     expect(detail).toContain("Optimal settlement: yes");
     expect(detail).not.toContain("private-invite-token");
     expect(stdout).toEqual([]);
+  });
+
+  it("drills from a group's details into its members and expenses", async () => {
+    await withBrowserTerminal(async (key, screens) => {
+      const { calls, runtime, stdout } = harness((url) => {
+        if (url.pathname === "/base/groups") {
+          return Response.json({
+            items: [{ id: "group/one", name: "Lisbon trip" }],
+            hasMore: false,
+            nextCursor: null,
+          });
+        }
+        if (url.pathname.endsWith("/members/member-1")) {
+          return Response.json({
+            id: "member-1",
+            role: "admin",
+            user: { id: "user-1", name: "Leonardo" },
+          });
+        }
+        if (url.pathname.endsWith("/members")) {
+          return Response.json([
+            { id: "member-1", userId: "user-1", name: "Leonardo", role: "admin" },
+          ]);
+        }
+        if (url.pathname.endsWith("/activities")) {
+          return Response.json({
+            items: [
+              { entity: "expense", id: "expense-1", title: "Dinner", amount: "20" },
+            ],
+            hasMore: false,
+            nextCursor: null,
+          });
+        }
+        return Response.json({ id: "group/one", name: "Lisbon trip" });
+      });
+      runtime.browser = browseCollection;
+      const result = runCli(["groups", "list"], runtime);
+      await Bun.sleep(0);
+
+      key("return");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("m members");
+      expect(screens.at(-1)).toContain("e expenses");
+
+      key("m", "m");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("Lisbon trip › group members");
+      expect(screens.at(-1)).toContain("Leonardo");
+      expect(screens.at(-1)).toContain("esc/← back");
+
+      key("return");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("Role:");
+      key("escape");
+      expect(screens.at(-1)).toContain("Leonardo");
+      key("escape");
+      expect(screens.at(-1)).toContain("Lisbon trip");
+      expect(screens.at(-1)).toContain("m members");
+
+      key("e", "e");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("Lisbon trip › activities");
+      expect(screens.at(-1)).toContain("Expense: Dinner");
+
+      key("q");
+      expect(await result).toBe(0);
+      expect(calls.map(({ url }) => `${url.pathname}${url.search}`)).toEqual([
+        "/base/groups",
+        "/base/groups/group%2Fone",
+        "/base/groups/group%2Fone/members",
+        "/base/groups/group%2Fone/members/member-1",
+        "/base/groups/group%2Fone/activities?type=expenses",
+      ]);
+      expect(stdout).toEqual([]);
+    });
+  });
+
+  it("drills from a friend into their expenses and shared groups", async () => {
+    await withBrowserTerminal(async (key, screens) => {
+      const { calls, runtime, stdout } = harness((url) => {
+        if (url.pathname === "/base/friends") {
+          return Response.json({
+            items: [
+              {
+                id: "friendship-1",
+                user: { id: "user-2", name: "Ana" },
+                balance: 12.5,
+                currency: { code: "EUR" },
+              },
+            ],
+            hasMore: false,
+            nextCursor: null,
+          });
+        }
+        if (url.pathname.endsWith("/activities")) {
+          return Response.json({
+            items: [
+              { entity: "expense", id: "expense-1", title: "Tapas", amount: "32" },
+            ],
+            hasMore: false,
+            nextCursor: null,
+          });
+        }
+        if (url.pathname.endsWith("/groups")) {
+          return Response.json([
+            { id: "group-1", name: "Lisbon trip", type: "travel" },
+          ]);
+        }
+        if (url.pathname === "/base/groups/group-1") {
+          return Response.json({ id: "group-1", name: "Lisbon trip" });
+        }
+        return Response.json({ id: "friendship-1", status: "accepted" });
+      });
+      runtime.browser = browseCollection;
+      const result = runCli(["friends", "list"], runtime);
+      await Bun.sleep(0);
+
+      key("return");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("e expenses");
+      expect(screens.at(-1)).toContain("g shared groups");
+
+      key("e", "e");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("Ana › activities");
+      expect(screens.at(-1)).toContain("Expense: Tapas");
+      key("escape");
+
+      key("g", "g");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("Ana › shared groups");
+      expect(screens.at(-1)).toContain("Lisbon trip");
+
+      // A shared group drills on into the group's own collections.
+      key("return");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("m members");
+
+      key("q");
+      expect(await result).toBe(0);
+      expect(calls.map(({ url }) => `${url.pathname}${url.search}`)).toEqual([
+        "/base/friends",
+        "/base/friends/friendship-1",
+        "/base/friends/friendship-1/activities?type=expenses",
+        "/base/friends/friendship-1/groups",
+        "/base/groups/group-1",
+      ]);
+      expect(stdout).toEqual([]);
+    });
   });
 
   it("loads curated member details from the browser", async () => {
@@ -600,25 +756,31 @@ describe("BananaSplit CLI", () => {
           usedOptimalSettlement: true,
         });
       }
-      return Response.json([
-        {
-          entity: "expense",
-          id: "expense/one",
-          title: "Dinner",
-          amount: 42,
-          currency: { code: "EUR" },
-        },
-        {
-          entity: "payment",
-          id: "payment/one",
-          description: "Payback",
-          amount: 15,
-          currency: { code: "EUR" },
-        },
-      ]);
+      return Response.json({
+        items: [
+          {
+            entity: "expense",
+            id: "expense/one",
+            title: "Dinner",
+            amount: 42,
+            currency: { code: "EUR" },
+          },
+          {
+            entity: "payment",
+            id: "payment/one",
+            description: "Payback",
+            amount: 15,
+            currency: { code: "EUR" },
+          },
+        ],
+        hasMore: false,
+        nextCursor: null,
+      });
     });
     runtime.browser = async (_presentation, body, loadDetail) => {
-      for (const item of body as any[]) details.push(await loadDetail(item));
+      for (const item of (body as any).items) {
+        details.push(await loadDetail(item));
+      }
       return true;
     };
 

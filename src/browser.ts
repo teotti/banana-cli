@@ -6,6 +6,9 @@ import { asArray, asRecord, display } from "./shared";
 import {
   CliFailure,
   type BrowserDetailLoader,
+  type BrowserLevel,
+  type BrowserLink,
+  type BrowserNesting,
   type BrowserPageLoader,
   type BrowserPresentation,
   type Presentation,
@@ -20,10 +23,21 @@ const ANSI = {
   reset: RESET,
 };
 
-type BrowserDetailState =
-  | { status: "loading"; title: string }
-  | { status: "loaded"; title: string; value: string }
-  | { status: "error"; title: string; message: string };
+type BrowserDetailState = { title: string; links?: BrowserLink[] } & (
+  | { status: "loading" }
+  | { status: "loaded"; value: string }
+  | { status: "error"; message: string }
+);
+
+/** One collection on the browsing stack, with the state of its screen. */
+type BrowserStackLevel = BrowserLevel & {
+  query: string;
+  selectedIndex: number;
+  detail?: BrowserDetailState;
+  pageStatus?: string;
+  /** The parent item this level was opened from, shown as a breadcrumb. */
+  title?: string;
+};
 
 export function hasInteractivePager() {
   if (process.env.CI || spawnSync("less", ["--version"]).status !== 0) {
@@ -72,6 +86,7 @@ export function isListPresentation(presentation: Presentation) {
     presentation === "expense-list" ||
     presentation === "friend-list" ||
     presentation === "group-list" ||
+    presentation === "friend-groups" ||
     presentation === "members" ||
     presentation === "activities"
   );
@@ -85,19 +100,33 @@ export function isBrowserPresentation(
     presentation === "balance-users" ||
     presentation === "friend-list" ||
     presentation === "group-list" ||
+    presentation === "friend-groups" ||
     presentation === "members" ||
     presentation === "activities"
   );
 }
 
+const LABELS: Record<BrowserPresentation, string> = {
+  "balance-users": "user balances",
+  "friend-list": "friends",
+  "group-list": "groups",
+  "expense-list": "expenses",
+  "friend-groups": "shared groups",
+  members: "group members",
+  activities: "activities",
+};
+/** Presentations whose body wraps its rows in `{items, hasMore, nextCursor}`. */
+const PAGED = new Set<BrowserPresentation>([
+  "group-list",
+  "friend-list",
+  "expense-list",
+  "activities",
+]);
+
 function browserItems(presentation: BrowserPresentation, body: unknown) {
-  return asArray(
-    presentation === "group-list" ||
-    presentation === "friend-list" ||
-    presentation === "expense-list"
-      ? asRecord(body).items
-      : body,
-  ).map(asRecord);
+  return asArray(PAGED.has(presentation) ? asRecord(body).items : body).map(
+    asRecord,
+  );
 }
 
 function filterBrowserItems(
@@ -118,7 +147,11 @@ function browserItemTitle(
   if (presentation === "balance-users" || presentation === "friend-list") {
     return display(asRecord(item.user).name);
   }
-  if (presentation === "group-list" || presentation === "members") {
+  if (
+    presentation === "group-list" ||
+    presentation === "friend-groups" ||
+    presentation === "members"
+  ) {
     return display(item.name);
   }
   return item.entity === "payment"
@@ -134,13 +167,17 @@ export function renderCollectionBrowser(
   detail?: BrowserDetailState,
   rows = Infinity,
   pageStatus?: string,
+  trail: string[] = [],
 ) {
   if (detail) {
+    const links = detail.status === "loading" ? [] : (detail.links ?? []);
     return [
       `${ANSI.bold}${ANSI.yellow}BANANA${ANSI.reset}`,
       "",
       `◆ ${ANSI.bold}${detail.title}${ANSI.reset}`,
-      `  ${ANSI.dim}esc/← back · q quit${ANSI.reset}`,
+      `  ${ANSI.dim}esc/← back${links
+        .map((link) => ` · ${link.key} ${link.label}`)
+        .join("")} · q quit${ANSI.reset}`,
       "",
       detail.status === "loading"
         ? `${ANSI.dim}Loading details…${ANSI.reset}`
@@ -157,27 +194,23 @@ export function renderCollectionBrowser(
   const activeIndex = Math.min(selectedIndex, Math.max(items.length - 1, 0));
   const visibleCount = Math.max(1, rows - 13);
   const start = Math.max(0, activeIndex - visibleCount + 1);
-  const label = {
-    "balance-users": "user balances",
-    "friend-list": "friends",
-    "group-list": "groups",
-    "expense-list": "expenses",
-    members: "group members",
-    activities: "group activities",
-  }[presentation];
+  const label = LABELS[presentation];
   const count = `${ANSI.green}${items.length}${
     normalizedQuery ? `/${allItems.length}` : ""
   }${ANSI.reset}`;
+  const path = [...trail, label].join(" › ");
   const lines = [
     `${ANSI.bold}${ANSI.yellow}BANANA${ANSI.reset}`,
     "",
-    `┌─ ${ANSI.yellow} ${label} ${ANSI.reset}`,
+    `┌─ ${ANSI.yellow} ${path} ${ANSI.reset}`,
     "│",
     `◇ Found ${count} ${label}`,
     "│",
     `◆ ${ANSI.bold}Browse ${label}${ANSI.reset}`,
     `  Search: ${query}${ANSI.yellow}█${ANSI.reset}`,
-    `  ${ANSI.dim}↑↓ move · type search · enter/→ details · esc/← clear · q quit${ANSI.reset}`,
+    `  ${ANSI.dim}↑↓ move · type search · enter/→ details · esc/← ${
+      trail.length ? "back" : "clear"
+    } · q quit${ANSI.reset}`,
     "",
     ...(items.length
       ? items.slice(start, start + visibleCount).map(
@@ -189,17 +222,14 @@ export function renderCollectionBrowser(
 
   if (pageStatus) {
     lines.push("", pageStatus);
-  } else if (
-    (presentation === "group-list" ||
-      presentation === "friend-list" ||
-      presentation === "expense-list") &&
-    response.hasMore
-  ) {
+  } else if (PAGED.has(presentation) && response.hasMore) {
     lines.push(
       "",
-      `${ANSI.dim}${presentation === "expense-list"
-        ? "Reach the last item to load more expenses (↓ to continue)."
-        : `More ${label} are available from the API.`}${ANSI.reset}`,
+      `${ANSI.dim}${
+        presentation === "expense-list" || presentation === "activities"
+          ? `Reach the last item to load more ${label} (↓ to continue).`
+          : `More ${label} are available from the API.`
+      }${ANSI.reset}`,
     );
   }
   return lines.join("\n");
@@ -227,19 +257,27 @@ export async function browseCollection(
   body: unknown,
   loadDetail: BrowserDetailLoader,
   loadPage?: BrowserPageLoader,
+  nested?: BrowserNesting,
 ) {
   if (!hasInteractiveBrowser()) return false;
 
   const input = process.stdin;
   const output = process.stdout;
   const wasRaw = input.isRaw;
-  let query = "";
-  let selectedIndex = 0;
-  let detail: BrowserDetailState | undefined;
+  const levels: BrowserStackLevel[] = [
+    {
+      presentation,
+      body,
+      loadDetail,
+      loadPage,
+      links: nested?.links,
+      query: "",
+      selectedIndex: 0,
+    },
+  ];
   let detailGeneration = 0;
   let finished = false;
   let loadingPage = false;
-  let pageStatus: string | undefined;
 
   emitKeypressEvents(input);
   input.setRawMode(true);
@@ -247,10 +285,21 @@ export async function browseCollection(
   output.write("\x1b[?1049h\x1b[?25l");
 
   return await new Promise<boolean>((resolve) => {
+    const current = () => levels[levels.length - 1];
     const draw = () => {
       if (finished) return;
+      const level = current();
       output.write(
-        `\x1b[H\x1b[2J${renderCollectionBrowser(presentation, body, query, selectedIndex, detail, output.rows, pageStatus)}`,
+        `\x1b[H\x1b[2J${renderCollectionBrowser(
+          level.presentation,
+          level.body,
+          level.query,
+          level.selectedIndex,
+          level.detail,
+          output.rows,
+          level.pageStatus,
+          levels.slice(1).map((parent) => parent.title ?? ""),
+        )}`,
       );
     };
     const finish = () => {
@@ -263,46 +312,84 @@ export async function browseCollection(
       output.write("\x1b[?25h\x1b[?1049l");
       resolve(true);
     };
-    const openDetail = async (item: Record<string, unknown>) => {
+    const failureMessage = (error: unknown) =>
+      error instanceof CliFailure ? error.message : "Unexpected error";
+    const openDetail = async (
+      level: BrowserStackLevel,
+      item: Record<string, unknown>,
+    ) => {
       const generation = ++detailGeneration;
-      const title = browserItemTitle(presentation, item);
-      detail = { status: "loading", title };
+      const title = browserItemTitle(level.presentation, item);
+      const links = nested?.open ? level.links?.(item) : undefined;
+      level.detail = { status: "loading", title, links };
       draw();
       try {
-        const value = await loadDetail(item);
+        const value = await level.loadDetail(item);
         if (finished || generation !== detailGeneration) return;
-        detail = { status: "loaded", title, value };
+        level.detail = { status: "loaded", title, value, links };
       } catch (error) {
         if (finished || generation !== detailGeneration) return;
-        detail = {
+        level.detail = {
           status: "error",
           title,
-          message:
-            error instanceof CliFailure ? error.message : "Unexpected error",
+          links,
+          message: failureMessage(error),
         };
       }
       draw();
     };
-    const loadNextPage = async () => {
-      const response = asRecord(body);
-      const cursor = response.nextCursor;
-      if (finished || loadingPage || !loadPage || !response.hasMore ||
-          typeof cursor !== "string" || !cursor) return;
-      loadingPage = true;
-      pageStatus = "Loading more expenses…";
+    const openLink = async (level: BrowserStackLevel, link: BrowserLink) => {
+      const detail = level.detail;
+      if (!nested?.open || !detail) return;
+      const generation = ++detailGeneration;
+      level.detail = { status: "loading", title: detail.title };
       draw();
       try {
-        const page = asRecord(await loadPage(cursor));
+        const opened = await nested.open(link);
+        if (finished || generation !== detailGeneration) return;
+        level.detail = detail;
+        levels.push({
+          ...opened,
+          query: "",
+          selectedIndex: 0,
+          title: detail.title,
+        });
+      } catch (error) {
+        if (finished || generation !== detailGeneration) return;
+        level.detail = {
+          status: "error",
+          title: detail.title,
+          links: detail.links,
+          message: failureMessage(error),
+        };
+      }
+      draw();
+    };
+    const loadNextPage = async (level: BrowserStackLevel) => {
+      const response = asRecord(level.body);
+      const cursor = response.nextCursor;
+      if (finished || loadingPage || !level.loadPage || !response.hasMore ||
+          typeof cursor !== "string" || !cursor) return;
+      const label = LABELS[level.presentation];
+      loadingPage = true;
+      level.pageStatus = `Loading more ${label}…`;
+      draw();
+      try {
+        const page = asRecord(await level.loadPage(cursor));
         if (finished) return;
         if (page.hasMore && page.nextCursor === cursor) {
-          throw new CliFailure("api", "Expense pagination did not advance");
+          throw new CliFailure("api", `Pagination of ${label} did not advance`);
         }
-        body = { ...page, items: [...asArray(response.items), ...asArray(page.items)] };
-        pageStatus = undefined;
+        level.body = {
+          ...page,
+          items: [...asArray(response.items), ...asArray(page.items)],
+        };
+        level.pageStatus = undefined;
       } catch (error) {
         if (finished) return;
-        pageStatus = `Unable to load more expenses: ${error instanceof CliFailure
-          ? error.message : "Unexpected error"}. Press ↓ to retry.`;
+        level.pageStatus = `Unable to load more ${label}: ${failureMessage(
+          error,
+        )}. Press ↓ to retry.`;
       } finally {
         loadingPage = false;
       }
@@ -312,34 +399,58 @@ export async function browseCollection(
       text: string,
       key: { ctrl?: boolean; meta?: boolean; name?: string },
     ) => {
-      const itemCount = filterBrowserItems(presentation, body, query).length;
+      const level = current();
+      const itemCount = filterBrowserItems(
+        level.presentation,
+        level.body,
+        level.query,
+      ).length;
       if ((key.ctrl && key.name === "c") || key.name === "q") {
         finish();
         return;
       }
+      const detail = level.detail;
       if (detail) {
         if (key.name === "escape" || key.name === "left") {
           detailGeneration++;
-          detail = undefined;
+          level.detail = undefined;
           draw();
+          return;
         }
+        const link = (detail.status === "loading" ? [] : (detail.links ?? []))
+          .find((candidate) => candidate.key === key.name);
+        if (link) void openLink(level, link);
         return;
       }
       if (key.name === "escape" || key.name === "left") {
-        query = "";
-        selectedIndex = 0;
+        if (level.query) {
+          level.query = "";
+          level.selectedIndex = 0;
+        } else if (levels.length > 1) {
+          detailGeneration++;
+          levels.pop();
+        } else {
+          level.selectedIndex = 0;
+        }
       } else if (key.name === "up") {
-        selectedIndex = Math.max(0, selectedIndex - 1);
+        level.selectedIndex = Math.max(0, level.selectedIndex - 1);
       } else if (key.name === "down") {
-        selectedIndex = Math.min(Math.max(itemCount - 1, 0), selectedIndex + 1);
-        if (selectedIndex >= itemCount - 1) void loadNextPage();
+        level.selectedIndex = Math.min(
+          Math.max(itemCount - 1, 0),
+          level.selectedIndex + 1,
+        );
+        if (level.selectedIndex >= itemCount - 1) void loadNextPage(level);
       } else if (key.name === "backspace" || key.name === "delete") {
-        query = query.slice(0, -1);
-        selectedIndex = 0;
+        level.query = level.query.slice(0, -1);
+        level.selectedIndex = 0;
       } else if (key.name === "return" || key.name === "enter" || key.name === "right") {
-        const items = filterBrowserItems(presentation, body, query);
-        const selected = items[Math.min(selectedIndex, items.length - 1)];
-        if (selected) void openDetail(selected);
+        const items = filterBrowserItems(
+          level.presentation,
+          level.body,
+          level.query,
+        );
+        const selected = items[Math.min(level.selectedIndex, items.length - 1)];
+        if (selected) void openDetail(level, selected);
         return;
       } else if (
         text &&
@@ -348,8 +459,8 @@ export async function browseCollection(
         text >= " " &&
         text !== "\x7f"
       ) {
-        query += text;
-        selectedIndex = 0;
+        level.query += text;
+        level.selectedIndex = 0;
       }
       draw();
     };

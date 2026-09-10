@@ -23,6 +23,9 @@ import { DEFAULT_API_URL, request } from "./request";
 import { asArray, asRecord, usageFailure } from "./shared";
 import {
   CliFailure,
+  type BrowserLevel,
+  type BrowserLink,
+  type BrowserPresentation,
   type CliRuntime,
   type CommandParser,
   type OutputMode,
@@ -347,32 +350,70 @@ export async function runCli(
     }
 
     const human = presenter.format(clean);
-    const browserPresenter = presenter.browser;
-    const loadDetail = async (item: Record<string, unknown>) => {
-      if (!browserPresenter) {
-        throw new CliFailure("api", "Details are unavailable for this item");
-      }
-      const detailCommand: RequestCommand = {
-        kind: "request",
-        path: browserPresenter.detailPath(command, item),
-        presentation: command.presentation,
+    // Every browsable collection — the one asked for and any drilled into from
+    // an item's details — is browsed the same way, off its own command.
+    const browserLevel = (
+      levelCommand: RequestCommand,
+      levelBody: unknown,
+    ): BrowserLevel => {
+      const levelPresenter = PRESENTERS[levelCommand.presentation];
+      const browserPresenter = levelPresenter.browser;
+      return {
+        presentation: levelCommand.presentation as BrowserPresentation,
+        body: levelBody,
+        async loadDetail(item) {
+          if (!browserPresenter) {
+            throw new CliFailure("api", "Details are unavailable for this item");
+          }
+          const detail = await request(
+            {
+              kind: "request",
+              path: browserPresenter.detailPath(levelCommand, item),
+              presentation: levelCommand.presentation,
+            },
+            requestRuntime,
+            env,
+          );
+          return browserPresenter.formatDetail(item, detail);
+        },
+        links: browserPresenter?.links
+          ? (item) => browserPresenter.links!(levelCommand, item)
+          : undefined,
+        loadPage:
+          levelCommand.presentation === "expense-list" ||
+          levelCommand.presentation === "activities"
+            ? async (cursor: string) => {
+                const query = new URLSearchParams(levelCommand.query);
+                query.set("cursor", cursor);
+                return levelPresenter.clean(
+                  await request(
+                    { ...levelCommand, query },
+                    requestRuntime,
+                    env,
+                  ),
+                );
+              }
+            : undefined,
       };
-      const detail = await request(detailCommand, requestRuntime, env);
-      return browserPresenter.formatDetail(item, detail);
     };
-    const loadPage = command.presentation === "expense-list"
-      ? async (cursor: string) => {
-          const query = new URLSearchParams(command.query);
-          query.set("cursor", cursor);
-          return presenter.clean(await request(
-            { ...command, query }, requestRuntime, env,
-          ));
-        }
-      : undefined;
+    const level = browserLevel(command, clean);
+    const openLink = async (link: BrowserLink) => {
+      const linkCommand: RequestCommand = {
+        kind: "request",
+        path: link.path,
+        presentation: link.presentation,
+        query: link.query,
+      };
+      const linkBody = PRESENTERS[link.presentation].clean(
+        await request(linkCommand, requestRuntime, env),
+      );
+      return browserLevel(linkCommand, linkBody);
+    };
     if (
       (!browser ||
         !browserPresentation ||
-        !(await browser(browserPresentation, clean, loadDetail, loadPage))) &&
+        !(await browser(browserPresentation, clean, level.loadDetail,
+          level.loadPage, { links: level.links, open: openLink }))) &&
       (!pager || !(await pager(human)))
     ) {
       stdout(human);

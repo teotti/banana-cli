@@ -87,6 +87,12 @@ To add a command: update help and the relevant parser/presenter in
 command modules in `src/cli.ts`. Multi-step commands are wired in `runCli` —
 see `mergeExpenseBody` in `src/commands/expenses.ts` and the group members merge.
 Reuse helpers from `src/shared.ts`; interactive browsing lives in `src/browser.ts`.
+The browser keeps a stack of collections: a presenter's `browser.links` names the
+collections an item's detail view can drill into (a group offers members,
+expenses and activity; a friend offers those plus shared groups), `runCli`
+fetches and cleans each one into a `BrowserLevel`, and Esc pops back to the
+detail it was opened from. A linked collection needs no command of its own —
+only a presentation with a presenter, like `friend-groups`.
 
 Help pages are data, not strings: each command builds one with `helpText()`
 from `src/help.ts` (`summary`, `usage`, `commands`, `options`, `notes`,
