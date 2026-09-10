@@ -11,6 +11,7 @@ export type Presentation =
   | "friend-list"
   | "group-list"
   | "group"
+  | "friend-groups"
   | "members"
   | "activities"
   | "expense-list"
@@ -24,6 +25,7 @@ export type BrowserPresentation =
   | "balance-users"
   | "friend-list"
   | "group-list"
+  | "friend-groups"
   | "expense-list"
   | "members"
   | "activities";

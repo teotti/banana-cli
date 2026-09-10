@@ -86,6 +86,7 @@ export function isListPresentation(presentation: Presentation) {
     presentation === "expense-list" ||
     presentation === "friend-list" ||
     presentation === "group-list" ||
+    presentation === "friend-groups" ||
     presentation === "members" ||
     presentation === "activities"
   );
@@ -99,6 +100,7 @@ export function isBrowserPresentation(
     presentation === "balance-users" ||
     presentation === "friend-list" ||
     presentation === "group-list" ||
+    presentation === "friend-groups" ||
     presentation === "members" ||
     presentation === "activities"
   );
@@ -109,8 +111,9 @@ const LABELS: Record<BrowserPresentation, string> = {
   "friend-list": "friends",
   "group-list": "groups",
   "expense-list": "expenses",
+  "friend-groups": "shared groups",
   members: "group members",
-  activities: "group activities",
+  activities: "activities",
 };
 /** Presentations whose body wraps its rows in `{items, hasMore, nextCursor}`. */
 const PAGED = new Set<BrowserPresentation>([
@@ -144,7 +147,11 @@ function browserItemTitle(
   if (presentation === "balance-users" || presentation === "friend-list") {
     return display(asRecord(item.user).name);
   }
-  if (presentation === "group-list" || presentation === "members") {
+  if (
+    presentation === "group-list" ||
+    presentation === "friend-groups" ||
+    presentation === "members"
+  ) {
     return display(item.name);
   }
   return item.entity === "payment"

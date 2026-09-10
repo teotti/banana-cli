@@ -569,7 +569,7 @@ describe("BananaSplit CLI", () => {
 
       key("e", "e");
       await Bun.sleep(0);
-      expect(screens.at(-1)).toContain("Lisbon trip › group activities");
+      expect(screens.at(-1)).toContain("Lisbon trip › activities");
       expect(screens.at(-1)).toContain("Expense: Dinner");
 
       key("q");
@@ -580,6 +580,80 @@ describe("BananaSplit CLI", () => {
         "/base/groups/group%2Fone/members",
         "/base/groups/group%2Fone/members/member-1",
         "/base/groups/group%2Fone/activities?type=expenses",
+      ]);
+      expect(stdout).toEqual([]);
+    });
+  });
+
+  it("drills from a friend into their expenses and shared groups", async () => {
+    await withBrowserTerminal(async (key, screens) => {
+      const { calls, runtime, stdout } = harness((url) => {
+        if (url.pathname === "/base/friends") {
+          return Response.json({
+            items: [
+              {
+                id: "friendship-1",
+                user: { id: "user-2", name: "Ana" },
+                balance: 12.5,
+                currency: { code: "EUR" },
+              },
+            ],
+            hasMore: false,
+            nextCursor: null,
+          });
+        }
+        if (url.pathname.endsWith("/activities")) {
+          return Response.json({
+            items: [
+              { entity: "expense", id: "expense-1", title: "Tapas", amount: "32" },
+            ],
+            hasMore: false,
+            nextCursor: null,
+          });
+        }
+        if (url.pathname.endsWith("/groups")) {
+          return Response.json([
+            { id: "group-1", name: "Lisbon trip", type: "travel" },
+          ]);
+        }
+        if (url.pathname === "/base/groups/group-1") {
+          return Response.json({ id: "group-1", name: "Lisbon trip" });
+        }
+        return Response.json({ id: "friendship-1", status: "accepted" });
+      });
+      runtime.browser = browseCollection;
+      const result = runCli(["friends", "list"], runtime);
+      await Bun.sleep(0);
+
+      key("return");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("e expenses");
+      expect(screens.at(-1)).toContain("g shared groups");
+
+      key("e", "e");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("Ana › activities");
+      expect(screens.at(-1)).toContain("Expense: Tapas");
+      key("escape");
+
+      key("g", "g");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("Ana › shared groups");
+      expect(screens.at(-1)).toContain("Lisbon trip");
+
+      // A shared group drills on into the group's own collections.
+      key("return");
+      await Bun.sleep(0);
+      expect(screens.at(-1)).toContain("m members");
+
+      key("q");
+      expect(await result).toBe(0);
+      expect(calls.map(({ url }) => `${url.pathname}${url.search}`)).toEqual([
+        "/base/friends",
+        "/base/friends/friendship-1",
+        "/base/friends/friendship-1/activities?type=expenses",
+        "/base/friends/friendship-1/groups",
+        "/base/groups/group-1",
       ]);
       expect(stdout).toEqual([]);
     });

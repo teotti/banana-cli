@@ -23,7 +23,12 @@ import {
 } from "../shared";
 import { helpText } from "../help";
 import { type Field, fields, heading, note, section, table } from "../render";
-import { type ParsedCommand, type Presenter } from "../types";
+import {
+  type BrowserLink,
+  type ParsedCommand,
+  type Presenter,
+  type RequestCommand,
+} from "../types";
 
 const HELP = helpText({
   summary: "Create groups and browse their members, balances and activity.",
@@ -458,6 +463,35 @@ function cleanPaymentDetail(body: unknown) {
   };
 }
 
+/** The collections a group's details drill into, wherever it is listed. */
+function groupLinks(
+  _command: RequestCommand,
+  item: Record<string, unknown>,
+): BrowserLink[] {
+  const group = `/groups/${encodedDetailId(item.id)}`;
+  return [
+    { key: "m", label: "members", presentation: "members",
+      path: `${group}/members` },
+    { key: "e", label: "expenses", presentation: "activities",
+      path: `${group}/activities`,
+      query: new URLSearchParams({ type: "expenses" }) },
+    { key: "a", label: "activity", presentation: "activities",
+      path: `${group}/activities` },
+  ];
+}
+
+function cleanSharedGroups(body: unknown) {
+  return asArray(body).map((value) => {
+    const group = asRecord(value);
+    return {
+      id: group.id ?? null,
+      name: group.name ?? null,
+      description: group.description ?? null,
+      type: group.type ?? null,
+    };
+  });
+}
+
 function formatGroup(body: unknown) {
   const response = asRecord(body);
   return section(
@@ -601,18 +635,7 @@ export const groupPresenters = {
       detailPath(_command, item) {
         return `/groups/${encodedDetailId(item.id)}`;
       },
-      links(_command, item) {
-        const group = `/groups/${encodedDetailId(item.id)}`;
-        return [
-          { key: "m", label: "members", presentation: "members",
-            path: `${group}/members` },
-          { key: "e", label: "expenses", presentation: "activities",
-            path: `${group}/activities`,
-            query: new URLSearchParams({ type: "expenses" }) },
-          { key: "a", label: "activity", presentation: "activities",
-            path: `${group}/activities` },
-        ];
-      },
+      links: groupLinks,
       formatDetail(item, body) {
         return formatGroup(cleanGroup({
           ...asRecord(body),
@@ -622,6 +645,34 @@ export const groupPresenters = {
     },
   },
   group: { clean: cleanGroup, format: formatGroup },
+  "friend-groups": {
+    clean: cleanSharedGroups,
+    format(body) {
+      const items = asArray(body);
+      if (!items.length) return note("No shared groups.");
+      return table(
+        [
+          { label: "ID", id: true },
+          { label: "Name", max: 24 },
+          { label: "Type", max: 12 },
+          { label: "Description", max: 32 },
+        ],
+        items.map((value) => {
+          const group = asRecord(value);
+          return [group.id, group.name, group.type, group.description];
+        }),
+      );
+    },
+    browser: {
+      detailPath(_command, item) {
+        return `/groups/${encodedDetailId(item.id)}`;
+      },
+      links: groupLinks,
+      formatDetail(_item, body) {
+        return formatGroup(cleanGroup(body));
+      },
+    },
+  },
   members: {
     clean: cleanMembers,
     format(body) {
@@ -739,6 +790,11 @@ export const groupPresenters = {
     },
   },
 } satisfies Record<
-  "group-list" | "group" | "members" | "activities" | "group-created",
+  | "group-list"
+  | "group"
+  | "friend-groups"
+  | "members"
+  | "activities"
+  | "group-created",
   Presenter
 >;

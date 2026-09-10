@@ -157,6 +157,18 @@ export const friendPresenters = {
       detailPath(_command, item) {
         return `/friends/${encodedDetailId(item.id)}`;
       },
+      links(_command, item) {
+        const friendship = `/friends/${encodedDetailId(item.id)}`;
+        return [
+          { key: "e", label: "expenses", presentation: "activities",
+            path: `${friendship}/activities`,
+            query: new URLSearchParams({ type: "expenses" }) },
+          { key: "a", label: "activity", presentation: "activities",
+            path: `${friendship}/activities` },
+          { key: "g", label: "shared groups", presentation: "friend-groups",
+            path: `${friendship}/groups` },
+        ];
+      },
       formatDetail(item, body) {
         const friendship = asRecord(body);
         const user = asRecord(friendship.user);
