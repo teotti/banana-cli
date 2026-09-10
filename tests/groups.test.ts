@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { runCli } from "../src/index";
-import { harness } from "./helpers";
+import { ANA, GROUP, ME, harness, lookup } from "./helpers";
 
 describe("BananaSplit CLI", () => {
   it("maps group list options to API query parameters", async () => {
@@ -89,8 +89,8 @@ describe("BananaSplit CLI", () => {
     expect(await runCli(["groups", "list"], runtime)).toBe(0);
     expect(stdout[1]).toBe(
       [
-        "ID       Name         Type    Members    Balance  Last activity",
-        "group-1  Lisbon trip  travel        2  12.50 EUR  2026-08-28",
+        "Name         Type    Members    Balance  Last activity",
+        "Lisbon trip  travel        2  12.50 EUR  2026-08-28",
         "",
         'More groups available. Next page: banana groups list --cursor "cursor-2"',
       ].join("\n"),
@@ -121,7 +121,7 @@ describe("BananaSplit CLI", () => {
     );
 
     expect(
-      await runCli(["--json", "groups", "get", "group-1"], groupHarness.runtime),
+      await runCli(["--json", "groups", "get", GROUP.id], groupHarness.runtime),
     ).toBe(0);
     expect(JSON.parse(groupHarness.stdout[0])).toEqual({
       id: "group-1",
@@ -138,7 +138,7 @@ describe("BananaSplit CLI", () => {
       memberBalanceVisibility: "all_members",
     });
     expect(
-      await runCli(["groups", "get", "group-1"], groupHarness.runtime),
+      await runCli(["groups", "get", GROUP.id], groupHarness.runtime),
     ).toBe(0);
     expect(groupHarness.stdout[1]).toContain("Members:            2");
 
@@ -159,7 +159,7 @@ describe("BananaSplit CLI", () => {
     );
     expect(
       await runCli(
-        ["groups", "members", "group-1", "--json"],
+        ["groups", "members", GROUP.id, "--json"],
         membersHarness.runtime,
       ),
     ).toBe(0);
@@ -177,26 +177,31 @@ describe("BananaSplit CLI", () => {
     ]);
     expect(
       await runCli(
-        ["groups", "members", "group-1"],
+        ["groups", "members", GROUP.id],
         membersHarness.runtime,
       ),
     ).toBe(0);
     expect(membersHarness.stdout[1]).toBe(
       [
-        "User ID  Name      Role   Guest  Default split  Joined",
-        "user-1   Leonardo  admin  no                 —  2026-08-01",
+        "Name      Role   Guest  Default split  Joined",
+        "Leonardo  admin  no                 —  2026-08-01",
       ].join("\n"),
     );
   });
 
-  it("encodes group IDs for get and member requests", async () => {
-    const { calls, runtime } = harness();
+  it("finds a group by name for get, members and activities", async () => {
+    const { calls, runtime } = harness((url, init) => {
+      if (init?.method === undefined && url.pathname === "/base/groups") {
+        return Response.json({ items: [{ id: "group/one", name: "Lisbon trip" }] });
+      }
+      return lookup(url, init) ?? Response.json({});
+    });
 
-    expect(await runCli(["groups", "get", "group/one"], runtime)).toBe(0);
+    expect(await runCli(["groups", "get", "lisbon"], runtime)).toBe(0);
+    expect(await runCli(["groups", "members", "Lisbon trip"], runtime)).toBe(0);
     expect(
-      await runCli(["groups", "members", "group/one"], runtime),
-    ).toBe(0);
-    expect(calls.map(({ url }) => url.pathname)).toEqual([
+      calls.map(({ url }) => url.pathname).filter((path) => path !== "/base/groups"),
+    ).toEqual([
       "/base/groups/group%2Fone",
       "/base/groups/group%2Fone/members",
       "/base/groups/group%2Fone/members",
@@ -211,7 +216,7 @@ describe("BananaSplit CLI", () => {
         [
           "groups",
           "activities",
-          "group-1",
+          GROUP.id,
           "--search",
           "dinner out",
           "--limit",
@@ -229,7 +234,7 @@ describe("BananaSplit CLI", () => {
       ),
     ).toBe(0);
     expect(calls[0].url.pathname).toBe(
-      "/base/groups/group-1/activities/search",
+      `/base/groups/${GROUP.id}/activities/search`,
     );
     expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
       l: "10",
@@ -278,7 +283,7 @@ describe("BananaSplit CLI", () => {
 
     expect(
       await runCli(
-        ["groups", "activities", "group-1", "--json"],
+        ["groups", "activities", GROUP.id, "--json"],
         runtime,
       ),
     ).toBe(0);
@@ -291,7 +296,8 @@ describe("BananaSplit CLI", () => {
         amount: 42,
         currency: "EUR",
         date: "2026-08-27T20:00:00.000Z",
-        paidBy: { id: "user-1", name: "Leonardo" },
+        paidById: "user-1",
+        paidBy: "Leonardo",
         category: "Food",
         splitType: "equal",
         isRecurring: true,
@@ -303,8 +309,10 @@ describe("BananaSplit CLI", () => {
         amount: 15,
         currency: "EUR",
         date: "2026-08-28T09:00:00.000Z",
-        from: { id: "user-2", name: "Ana" },
-        to: { id: "user-1", name: "Leonardo" },
+        fromUserId: "user-2",
+        from: "Ana",
+        toUserId: "user-1",
+        to: "Leonardo",
         isSettlement: true,
       },
       ],
@@ -312,7 +320,7 @@ describe("BananaSplit CLI", () => {
       nextCursor: "next-page",
     });
     expect(
-      await runCli(["groups", "activities", "group-1"], runtime),
+      await runCli(["groups", "activities", GROUP.id], runtime),
     ).toBe(0);
     expect(stdout[1]).toBe(
       [
@@ -321,25 +329,31 @@ describe("BananaSplit CLI", () => {
         "payment-1  2026-08-28  payment  —       Ana → Leonardo  15.00 EUR",
         "",
         "More activities available. Next page: banana groups activities " +
-          '<group-id> --cursor "next-page"',
+          '<group> --cursor "next-page"',
       ].join("\n"),
     );
   });
 
-  it("creates a group without exposing its invite token", async () => {
-    const { calls, runtime, stdout } = harness(
-      Response.json({
-        id: "group-1",
-        name: "Lisbon trip",
-        description: "Summer holiday",
-        type: "travel",
-        currencyId: "currency-eur",
-        creatorId: "user-1",
-        defaultSplitType: "equal",
-        memberBalanceVisibility: "all_members",
-        token: "private-invite-token",
-      }),
-    );
+  it("creates a group by naming its currency and members", async () => {
+    const created = {
+      id: "group-1",
+      name: "Lisbon trip",
+      description: "Summer holiday",
+      type: "travel",
+      currency: { code: "EUR" },
+      balance: 0,
+      defaultSplitType: "equal",
+      useOptimalSettlement: false,
+      memberBalanceVisibility: "all_members",
+      token: "private-invite-token",
+    };
+    const { calls, runtime, stdout } = harness((url, init) => {
+      const answer = lookup(url, init);
+      if (answer) return answer;
+      return url.pathname.endsWith("/members")
+        ? Response.json([{ id: "member-1" }, { id: "member-2" }])
+        : Response.json(created);
+    });
 
     expect(
       await runCli(
@@ -348,41 +362,33 @@ describe("BananaSplit CLI", () => {
           "create",
           "--name",
           "Lisbon trip",
-          "--currency-id",
-          "currency-eur",
+          "--currency",
+          "EUR",
           "--description",
           "Summer holiday",
           "--type",
           "travel",
           "--member",
-          "user-2",
+          "Ana",
           "--member",
-          "user-3",
-          "--json",
+          ME.id,
         ],
         runtime,
       ),
     ).toBe(0);
-    expect(calls[0].url.pathname).toBe("/base/groups");
-    expect(calls[0].init?.method).toBe("POST");
-    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
-      name: "Lisbon trip",
-      currencyId: "currency-eur",
-      description: "Summer holiday",
-      type: "travel",
-      groupMembers: ["user-2", "user-3"],
-    });
-    expect(JSON.parse(stdout[0])).toEqual({
-      id: "group-1",
+
+    const post = calls.find(({ init }) => init?.method === "POST")!;
+    expect(post.url.pathname).toBe("/base/groups");
+    expect(JSON.parse(String(post.init?.body))).toEqual({
       name: "Lisbon trip",
       description: "Summer holiday",
       type: "travel",
+      groupMembers: [ANA.id, ME.id],
       currencyId: "currency-eur",
-      creatorId: "user-1",
-      defaultSplitType: "equal",
-      memberBalanceVisibility: "all_members",
     });
+    expect(stdout[0]).toContain("Group created");
+    expect(stdout[0]).toContain("Currency:           EUR");
+    expect(stdout[0]).toContain("Members:            2");
     expect(stdout[0]).not.toContain("private-invite-token");
   });
-
 });

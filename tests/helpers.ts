@@ -23,6 +23,47 @@ export function credential(
   };
 }
 
+export const CURRENCIES = [
+  {
+    id: "currency-eur",
+    name: "Euro",
+    code: "EUR",
+    symbol: "€",
+    type: "fiat",
+    decimals: 2,
+    exchangeRateToBase: "1",
+    updatedAt: "2026-09-01T00:00:00.000Z",
+  },
+];
+export const ME = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "Leonardo",
+  email: "leo@example.test",
+  username: "leo",
+};
+export const ANA = { id: "22222222-2222-4222-8222-222222222222", name: "Ana" };
+export const GROUP = {
+  id: "33333333-3333-4333-8333-333333333333",
+  name: "Lisbon trip",
+};
+
+/**
+ * Answers the name lookups a write makes on its way to an id, so a test only
+ * has to describe the request it is actually about.
+ */
+export function lookup(url: URL, init?: RequestInit) {
+  if (init?.method !== undefined) return undefined;
+  if (url.pathname.endsWith("/currencies")) return Response.json(CURRENCIES);
+  if (url.pathname.endsWith("/current-user")) return Response.json(ME);
+  if (url.pathname.endsWith("/friends")) {
+    return Response.json({ items: [{ id: "friendship-1", user: ANA }] });
+  }
+  if (url.pathname.endsWith("/groups")) {
+    return Response.json({ items: [GROUP] });
+  }
+  return undefined;
+}
+
 export function harness(
   response:
     | Response

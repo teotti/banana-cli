@@ -54,7 +54,8 @@ describe("BananaSplit CLI", () => {
       items: [
         {
           id: "friendship-1",
-          user: { id: "user-2", name: "Ana" },
+          userId: "user-2",
+          user: "Ana",
           balance: 12.5,
           currency: "EUR",
           isGuest: false,

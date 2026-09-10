@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { fields, heading, note, section, table } from "../src/render";
+import { humanNumber } from "../src/shared";
 
 describe("table", () => {
   const columns = [
@@ -56,5 +57,25 @@ describe("section", () => {
     expect(section(heading("Expense", false), undefined, note("None.", false))).toBe(
       "Expense\n\nNone.",
     );
+  });
+});
+
+describe("humanNumber", () => {
+  it("keeps the decimals an amount was stored with", () => {
+    // The rounding that made a caller re-fetch an expense it had just created.
+    expect(humanNumber("95.185000000000000000")).toBe("95.185");
+    expect(humanNumber("8.100000000000000000")).toBe("8.10");
+    expect(humanNumber(42)).toBe("42.00");
+  });
+
+  it("still rounds away float arithmetic artifacts", () => {
+    expect(humanNumber(2397.5199999999995)).toBe("2397.52");
+    expect(humanNumber(-0.30000000000000004)).toBe("-0.30");
+  });
+
+  it("keeps more decimals for amounts too small for two", () => {
+    expect(humanNumber(0.000005)).toBe("0.000005");
+    expect(humanNumber(0)).toBe("0.00");
+    expect(humanNumber(null)).toBe("—");
   });
 });

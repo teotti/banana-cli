@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { runCli } from "../src/index";
-import { harness, TOKEN } from "./helpers";
+import { GROUP, harness, TOKEN } from "./helpers";
 
 describe("BananaSplit CLI", () => {
   it("prints help without requiring authentication", async () => {
@@ -111,7 +111,7 @@ describe("BananaSplit CLI", () => {
     );
     expect(
       await runCli(
-        ["groups", "activities", "group-1"],
+        ["groups", "activities", GROUP.id],
         activitiesHarness.runtime,
       ),
     ).toBe(0);
@@ -301,10 +301,10 @@ describe("BananaSplit CLI", () => {
         "Dinner",
         "--amount",
         "10",
-        "--currency-id",
-        "currency-eur",
-        "--paid-by-id",
-        "user-1",
+        "--currency",
+        "EUR",
+        "--paid-by",
+        "me",
         "--date",
         "2026-09-01",
       ],
@@ -315,10 +315,10 @@ describe("BananaSplit CLI", () => {
         "Dinner",
         "--amount",
         "10",
-        "--currency-id",
-        "currency-eur",
-        "--paid-by-id",
-        "user-1",
+        "--currency",
+        "EUR",
+        "--paid-by",
+        "me",
         "--date",
         "2026-09-01",
         "--split",
@@ -329,10 +329,10 @@ describe("BananaSplit CLI", () => {
         "add",
         "--amount",
         "10",
-        "--currency-id",
-        "currency-eur",
-        "--from-user-id",
-        "user-1",
+        "--currency",
+        "EUR",
+        "--from",
+        "me",
         "--date",
         "2026-09-01",
       ],
@@ -359,26 +359,26 @@ describe("BananaSplit CLI", () => {
         "Dinner",
         "--amount",
         "10",
-        "--currency-id",
-        "currency-eur",
-        "--paid-by-id",
-        "user-1",
+        "--currency",
+        "EUR",
+        "--paid-by",
+        "me",
         "--date",
         "2026/09/02",
-        "--group-id",
-        "group-1",
+        "--group",
+        "Lisbon",
       ],
       [
         "payments",
         "add",
         "--amount",
         "10",
-        "--currency-id",
-        "currency-eur",
-        "--from-user-id",
-        "user-1",
-        "--to-user-id",
-        "user-2",
+        "--currency",
+        "EUR",
+        "--from",
+        "me",
+        "--to",
+        "Ana",
         "--date",
         "31-02-2026",
       ],
@@ -421,7 +421,7 @@ describe("BananaSplit CLI", () => {
       await runCli(["groups", "activities", "--help"], runtime),
     ).toBe(0);
     expect(stdout[0]).toContain(
-      "banana groups activities <group-id> [flags]",
+      "banana groups activities <group> [flags]",
     );
     expect(calls).toHaveLength(0);
   });

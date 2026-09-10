@@ -39,7 +39,8 @@ describe("BananaSplit CLI", () => {
     ).toBe(0);
     expect(JSON.parse(usersHarness.stdout[0])).toEqual([
       {
-        user: { id: "user-2", name: "Ana" },
+        userId: "user-2",
+        user: "Ana",
         balance: -5,
         totalOwed: 0,
         totalOwing: 5,
@@ -50,8 +51,8 @@ describe("BananaSplit CLI", () => {
     ).toBe(0);
     expect(usersHarness.stdout[1]).toBe(
       [
-        "User ID  Name  Balance  Owed  Owing",
-        "user-2   Ana     -5.00  0.00   5.00",
+        "Name  Balance  Owed  Owing",
+        "Ana     -5.00  0.00   5.00",
       ].join("\n"),
     );
   });
