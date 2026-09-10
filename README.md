@@ -106,9 +106,10 @@ banana payments get PAYMENT_ID
 banana logout
 ```
 
-Run `banana update` to install the latest stable release. Standalone installs
-update in place; Bun package installs update through Bun's global package
-manager.
+Run `banana update` to install the latest stable release, which reports the
+version it installed — `v0.2.4 → v0.2.5` — or tells you the version you were
+already on. Standalone installs update in place; Bun package installs update
+through Bun's global package manager.
 
 List expenses across the authenticated account, sorted by date or amount:
 
