@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { defaultSecureStorage } from "./secrets";
 import { userAgent } from "./shared";
 import {
   CliFailure,
@@ -18,7 +19,7 @@ export const REQUEST_TIMEOUT_MS = 15_000;
 export const OAUTH_CLIENT_ID = "bananasplit-cli";
 export const OAUTH_SCOPES = "api:read api:write offline_access";
 const DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
-const SECRET_SERVICE = "bananasplit-cli";
+const SECRET_SERVICE = "banana";
 const ACCESS_TOKEN_MARGIN_MS = 30_000;
 const LOCK_WAIT_MS = 65_000;
 const LOCK_STALE_MS = 60_000;
@@ -160,7 +161,8 @@ export function createAuthRuntime(runtime: CliRuntime): AuthRuntime {
     fetch: runtime.fetch ?? globalThis.fetch,
     now: runtime.now ?? Date.now,
     openUrl: runtime.openUrl ?? defaultOpenUrl,
-    secrets: runtime.secrets ?? Bun.secrets,
+    secrets:
+      runtime.secrets ?? defaultSecureStorage(runtime.env ?? process.env),
     sleep: runtime.sleep ?? defaultSleep,
     timeoutMs: runtime.timeoutMs ?? REQUEST_TIMEOUT_MS,
   };

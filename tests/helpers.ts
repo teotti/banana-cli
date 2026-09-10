@@ -32,7 +32,7 @@ export function harness(
   const calls: Array<{ init?: RequestInit; url: URL }> = [];
   const secretCalls: Array<{ action: "delete" | "get" | "set"; value?: string }> = [];
   const values = new Map([
-    ["bananasplit-cli\0https://api.example.test", JSON.stringify(credential())],
+    ["banana\0https://api.example.test", JSON.stringify(credential())],
   ]);
   const stdout: string[] = [];
   const stderr: string[] = [];

@@ -102,7 +102,7 @@ describe("OAuth authentication", () => {
       "Logged in.",
     ]);
     const stored = JSON.parse(
-      result.values.get("bananasplit-cli\0https://api.example.test")!,
+      result.values.get("banana\0https://api.example.test")!,
     );
     expect(stored).toEqual({
       accessToken: ACCESS_TOKEN,
@@ -297,7 +297,7 @@ describe("OAuth authentication", () => {
     };
     result.values.clear();
     result.values.set(
-      "bananasplit-cli\0http://127.0.0.1:8080",
+      "banana\0http://127.0.0.1:8080",
       JSON.stringify(credential({
         authBaseUrl: "http://localhost:8081/api/",
       })),
@@ -336,7 +336,7 @@ describe("OAuth authentication", () => {
         : Response.json({ id: "user-1", name: "Ada" })
     );
     refreshed.values.set(
-      "bananasplit-cli\0https://api.example.test",
+      "banana\0https://api.example.test",
       JSON.stringify(credential({ accessTokenExpiresAt: NOW + 30_000 })),
     );
     expect(await runCli(["me"], refreshed.runtime)).toBe(0);
@@ -359,7 +359,7 @@ describe("OAuth authentication", () => {
         : new Response(null)
     );
     storageFailure.values.set(
-      "bananasplit-cli\0https://api.example.test",
+      "banana\0https://api.example.test",
       JSON.stringify(credential({ accessTokenExpiresAt: NOW })),
     );
     storageFailure.runtime.secrets = {
@@ -381,7 +381,7 @@ describe("OAuth authentication", () => {
         : Response.json({ ok: true })
     );
     invalid.values.set(
-      "bananasplit-cli\0https://api.example.test",
+      "banana\0https://api.example.test",
       JSON.stringify(credential({ accessTokenExpiresAt: NOW })),
     );
     expect(await runCli(["me"], invalid.runtime)).toBe(1);
@@ -514,7 +514,7 @@ describe("OAuth authentication", () => {
     };
     concurrent.values.clear();
     concurrent.values.set(
-      `bananasplit-cli\0${concurrentOrigin}`,
+      `banana\0${concurrentOrigin}`,
       JSON.stringify(credential({
         accessTokenExpiresAt: NOW,
         authBaseUrl: `${concurrentOrigin}/api/`,
@@ -552,7 +552,7 @@ describe("OAuth authentication", () => {
     stale.runtime.env = { BANANASPLIT_API_URL: `${origin}/base` };
     stale.values.clear();
     stale.values.set(
-      `bananasplit-cli\0${origin}`,
+      `banana\0${origin}`,
       JSON.stringify(credential({
         accessTokenExpiresAt: NOW,
         authBaseUrl: `${origin}/api/`,
