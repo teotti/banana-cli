@@ -1,13 +1,28 @@
 import { describe, expect, it } from "bun:test";
+import { version as CLI_VERSION } from "../package.json";
 import { updateCli, type UpdateRuntime } from "../src/update";
+
+const LATEST = "https://github.com/teotti/banana-cli/releases/latest";
+
+/** What GitHub answers for `/releases/latest`: a redirect to the tag. */
+function redirect(version: string) {
+  return new Response(null, {
+    status: 302,
+    headers: { location: `${LATEST.replace("/latest", "")}/tag/v${version}` },
+  });
+}
 
 function updater(overrides: Partial<UpdateRuntime> = {}) {
   const calls: Parameters<UpdateRuntime["spawn"]>[] = [];
   let unrefs = 0;
   const runtime: UpdateRuntime = {
+    color: false,
     env: { PATH: "/bin" },
     execPath: "/opt/banana/bin/banana",
-    fetch: async () => new Response("installer body"),
+    fetch: async (input) =>
+      String(input) === LATEST
+        ? redirect("9.9.9")
+        : new Response("installer body"),
     isStandalone: true,
     pid: 42,
     platform: "linux",
@@ -32,7 +47,9 @@ describe("CLI updater", () => {
       isStandalone: false,
     });
 
-    expect(await updateCli(test.runtime)).toBe("Banana is up to date.");
+    expect(await updateCli(test.runtime)).toBe(
+      `Banana is now up to date.\n  v${CLI_VERSION} → v9.9.9`,
+    );
     expect(test.calls).toEqual([
       [
         [
@@ -44,7 +61,7 @@ describe("CLI updater", () => {
         ],
         {
           env: { PATH: "/bin" },
-          stdout: "inherit",
+          stdout: "ignore",
           stderr: "inherit",
         },
       ],
@@ -56,18 +73,23 @@ describe("CLI updater", () => {
     const test = updater({
       fetch: async (input) => {
         urls.push(String(input));
-        return new Response("#!/bin/sh\necho updated");
+        return String(input) === LATEST
+          ? redirect("9.9.9")
+          : new Response("#!/bin/sh\necho updated");
       },
     });
 
-    expect(await updateCli(test.runtime)).toBe("Banana is up to date.");
+    expect(await updateCli(test.runtime)).toBe(
+      `Banana is now up to date.\n  v${CLI_VERSION} → v9.9.9`,
+    );
     expect(urls).toEqual([
       "https://github.com/teotti/banana-cli/releases/latest/download/install.sh",
+      LATEST,
     ]);
     expect(test.calls[0]?.[0]).toEqual(["sh"]);
     expect(test.calls[0]?.[1]).toMatchObject({
       env: { PATH: "/bin", BANANA_INSTALL_DIR: "/opt/banana/bin" },
-      stdout: "inherit",
+      stdout: "ignore",
       stderr: "inherit",
     });
     expect(await (test.calls[0]?.[1].stdin as Blob).text()).toBe(
@@ -82,7 +104,7 @@ describe("CLI updater", () => {
     });
 
     expect(await updateCli(test.runtime)).toBe(
-      "Banana update started; it will finish after this command exits.",
+      "Banana v9.9.9 will finish updating after this command exits.",
     );
     expect(test.calls[0]?.[0]).toEqual([
       "powershell.exe",
@@ -96,7 +118,7 @@ describe("CLI updater", () => {
         BANANA_INSTALL_DIR: "C:\\Tools\\Banana\\.banana-update-42",
         BANANA_SKIP_PATH_UPDATE: "1",
       },
-      stdout: "inherit",
+      stdout: "ignore",
       stderr: "inherit",
     });
     expect(await (test.calls[0]?.[1].stdin as Blob).text()).toBe(
@@ -121,6 +143,39 @@ describe("CLI updater", () => {
       stderr: "ignore",
     });
     expect(test.unrefs()).toBe(1);
+  });
+
+  it("names the installed version in the banana accent when colour is on", async () => {
+    const test = updater({ color: true });
+
+    expect(await updateCli(test.runtime)).toBe(
+      `Banana is now up to date.\n  \x1b[2mv${CLI_VERSION} →\x1b[0m` +
+        " \x1b[1m\x1b[38;2;190;148;0mv9.9.9\x1b[0m",
+    );
+  });
+
+  it("says so when the installed version is the one already running", async () => {
+    const test = updater({
+      fetch: async (input) =>
+        String(input) === LATEST
+          ? redirect(CLI_VERSION)
+          : new Response("installer body"),
+    });
+
+    expect(await updateCli(test.runtime)).toBe(
+      `Banana is already up to date.\n  v${CLI_VERSION}`,
+    );
+  });
+
+  it("still reports success when the version lookup fails", async () => {
+    const test = updater({
+      fetch: async (input) => {
+        if (String(input) === LATEST) throw new Error("offline");
+        return new Response("installer body");
+      },
+    });
+
+    expect(await updateCli(test.runtime)).toBe("Banana is now up to date.");
   });
 
   it("reports download and installer failures", async () => {
