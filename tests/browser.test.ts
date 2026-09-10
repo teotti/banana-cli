@@ -3,7 +3,9 @@ import { PassThrough } from "node:stream";
 import { browseCollection } from "../src/browser";
 import { renderCollectionBrowser, renderGroupBrowser, runCli } from "../src/index";
 import { CliFailure } from "../src/types";
-import { harness } from "./helpers";
+import { GROUP, harness } from "./helpers";
+
+const GROUP_ID = GROUP.id;
 
 async function withBrowserTerminal(
   check: (key: (name: string, text?: string) => void, screens: string[]) => Promise<void>,
@@ -209,9 +211,8 @@ describe("BananaSplit CLI", () => {
       expect(item).not.toHaveProperty("splits");
       const detail = await loadDetail(item);
       expect(detail).toContain("Paid by:     Leonardo");
-      expect(detail).toContain("Paid by ID:  u-1");
       expect(detail).toContain("Splits");
-      expect(detail).toContain("u-2      Ana   20.00 EUR");
+      expect(detail).toContain("Ana   20.00 EUR");
       return true;
     };
     expect(await runCli(["expenses", "list", "--recurring", "--sort", "amount"], runtime)).toBe(0);
@@ -276,7 +277,7 @@ describe("BananaSplit CLI", () => {
 
     expect(await runCli(["groups", "list"], runtime)).toBe(0);
     expect(calls[0].url.searchParams.has("l")).toBe(false);
-    expect(paged[0]).toContain("group-1  Lisbon trip");
+    expect(paged[0]).toContain("Lisbon trip  travel");
     expect(stdout).toEqual([]);
   });
 
@@ -292,10 +293,10 @@ describe("BananaSplit CLI", () => {
             totalOwing: 0,
           },
         ],
-        heading: "User ID  Name      Balance",
+        heading: "Name      Balance",
       },
       {
-        args: ["groups", "members", "group-1"],
+        args: ["groups", "members", GROUP_ID],
         response: [
           {
             id: "member-1",
@@ -304,10 +305,10 @@ describe("BananaSplit CLI", () => {
             role: "admin",
           },
         ],
-        heading: "User ID  Name      Role",
+        heading: "Name      Role",
       },
       {
-        args: ["groups", "activities", "group-1"],
+        args: ["groups", "activities", GROUP_ID],
         response: {
           items: [
             {
@@ -374,18 +375,10 @@ describe("BananaSplit CLI", () => {
     const balances = renderCollectionBrowser(
       "balance-users",
       [
-        {
-          user: { id: "user-1", name: "Leonardo" },
-          balance: 10,
-          totalOwed: 10,
-          totalOwing: 0,
-        },
-        {
-          user: { id: "user-2", name: "Ana" },
-          balance: -5,
-          totalOwed: 0,
-          totalOwing: 5,
-        },
+        { userId: "user-1", user: "Leonardo", balance: 10, totalOwed: 10,
+          totalOwing: 0 },
+        { userId: "user-2", user: "Ana", balance: -5, totalOwed: 0,
+          totalOwing: 5 },
       ],
       "ana",
     );
@@ -695,11 +688,11 @@ describe("BananaSplit CLI", () => {
     };
 
     expect(
-      await runCli(["groups", "members", "group/one"], runtime),
+      await runCli(["groups", "members", GROUP_ID], runtime),
     ).toBe(0);
     expect(calls.map(({ url }) => url.pathname)).toEqual([
-      "/base/groups/group%2Fone/members",
-      "/base/groups/group%2Fone/members/member%2Fone",
+      `/base/groups/${GROUP_ID}/members`,
+      `/base/groups/${GROUP_ID}/members/member%2Fone`,
     ]);
     expect(detail).toContain("Username:      leo");
     expect(detail).toContain("Email:         leo@example.test");
@@ -785,21 +778,20 @@ describe("BananaSplit CLI", () => {
     };
 
     expect(
-      await runCli(["groups", "activities", "group-1"], runtime),
+      await runCli(["groups", "activities", GROUP_ID], runtime),
     ).toBe(0);
     expect(calls.map(({ url }) => url.pathname)).toEqual([
-      "/base/groups/group-1/activities",
+      `/base/groups/${GROUP_ID}/activities`,
       "/base/expenses/expense%2Fone",
       "/base/payments/payment%2Fone",
     ]);
     expect(details[0]).toContain("Description:          Team dinner");
     expect(details[0]).toContain("Recurrence frequency: monthly");
     expect(details[0]).toContain("Recurrence interval:  1");
-    expect(details[0]).toContain("user-1   Leonardo  22.00 EUR");
-    expect(details[0]).toContain("user-2   Ana       20.00 EUR");
+    expect(details[0]).toContain("Leonardo  22.00 EUR");
+    expect(details[0]).toContain("Ana       20.00 EUR");
     expect(details[0]).not.toContain("private");
     expect(details[1]).toContain("From:               Ana");
-    expect(details[1]).toContain("From ID:            user-2");
     expect(details[1]).toContain("To:                 Leonardo");
     expect(details[1]).toContain("Optimal settlement: yes");
     expect(details[1]).toContain("Timezone:           Europe/Lisbon");
@@ -841,8 +833,8 @@ describe("BananaSplit CLI", () => {
     ]);
     expect(detail).toContain("Balance: -7.00 EUR");
     expect(detail).toContain("Owed:    2.00 EUR");
-    expect(detail).toContain("—         Direct       -2.00 EUR");
-    expect(detail).toContain("group-1   Lisbon trip  -5.00 EUR");
+    expect(detail).toContain("Direct       -2.00 EUR");
+    expect(detail).toContain("Lisbon trip  -5.00 EUR");
   });
 
 });

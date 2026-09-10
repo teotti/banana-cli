@@ -3,7 +3,6 @@ import {
   appendQuery,
   asArray,
   asRecord,
-  cleanUserSummary,
   display,
   encodedDetailId,
   enumValue,
@@ -18,40 +17,48 @@ import {
   requiredString,
   requirePositionals,
   usageFailure,
+  userRef,
   wantsHelp,
 } from "../shared";
 import { helpText } from "../help";
 import { fields, heading, note, section, table } from "../render";
-import { CliFailure, type ParsedCommand, type Presenter } from "../types";
+import {
+  CliFailure,
+  type ParsedCommand,
+  type Presenter,
+  type Reference,
+} from "../types";
 
 const SPLIT_TYPES = "equal|custom|percentage|shares";
+const NAMES_NOTE =
+  "--currency, --group, --paid-by and --split take a code, a name or a\nprefix of one, as well as an id. `--paid-by me` is you.";
 const ADD_HELP = helpText({
   summary: "Add an expense and split it between people.",
   usage: [
-    "banana expenses add --title TEXT --amount AMOUNT --currency-id ID",
-    "                    --paid-by-id ID --date DATE [flags]",
+    "banana expenses add --title TEXT --amount AMOUNT --currency CODE",
+    "                    --date DATE [flags]",
     "banana expenses add JSON",
   ],
   options: [
     ["--title TEXT", "What the expense was for (required)"],
     ["--amount AMOUNT", "Total amount (required)"],
-    ["--currency-id ID", "Currency of the amount (required)"],
-    ["--paid-by-id ID", "User who paid (required)"],
+    ["--currency CODE", "Currency of the amount (required)"],
     ["--date DATE", "YYYY-MM-DD or DD-MM-YYYY (required)"],
-    ["--group-id ID", "Charge the expense to a group"],
+    ["--paid-by WHO", "Who paid (default: you)"],
+    ["--group NAME", "Charge the expense to a group"],
     ["--description TEXT", "Longer note"],
     ["--split-type TYPE", SPLIT_TYPES],
-    ["--split USER_ID=AMOUNT", "One person's share; repeat for each split"],
+    ["--split WHO=AMOUNT", "One person's share; repeat for each split"],
   ],
   notes: [
-    "The splits must add up to --amount. Without --group-id at least one\n--split is required.",
+    "The splits must add up to --amount. Without --group at least one\n--split is required.",
+    NAMES_NOTE,
   ],
   examples: [
-    'banana expenses add --title Dinner --amount 42 --currency-id <currency-id> \\',
-    "  --paid-by-id <user-id> --date 2026-09-09 --group-id <group-id>",
-    'banana expenses add --title Taxi --amount 20 --currency-id <currency-id> \\',
-    "  --paid-by-id <user-id> --date 09-09-2026 \\",
-    "  --split <user-id>=10 --split <user-id>=10",
+    'banana expenses add --title Dinner --amount 42 --currency EUR \\',
+    '  --date 2026-09-09 --group "Lisbon trip"',
+    "banana expenses add --title Taxi --amount 20 --currency EUR \\",
+    "  --date 09-09-2026 --split me=10 --split Ana=10",
   ],
 });
 const HELP = helpText({
@@ -107,21 +114,22 @@ const EDIT_HELP = helpText({
   options: [
     ["--title TEXT", "What the expense was for"],
     ["--amount AMOUNT", "Total amount"],
-    ["--currency-id ID", "Currency of the amount"],
-    ["--paid-by-id ID", "User who paid"],
+    ["--currency CODE", "Currency of the amount"],
+    ["--paid-by WHO", "Who paid"],
     ["--date DATE", "YYYY-MM-DD or DD-MM-YYYY"],
     ["--description TEXT", "Longer note"],
-    ["--group-id ID", "Move the expense to a group"],
+    ["--group NAME", "Move the expense to a group"],
     ["--no-group", "Detach the expense from its group"],
     ["--split-type TYPE", SPLIT_TYPES],
-    ["--split USER_ID=AMOUNT", "One person's share; repeat for each split"],
+    ["--split WHO=AMOUNT", "One person's share; repeat for each split"],
   ],
   notes: [
     "Only the fields you pass change; everything else keeps its current value.\nChanging --amount means passing splits that add up to the new total.",
+    NAMES_NOTE,
   ],
   examples: [
     "banana expenses edit <expense-id> --title Groceries",
-    "banana expenses edit <expense-id> --amount 45 --split <user-id>=45",
+    "banana expenses edit <expense-id> --amount 45 --split me=45",
     "banana expenses edit <expense-id> --no-group",
   ],
 });
@@ -130,7 +138,7 @@ function parseSplits(value: unknown, usage: string) {
   return repeatedStrings(value).map((split) => {
     const separator = split.indexOf("=");
     if (separator < 1 || separator === split.length - 1) {
-      throw usageFailure("--split must use USER_ID=AMOUNT", usage);
+      throw usageFailure("--split must use WHO=AMOUNT", usage);
     }
     return {
       userId: split.slice(0, separator),
@@ -165,11 +173,11 @@ export function parseExpenses(args: string[]): ParsedCommand {
     rest,
     {
       amount: { type: "string" },
-      "currency-id": { type: "string" },
+      currency: { type: "string" },
       date: { type: "string" },
       description: { type: "string" },
-      "group-id": { type: "string" },
-      "paid-by-id": { type: "string" },
+      group: { type: "string" },
+      "paid-by": { type: "string" },
       split: { type: "string", multiple: true },
       "split-type": { type: "string" },
       title: { type: "string" },
@@ -188,7 +196,7 @@ export function parseExpenses(args: string[]): ParsedCommand {
   }
   requirePositionals(positionals, 0, ADD_HELP);
 
-  const groupId = values["group-id"] as string | undefined;
+  const group = values.group as string | undefined;
   const description = values.description as string | undefined;
   const splits = parseSplits(values.split, ADD_HELP);
   const splitType = enumValue(values["split-type"], "--split-type", [
@@ -197,9 +205,9 @@ export function parseExpenses(args: string[]): ParsedCommand {
     "percentage",
     "shares",
   ] as const);
-  if (splits.length === 0 && groupId === undefined) {
+  if (splits.length === 0 && group === undefined) {
     throw usageFailure(
-      "At least one --split is required unless --group-id is provided",
+      "At least one --split is required unless --group is provided",
       ADD_HELP,
     );
   }
@@ -218,19 +226,42 @@ export function parseExpenses(args: string[]): ParsedCommand {
     body: {
       title: requiredString(values.title, "--title", ADD_HELP),
       amount: requiredString(values.amount, "--amount", ADD_HELP),
-      currencyId: requiredString(
-        values["currency-id"],
-        "--currency-id",
-        ADD_HELP,
-      ),
-      paidById: requiredString(values["paid-by-id"], "--paid-by-id", ADD_HELP),
       date: isoDate(values.date, ADD_HELP),
       splits,
-      ...(groupId === undefined ? {} : { groupId }),
       ...(description === undefined ? {} : { description }),
       ...(splitType === undefined ? {} : { splitType }),
     },
+    references: [
+      {
+        field: "currencyId",
+        flag: "--currency",
+        kind: "currency",
+        value: requiredString(values.currency, "--currency", ADD_HELP),
+      },
+      // Left without a value on purpose: an expense you do not attribute to
+      // anyone else is one you paid.
+      {
+        field: "paidById",
+        flag: "--paid-by",
+        kind: "user",
+        value: values["paid-by"] as string | undefined,
+      },
+      ...(group === undefined
+        ? []
+        : [{ field: "groupId", flag: "--group", kind: "group" as const, value: group }]),
+      ...splitReferences(splits),
+    ],
   };
+}
+
+/** Every `--split WHO=AMOUNT` names a person the same way `--paid-by` does. */
+function splitReferences(splits: { userId: string }[]) {
+  return splits.map((split, index) => ({
+    field: `splits.${index}.userId`,
+    flag: "--split",
+    kind: "user" as const,
+    value: split.userId,
+  }));
 }
 
 function parseExpensesList(args: string[]): ParsedCommand {
@@ -291,12 +322,12 @@ function parseExpensesEdit(args: string[]): ParsedCommand {
     args,
     {
       amount: { type: "string" },
-      "currency-id": { type: "string" },
+      currency: { type: "string" },
       date: { type: "string" },
       description: { type: "string" },
-      "group-id": { type: "string" },
+      group: { type: "string" },
       "no-group": { type: "boolean" },
-      "paid-by-id": { type: "string" },
+      "paid-by": { type: "string" },
       split: { type: "string", multiple: true },
       "split-type": { type: "string" },
       title: { type: "string" },
@@ -322,10 +353,10 @@ function parseExpensesEdit(args: string[]): ParsedCommand {
   }
   requirePositionals(positionals, 1, EDIT_HELP);
 
-  const groupId = values["group-id"] as string | undefined;
-  if (groupId !== undefined && values["no-group"] === true) {
+  const group = values.group as string | undefined;
+  if (group !== undefined && values["no-group"] === true) {
     throw usageFailure(
-      "--group-id and --no-group cannot be used together",
+      "--group and --no-group cannot be used together",
       EDIT_HELP,
     );
   }
@@ -336,27 +367,34 @@ function parseExpensesEdit(args: string[]): ParsedCommand {
     "percentage",
     "shares",
   ] as const);
+  const currency = values.currency as string | undefined;
+  const paidBy = values["paid-by"] as string | undefined;
   const patch: Record<string, unknown> = {
     ...(values.title === undefined ? {} : { title: values.title }),
     ...(values.amount === undefined ? {} : { amount: values.amount }),
-    ...(values["currency-id"] === undefined
-      ? {}
-      : { currencyId: values["currency-id"] }),
-    ...(values["paid-by-id"] === undefined
-      ? {}
-      : { paidById: values["paid-by-id"] }),
     ...(values.date === undefined
       ? {}
       : { date: isoDate(values.date, EDIT_HELP) }),
     ...(values.description === undefined
       ? {}
       : { description: values.description }),
-    ...(groupId === undefined ? {} : { groupId }),
     ...(values["no-group"] === true ? { groupId: null } : {}),
     ...(splitType === undefined ? {} : { splitType }),
     ...(splits.length === 0 ? {} : { splits }),
   };
-  if (Object.keys(patch).length === 0) {
+  const references: Reference[] = [
+    ...(currency === undefined
+      ? []
+      : [{ field: "currencyId", flag: "--currency", kind: "currency" as const, value: currency }]),
+    ...(paidBy === undefined
+      ? []
+      : [{ field: "paidById", flag: "--paid-by", kind: "user" as const, value: paidBy }]),
+    ...(group === undefined
+      ? []
+      : [{ field: "groupId", flag: "--group", kind: "group" as const, value: group }]),
+    ...splitReferences(splits),
+  ];
+  if (Object.keys(patch).length === 0 && references.length === 0) {
     throw usageFailure("At least one field to change is required", EDIT_HELP);
   }
 
@@ -367,29 +405,7 @@ function parseExpensesEdit(args: string[]): ParsedCommand {
     presentation: "expense-updated",
     mergeExpense: path,
     body: patch,
-  };
-}
-
-function cleanCreatedExpense(body: unknown) {
-  const expense = asRecord(body);
-  return {
-    id: expense.id ?? null,
-    title: expense.title ?? null,
-    description: expense.description ?? null,
-    amount: numeric(expense.amount),
-    currencyId: expense.currencyId ?? null,
-    paidById: expense.paidById ?? null,
-    groupId: expense.groupId ?? null,
-    date: expense.date ?? null,
-    timezone: expense.timezone ?? null,
-    splitType: expense.splitType ?? null,
-    splits: asArray(expense.shares).map((value) => {
-      const share = asRecord(value);
-      return {
-        userId: share.userId ?? null,
-        amount: numeric(share.amount),
-      };
-    }),
+    references,
   };
 }
 
@@ -467,14 +483,11 @@ function cleanExpense(body: unknown) {
     title: expense.title ?? null,
     description: expense.description ?? null,
     amount: numeric(expense.amount),
-    currency: asRecord(expense.currency).code ?? expense.currencyId ?? null,
-    paidBy: cleanUserSummary(expense.paidByUser),
-    group: expense.groupId
-      ? {
-          id: expense.groupId,
-          name: asRecord(expense.group).name ?? null,
-        }
-      : null,
+    currencyId: expense.currencyId ?? null,
+    currency: asRecord(expense.currency).code ?? null,
+    ...userRef("paidById", "paidBy", expense.paidByUser),
+    groupId: expense.groupId ?? null,
+    group: asRecord(expense.group).name ?? null,
     category: asRecord(expense.category).name ?? null,
     date: expense.date ?? null,
     splitType: expense.splitType ?? null,
@@ -482,49 +495,41 @@ function cleanExpense(body: unknown) {
     splits: asArray(expense.shares).map((value) => {
       const share = asRecord(value);
       return {
-        user: cleanUserSummary(share.user),
+        ...userRef("userId", "user", share.user),
         amount: numeric(share.amount),
       };
     }),
   };
 }
 
-// Ids sit in their own rows at the bottom, where they line up and read as one
-// column instead of trailing off the end of the values above them.
+// Names carry the meaning here; the ids are in --json for whoever needs them.
 function formatExpense(body: unknown, title: string) {
   const response = asRecord(body);
   const splits = asArray(response.splits);
-  const group = asRecord(response.group);
-  const paidBy = asRecord(response.paidBy);
   return section(
     heading(title),
     fields([
       ["Title", display(response.title)],
       ["Amount", humanAmount(response.amount, response.currency)],
-      ["Paid by", display(paidBy.name)],
-      ["Group", response.group ? display(group.name) : "—"],
+      ["Paid by", display(response.paidBy)],
+      ["Group", display(response.group)],
       ["Category", display(response.category)],
       ["Description", display(response.description)],
       ["Date", humanDate(response.date)],
       ["Split type", display(response.splitType)],
       ["ID", display(response.id), true],
-      ["Paid by ID", display(paidBy.id), true],
-      ["Group ID", response.group ? display(group.id) : "—", true],
     ]),
     heading("Splits"),
     splits.length
       ? table(
           [
-            { label: "User ID", id: true },
             { label: "Name", max: 24 },
             { label: "Amount", align: "right" },
           ],
           splits.map((value) => {
             const split = asRecord(value);
-            const user = asRecord(split.user);
             return [
-              user.id,
-              user.name,
+              split.user,
               humanAmount(split.amount, response.currency),
             ];
           }),
@@ -572,7 +577,7 @@ export const expensePresenters = {
                   expense.id,
                   humanDate(expense.date),
                   expense.title,
-                  asRecord(expense.paidBy).name,
+                  expense.paidBy,
                   humanAmount(expense.amount, expense.currency),
                   humanAmount(expense.share, expense.currency),
                 ];
@@ -606,39 +611,8 @@ export const expensePresenters = {
     format: (body) => formatExpense(body, "Expense updated"),
   },
   "expense-created": {
-    clean: cleanCreatedExpense,
-    format(body) {
-      const response = asRecord(body);
-      const splits = asArray(response.splits);
-      return section(
-        heading("Expense created"),
-        fields([
-          ["Title", display(response.title)],
-          ["Amount", humanAmount(response.amount, response.currencyId)],
-          ["Date", humanDate(response.date)],
-          ["Split type", display(response.splitType)],
-          ["ID", display(response.id), true],
-          ["Paid by ID", display(response.paidById), true],
-          ["Group ID", display(response.groupId), true],
-        ]),
-        heading("Splits"),
-        splits.length
-          ? table(
-              [
-                { label: "User ID", id: true },
-                { label: "Amount", align: "right" },
-              ],
-              splits.map((value) => {
-                const split = asRecord(value);
-                return [
-                  split.userId,
-                  humanAmount(split.amount, response.currencyId),
-                ];
-              }),
-            )
-          : note("This expense has no splits."),
-      );
-    },
+    clean: cleanExpense,
+    format: (body) => formatExpense(body, "Expense created"),
   },
 } satisfies Record<
   "expense-list" | "expense" | "expense-updated" | "expense-created",

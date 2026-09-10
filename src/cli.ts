@@ -20,6 +20,7 @@ import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
 import { colorizeHelp, errorText, helpHeader, helpText } from "./help";
 import { DEFAULT_API_URL, request } from "./request";
+import { resolveReferences } from "./resolve";
 import { asArray, asRecord, usageFailure } from "./shared";
 import {
   CliFailure,
@@ -62,9 +63,9 @@ const ROOT_HELP = helpText({
       rows: [
         ["groups [list]", "List groups"],
         ["groups create", "Create a group"],
-        ["groups get <group-id>", "Show a group"],
-        ["groups members <group-id>", "List group members"],
-        ["groups activities <group-id>", "List group activities"],
+        ["groups get <group>", "Show a group"],
+        ["groups members <group>", "List group members"],
+        ["groups activities <group>", "List group activities"],
         ["friends [list]", "List friends"],
         ["currencies [list]", "List currencies"],
       ],
@@ -93,10 +94,14 @@ const ROOT_HELP = helpText({
       ],
     },
   ],
+  notes: [
+    "Currencies, groups and people are named by code, name or prefix\nwherever a command takes one — ids work too, and `me` is you.",
+  ],
   examples: [
     "banana balance",
     "banana expenses list --limit 10",
-    "banana groups list --sort balance",
+    'banana expenses add --title Dinner --amount 42 --currency EUR \\',
+    '  --date 2026-09-09 --group "Lisbon trip"',
     "banana expenses get <expense-id> --json",
   ],
   learnMore: ["banana <command> --help"],
@@ -120,6 +125,13 @@ const UPDATE_HELP = helpText({
   usage: ["banana update"],
   examples: ["banana update"],
 });
+
+/** Where a write's created row is read back from, to present it in full. */
+const CREATED_COLLECTIONS: Partial<Record<Presentation, string>> = {
+  "expense-created": "/expenses",
+  "group-created": "/groups",
+  "payment-created": "/payments",
+};
 
 const COMMANDS: Record<string, CommandParser> = {
   balance: parseBalance,
@@ -287,12 +299,26 @@ export async function runCli(
     );
     if (
       (pager || browser) &&
+      // A filtered listing needs the wide page it asked for to filter.
+      command.postFilter === undefined &&
       (command.presentation === "group-list" ||
         command.presentation === "expense-list" ||
         command.presentation === "friend-list") &&
       !hasExplicitLimit
     ) {
       command.query?.delete("l");
+    }
+
+    // Names become ids before anything is sent, so a write costs the caller
+    // no lookup call of its own.
+    if (command.references?.length) {
+      command.path = await resolveReferences(
+        command.references,
+        command.body,
+        command.path,
+        requestRuntime,
+        env,
+      );
     }
 
     if (command.mergeExpense !== undefined) {
@@ -311,24 +337,52 @@ export async function runCli(
       );
     }
     let body = await request(command, requestRuntime, env);
-    if (output.mode !== "raw" && command.presentation === "expense-updated") {
-      // PUT answers with a flat row, so re-read the expense for its
-      // paidBy / group / category / splits expansions.
+
+    // A write answers with the flat DB row: currency ids instead of codes, no
+    // names, no shares. Reading the row back here is what lets one command
+    // print — and answer --json with — the whole created object, so nothing
+    // has to follow up with a `get` to see what it made.
+    const created = CREATED_COLLECTIONS[command.presentation];
+    if (
+      output.mode !== "raw" &&
+      created &&
+      command.presentation === "payment-created" &&
+      Array.isArray(body)
+    ) {
+      // An optimal settlement answers with several rows and no single id.
+      command.presentation = "payments-created";
+    }
+    const createdId = created ? asRecord(body).id : undefined;
+    const detailPath =
+      output.mode === "raw"
+        ? undefined
+        : command.presentation === "expense-updated"
+          ? command.path
+          : typeof createdId === "string"
+            ? `${created}/${encodeURIComponent(createdId)}`
+            : undefined;
+    if (detailPath) {
       body = await request(
         {
           kind: "request",
-          path: command.path,
-          presentation: "expense-updated",
+          path: detailPath,
+          presentation: command.presentation,
         },
         requestRuntime,
         env,
       );
     }
-    if (output.mode !== "raw" && command.presentation === "group") {
+
+    // A group's member count is a second call wherever a group is shown.
+    if (
+      output.mode !== "raw" &&
+      (command.presentation === "group" ||
+        (command.presentation === "group-created" && detailPath))
+    ) {
       const members = await request(
         {
           kind: "request",
-          path: `${command.path}/members`,
+          path: `${detailPath ?? command.path}/members`,
           presentation: "members",
         },
         requestRuntime,
@@ -336,6 +390,8 @@ export async function runCli(
       );
       body = { ...asRecord(body), memberCount: asArray(members).length };
     }
+
+    if (command.postFilter) body = command.postFilter(body);
 
     if (output.mode === "raw") {
       stdout(JSON.stringify(body));

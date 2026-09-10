@@ -1,7 +1,6 @@
 import {
   asArray,
   asRecord,
-  cleanUserSummary,
   currencyCode,
   display,
   encodedDetailId,
@@ -9,6 +8,7 @@ import {
   humanNumber,
   numeric,
   usageFailure,
+  userRef,
   wantsHelp,
 } from "../shared";
 import { helpText } from "../help";
@@ -45,7 +45,7 @@ function cleanBalanceUsers(body: unknown) {
   return asArray(body).map((value) => {
     const entry = asRecord(value);
     return {
-      user: cleanUserSummary(entry.user),
+      ...userRef("userId", "user", entry.user),
       balance: numeric(entry.balance),
       totalOwed: numeric(entry.totalOwed),
       totalOwing: numeric(entry.totalOwing),
@@ -56,7 +56,8 @@ function cleanBalanceUsers(body: unknown) {
 function cleanBalanceDetail(body: unknown, item: Record<string, unknown>) {
   const response = asRecord(body);
   return {
-    user: cleanUserSummary(item.user),
+    userId: item.userId ?? null,
+    user: item.user ?? null,
     balance: numeric(response.balance) ?? numeric(item.balance),
     totalOwed: numeric(item.totalOwed),
     totalOwing: numeric(item.totalOwing),
@@ -99,7 +100,6 @@ export const balancePresenters = {
       if (!items.length) return note("No user balances.");
       return table(
         [
-          { label: "User ID", id: true },
           { label: "Name", max: 24 },
           { label: "Balance", align: "right" },
           { label: "Owed", align: "right" },
@@ -107,10 +107,8 @@ export const balancePresenters = {
         ],
         items.map((value) => {
           const entry = asRecord(value);
-          const user = asRecord(entry.user);
           return [
-            user.id,
-            user.name,
+            entry.user,
             humanNumber(entry.balance),
             humanNumber(entry.totalOwed),
             humanNumber(entry.totalOwing),
@@ -120,7 +118,7 @@ export const balancePresenters = {
     },
     browser: {
       detailPath(_command, item) {
-        return `/users/${encodedDetailId(asRecord(item.user).id)}/balances`;
+        return `/users/${encodedDetailId(item.userId)}/balances`;
       },
       formatDetail(item, body) {
         const detail = asRecord(cleanBalanceDetail(body, item));
@@ -130,20 +128,18 @@ export const balancePresenters = {
             ["Balance", humanAmount(detail.balance, detail.currency)],
             ["Owed", humanAmount(detail.totalOwed, detail.currency)],
             ["Owing", humanAmount(detail.totalOwing, detail.currency)],
-            ["User ID", display(asRecord(detail.user).id), true],
+            ["User ID", display(detail.userId), true],
           ]),
           heading("Balance breakdown"),
           breakdown.length
             ? table(
                 [
-                  { label: "Group ID", id: true },
                   { label: "Group", max: 24 },
                   { label: "Balance", align: "right" },
                 ],
                 breakdown.map((value) => {
                   const entry = asRecord(value);
                   return [
-                    entry.groupId,
                     entry.groupName,
                     humanAmount(entry.balance, detail.currency),
                   ];

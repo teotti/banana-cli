@@ -1,15 +1,16 @@
 import {
   DEFAULT_LIST_LIMIT,
+  SEARCH_LIMIT,
   appendQuery,
   asArray,
   asRecord,
-  cleanUserSummary,
   currencyCode,
   display,
   encodedDetailId,
   enumValue,
   humanAmount,
   humanDate,
+  matchItems,
   numeric,
   parseJsonBody,
   parseOptions,
@@ -18,6 +19,7 @@ import {
   requiredString,
   requirePositionals,
   usageFailure,
+  userRef,
   wantsHelp,
   yesNo,
 } from "../shared";
@@ -27,6 +29,7 @@ import {
   type BrowserLink,
   type ParsedCommand,
   type Presenter,
+  type Reference,
   type RequestCommand,
 } from "../types";
 
@@ -36,15 +39,18 @@ const HELP = helpText({
   commands: [
     ["list", "List your groups and their balances"],
     ["create", "Create a group"],
-    ["get <group-id>", "Show one group"],
-    ["members <group-id>", "List the members of a group"],
-    ["activities <group-id>", "List the expenses and payments in a group"],
+    ["get <group>", "Show one group"],
+    ["members <group>", "List the members of a group"],
+    ["activities <group>", "List the expenses and payments in a group"],
   ],
-  notes: ["`banana groups` on its own runs `banana groups list`."],
+  notes: [
+    "`banana groups` on its own runs `banana groups list`.",
+    "A group is named by its name, a prefix of it, or its id.",
+  ],
   examples: [
     "banana groups",
-    "banana groups get <group-id>",
-    "banana groups activities <group-id> --type expenses",
+    'banana groups get "Lisbon trip"',
+    "banana groups activities Lisbon --type expenses",
   ],
   learnMore: ["banana groups <command> --help"],
 });
@@ -52,54 +58,61 @@ const LIST_HELP = helpText({
   summary: "List your groups, newest activity first.",
   usage: ["banana groups list [flags]"],
   options: [
+    ["--search TEXT", "Only groups whose name matches"],
     ["--limit N", `Groups to fetch (default: ${DEFAULT_LIST_LIMIT})`],
     ["--cursor CURSOR", "Continue from a cursor returned by a previous page"],
     ["--archived", "Include archived groups"],
     ["--sort balance|lastActivity", "Order the list"],
   ],
+  notes: [
+    "--search matches on the name, case-insensitively. It fetches a wider\npage and filters it here, so pass --limit to widen it further.",
+  ],
   examples: [
     "banana groups list",
+    "banana groups list --search lisbon",
     "banana groups list --limit 20 --archived",
-    "banana groups list --sort balance --json",
   ],
 });
 const GET_HELP = helpText({
   summary: "Show one group with its currency, type and member count.",
-  usage: ["banana groups get <group-id>"],
-  examples: ["banana groups get <group-id>", "banana groups get <group-id> --json"],
+  usage: ["banana groups get <group>"],
+  notes: ["A group is named by its name, a prefix of it, or its id."],
+  examples: ['banana groups get "Lisbon trip"', "banana groups get Lisbon --json"],
 });
 const MEMBERS_HELP = helpText({
   summary: "List the members of a group and what each one owes.",
-  usage: ["banana groups members <group-id>"],
+  usage: ["banana groups members <group>"],
+  notes: ["A group is named by its name, a prefix of it, or its id."],
   examples: [
-    "banana groups members <group-id>",
-    "banana groups members <group-id> --json",
+    'banana groups members "Lisbon trip"',
+    "banana groups members Lisbon --json",
   ],
 });
 const CREATE_HELP = helpText({
   summary: "Create a group, optionally with its members.",
   usage: [
-    "banana groups create --name TEXT --currency-id ID [flags]",
+    "banana groups create --name TEXT --currency CODE [flags]",
     "banana groups create JSON",
   ],
   options: [
     ["--name TEXT", "Group name (required)"],
-    ["--currency-id ID", "Currency the group settles in (required)"],
+    ["--currency CODE", "Currency the group settles in (required)"],
     ["--description TEXT", "What the group is for"],
     ["--type TYPE", "vacation|roommates|couple|travel|party|other"],
-    ["--member USER_ID", "Add a member; repeat for several"],
+    ["--member WHO", "Add a member; repeat for several"],
   ],
-  notes: ["Run `banana currencies` for the ids --currency-id takes."],
+  notes: [
+    "--currency and --member take a code or name as well as an id.",
+  ],
   examples: [
-    'banana groups create --name "Lisbon trip" --currency-id <currency-id>',
-    'banana groups create --name Flat --currency-id <currency-id> \\',
-    "  --type roommates --member <user-id>",
-    'banana groups create \'{"name":"Lisbon trip","currencyId":"<currency-id>"}\'',
+    'banana groups create --name "Lisbon trip" --currency EUR',
+    "banana groups create --name Flat --currency EUR \\",
+    "  --type roommates --member Ana",
   ],
 });
 const ACTIVITIES_HELP = helpText({
   summary: "List the expenses and payments recorded in a group.",
-  usage: ["banana groups activities <group-id> [flags]"],
+  usage: ["banana groups activities <group> [flags]"],
   options: [
     ["--search QUERY", "Only activities matching a search"],
     ["--limit N", "Activities per page"],
@@ -109,11 +122,16 @@ const ACTIVITIES_HELP = helpText({
     ["--direction asc|desc", "Sort direction"],
   ],
   examples: [
-    "banana groups activities <group-id>",
-    "banana groups activities <group-id> --type expenses --sort amount",
-    'banana groups activities <group-id> --search "dinner"',
+    'banana groups activities "Lisbon trip"',
+    "banana groups activities Lisbon --type expenses --sort amount",
+    'banana groups activities Lisbon --search "dinner"',
   ],
 });
+
+/** The `<group>` argument every group command takes: a name, prefix or id. */
+function groupReference(value: string): Reference {
+  return { field: "path", flag: "<group>", kind: "group", value };
+}
 
 function parseGroupsList(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: LIST_HELP };
@@ -123,17 +141,22 @@ function parseGroupsList(args: string[]): ParsedCommand {
       archived: { type: "boolean" },
       cursor: { type: "string" },
       limit: { type: "string" },
+      search: { type: "string" },
       sort: { type: "string" },
     },
     LIST_HELP,
   );
   requirePositionals(positionals, 0, LIST_HELP);
 
+  const search = values.search as string | undefined;
   const query = new URLSearchParams();
   appendQuery(
     query,
     "l",
-    positiveInteger(values.limit, "--limit") ?? String(DEFAULT_LIST_LIMIT),
+    positiveInteger(values.limit, "--limit") ??
+      // The API has no name filter, so a search has to see more than one
+      // default page of groups to filter anything worth filtering.
+      String(search === undefined ? DEFAULT_LIST_LIMIT : SEARCH_LIMIT),
   );
   appendQuery(query, "cursor", values.cursor as string | undefined);
   appendQuery(query, "archived", values.archived as boolean | undefined);
@@ -147,6 +170,11 @@ function parseGroupsList(args: string[]): ParsedCommand {
     path: "/groups",
     presentation: "group-list",
     query,
+    ...(search === undefined
+      ? {}
+      : { postFilter: matchItems(search, (group: Record<string, unknown>) => [
+            group.name,
+          ]) }),
   };
 }
 
@@ -155,7 +183,7 @@ function parseGroupsCreate(args: string[]): ParsedCommand {
   const { positionals, values } = parseOptions(
     args,
     {
-      "currency-id": { type: "string" },
+      currency: { type: "string" },
       description: { type: "string" },
       member: { type: "string", multiple: true },
       name: { type: "string" },
@@ -192,15 +220,24 @@ function parseGroupsCreate(args: string[]): ParsedCommand {
     presentation: "group-created",
     body: {
       name: requiredString(values.name, "--name", CREATE_HELP),
-      currencyId: requiredString(
-        values["currency-id"],
-        "--currency-id",
-        CREATE_HELP,
-      ),
       ...(description === undefined ? {} : { description }),
       ...(type === undefined ? {} : { type }),
       ...(groupMembers.length === 0 ? {} : { groupMembers }),
     },
+    references: [
+      {
+        field: "currencyId",
+        flag: "--currency",
+        kind: "currency",
+        value: requiredString(values.currency, "--currency", CREATE_HELP),
+      },
+      ...groupMembers.map((member, index) => ({
+        field: `groupMembers.${index}`,
+        flag: "--member",
+        kind: "user" as const,
+        value: member,
+      })),
+    ],
   };
 }
 
@@ -244,22 +281,23 @@ function parseGroupsActivities(args: string[]): ParsedCommand {
     enumValue(values.direction, "--direction", ["asc", "desc"] as const),
   );
 
-  const groupId = encodeURIComponent(positionals[0]);
   const search = values.search as string | undefined;
   if (search !== undefined) query.set("q", search);
   return {
     kind: "request",
-    path: `/groups/${groupId}/activities${search === undefined ? "" : "/search"}`,
+    path: `/groups/:ref/activities${search === undefined ? "" : "/search"}`,
     presentation: "activities",
     query,
+    references: [groupReference(positionals[0]!)],
   };
 }
 
 export function parseGroups(args: string[]): ParsedCommand {
-  if (args.length === 0) return parseGroupsList(args);
   if (args[0] === "--help" || args[0] === "-h") {
     return { kind: "help", text: HELP };
   }
+  // `banana groups --search x` is the list, the same as `banana groups`.
+  if (args.length === 0 || args[0]!.startsWith("-")) return parseGroupsList(args);
 
   const [command, ...rest] = args;
   if (command === "list") return parseGroupsList(rest);
@@ -272,10 +310,9 @@ export function parseGroups(args: string[]): ParsedCommand {
     requirePositionals(positionals, 1, help);
     return {
       kind: "request",
-      path: `/groups/${encodeURIComponent(positionals[0])}${
-        command === "members" ? "/members" : ""
-      }`,
+      path: `/groups/:ref${command === "members" ? "/members" : ""}`,
       presentation: command === "members" ? "members" : "group",
+      references: [groupReference(positionals[0]!)],
     };
   }
   throw usageFailure(`Unknown command: groups ${command}`, HELP);
@@ -352,8 +389,8 @@ function cleanActivities(body: unknown) {
         amount: numeric(activity.amount),
         currency: currencyCode(activity.currency),
         date: activity.date ?? null,
-        from: cleanUserSummary(activity.fromUser),
-        to: cleanUserSummary(activity.toUser),
+        ...userRef("fromUserId", "from", activity.fromUser),
+        ...userRef("toUserId", "to", activity.toUser),
         isSettlement: activity.isSettlement === true,
       };
     }
@@ -364,7 +401,7 @@ function cleanActivities(body: unknown) {
       amount: numeric(activity.amount),
       currency: currencyCode(activity.currency),
       date: activity.date ?? null,
-      paidBy: cleanUserSummary(activity.paidByUser),
+      ...userRef("paidById", "paidBy", activity.paidByUser),
       category: asRecord(activity.category).name ?? null,
       splitType: activity.splitType ?? null,
       isRecurring: activity.recurringExpenseRuleId != null,
@@ -374,20 +411,6 @@ function cleanActivities(body: unknown) {
     items,
     hasMore: response.hasMore === true,
     nextCursor: response.nextCursor ?? null,
-  };
-}
-
-function cleanCreatedGroup(body: unknown) {
-  const group = asRecord(body);
-  return {
-    id: group.id ?? null,
-    name: group.name ?? null,
-    description: group.description ?? null,
-    type: group.type ?? null,
-    currencyId: group.currencyId ?? null,
-    creatorId: group.creatorId ?? null,
-    defaultSplitType: group.defaultSplitType ?? null,
-    memberBalanceVisibility: group.memberBalanceVisibility ?? null,
   };
 }
 
@@ -420,9 +443,9 @@ function cleanExpenseDetail(body: unknown) {
     currency: currencyCode(expense.currency),
     date: expense.date ?? null,
     timezone: expense.timezone ?? null,
-    paidBy: cleanUserSummary(expense.paidByUser),
-    creator: cleanUserSummary(expense.creator),
-    group: cleanUserSummary(expense.group),
+    ...userRef("paidById", "paidBy", expense.paidByUser),
+    ...userRef("creatorId", "creator", expense.creator),
+    ...userRef("groupId", "group", expense.group),
     category: asRecord(expense.category).name ?? null,
     splitType: expense.splitType ?? null,
     isRecurring:
@@ -437,8 +460,7 @@ function cleanExpenseDetail(body: unknown) {
     splits: asArray(expense.shares).map((value) => {
       const share = asRecord(value);
       return {
-        user: cleanUserSummary(share.user),
-        userId: share.userId ?? null,
+        ...userRef("userId", "user", share.user),
         amount: numeric(share.amount),
       };
     }),
@@ -454,10 +476,10 @@ function cleanPaymentDetail(body: unknown) {
     currency: currencyCode(payment.currency),
     date: payment.date ?? null,
     timezone: payment.timezone ?? null,
-    from: cleanUserSummary(payment.fromUser),
-    to: cleanUserSummary(payment.toUser),
-    creator: cleanUserSummary(payment.creator),
-    group: cleanUserSummary(payment.group),
+    ...userRef("fromUserId", "from", payment.fromUser),
+    ...userRef("toUserId", "to", payment.toUser),
+    ...userRef("creatorId", "creator", payment.creator),
+    ...userRef("groupId", "group", payment.group),
     isSettlement: payment.isSettlement === true,
     usedOptimalSettlement: payment.usedOptimalSettlement === true,
   };
@@ -492,10 +514,10 @@ function cleanSharedGroups(body: unknown) {
   });
 }
 
-function formatGroup(body: unknown) {
+function formatGroup(body: unknown, title = "Group") {
   const response = asRecord(body);
   return section(
-    heading("Group"),
+    heading(title),
     fields([
       ["Name", display(response.name)],
       ["Description", display(response.description)],
@@ -521,25 +543,20 @@ function activityDetailPath(item: Record<string, unknown>) {
 function formatActivityDetail(item: Record<string, unknown>, body: unknown) {
   if (item.entity === "payment") {
     const payment = asRecord(cleanPaymentDetail(body));
-    const from = asRecord(payment.from);
-    const to = asRecord(payment.to);
     return section(
       heading("Payment"),
       fields([
         ["Description", display(payment.description)],
         ["Amount", humanAmount(payment.amount, payment.currency)],
-        ["From", display(from.name)],
-        ["To", display(to.name)],
+        ["From", display(payment.from)],
+        ["To", display(payment.to)],
         ["Settlement", yesNo(payment.isSettlement)],
         ["Optimal settlement", yesNo(payment.usedOptimalSettlement)],
         ["Date", humanDate(payment.date)],
         ["Timezone", display(payment.timezone)],
-        ["Group", display(asRecord(payment.group).name)],
-        ["Created by", display(asRecord(payment.creator).name)],
+        ["Group", display(payment.group)],
+        ["Created by", display(payment.creator)],
         ["ID", display(payment.id), true],
-        ["From ID", display(from.id), true],
-        ["To ID", display(to.id), true],
-        ["Group ID", display(asRecord(payment.group).id), true],
       ]),
     );
   }
@@ -547,14 +564,12 @@ function formatActivityDetail(item: Record<string, unknown>, body: unknown) {
   const expense = asRecord(cleanExpenseDetail(body));
   const recurrence = asRecord(expense.recurrence);
   const splits = asArray(expense.splits);
-  const paidBy = asRecord(expense.paidBy);
-  const group = asRecord(expense.group);
   return section(
     heading("Expense"),
     fields([
       ["Description", display(expense.description)],
       ["Amount", humanAmount(expense.amount, expense.currency)],
-      ["Paid by", display(paidBy.name)],
+      ["Paid by", display(expense.paidBy)],
       ["Category", display(expense.category)],
       ["Split", display(expense.splitType)],
       ["Recurring", yesNo(expense.isRecurring)],
@@ -566,28 +581,20 @@ function formatActivityDetail(item: Record<string, unknown>, body: unknown) {
           ] as Field[])),
       ["Date", humanDate(expense.date)],
       ["Timezone", display(expense.timezone)],
-      ["Group", display(group.name)],
-      ["Created by", display(asRecord(expense.creator).name)],
+      ["Group", display(expense.group)],
+      ["Created by", display(expense.creator)],
       ["ID", display(expense.id), true],
-      ["Paid by ID", display(paidBy.id), true],
-      ["Group ID", display(group.id), true],
     ]),
     heading("Splits"),
     splits.length
       ? table(
           [
-            { label: "User ID", id: true },
             { label: "Name", max: 24 },
             { label: "Amount", align: "right" },
           ],
           splits.map((value) => {
             const split = asRecord(value);
-            const user = asRecord(split.user);
-            return [
-              split.userId,
-              user.name,
-              humanAmount(split.amount, expense.currency),
-            ];
+            return [split.user, humanAmount(split.amount, expense.currency)];
           }),
         )
       : note("This expense has no splits."),
@@ -604,7 +611,6 @@ export const groupPresenters = {
         items.length
           ? table(
               [
-                { label: "ID", id: true },
                 { label: "Name", max: 24 },
                 { label: "Type", max: 12 },
                 { label: "Members", align: "right" },
@@ -614,7 +620,6 @@ export const groupPresenters = {
               items.map((value) => {
                 const group = asRecord(value);
                 return [
-                  group.id,
                   group.name,
                   group.type,
                   group.memberCount,
@@ -652,14 +657,13 @@ export const groupPresenters = {
       if (!items.length) return note("No shared groups.");
       return table(
         [
-          { label: "ID", id: true },
           { label: "Name", max: 24 },
           { label: "Type", max: 12 },
           { label: "Description", max: 32 },
         ],
         items.map((value) => {
           const group = asRecord(value);
-          return [group.id, group.name, group.type, group.description];
+          return [group.name, group.type, group.description];
         }),
       );
     },
@@ -680,7 +684,6 @@ export const groupPresenters = {
       if (!items.length) return note("No group members.");
       return table(
         [
-          { label: "User ID", id: true },
           { label: "Name", max: 24 },
           { label: "Role", max: 12 },
           { label: "Guest" },
@@ -690,7 +693,6 @@ export const groupPresenters = {
         items.map((value) => {
           const member = asRecord(value);
           return [
-            member.userId,
             member.name,
             member.role,
             yesNo(member.isGuest),
@@ -750,8 +752,8 @@ export const groupPresenters = {
                   payment ? "payment" : "expense",
                   payment ? activity.description : activity.title,
                   payment
-                    ? `${display(asRecord(activity.from).name)} → ${display(asRecord(activity.to).name)}`
-                    : asRecord(activity.paidBy).name,
+                    ? `${display(activity.from)} → ${display(activity.to)}`
+                    : activity.paidBy,
                   humanAmount(activity.amount, activity.currency),
                 ];
               }),
@@ -759,7 +761,7 @@ export const groupPresenters = {
           : note("No group activities."),
         note(
           response.hasMore && response.nextCursor
-            ? `More activities available. Next page: banana groups activities <group-id> --cursor ${JSON.stringify(response.nextCursor)}`
+            ? `More activities available. Next page: banana groups activities <group> --cursor ${JSON.stringify(response.nextCursor)}`
             : "End of activities.",
         ),
       );
@@ -772,22 +774,8 @@ export const groupPresenters = {
     },
   },
   "group-created": {
-    clean: cleanCreatedGroup,
-    format(body) {
-      const response = asRecord(body);
-      return section(
-        heading("Group created"),
-        fields([
-          ["Name", display(response.name)],
-          ["Description", display(response.description)],
-          ["Type", display(response.type)],
-          ["Default split", display(response.defaultSplitType)],
-          ["Balance visibility", display(response.memberBalanceVisibility)],
-          ["ID", display(response.id), true],
-          ["Currency ID", display(response.currencyId), true],
-        ]),
-      );
-    },
+    clean: cleanGroup,
+    format: (body) => formatGroup(body, "Group created"),
   },
 } satisfies Record<
   | "group-list"

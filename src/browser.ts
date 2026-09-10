@@ -145,7 +145,7 @@ function browserItemTitle(
   item: Record<string, unknown>,
 ) {
   if (presentation === "balance-users" || presentation === "friend-list") {
-    return display(asRecord(item.user).name);
+    return display(item.user);
   }
   if (
     presentation === "group-list" ||

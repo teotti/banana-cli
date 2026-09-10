@@ -20,6 +20,7 @@ export type Presentation =
   | "expense-updated"
   | "expense-created"
   | "payment-created"
+  | "payments-created"
   | "group-created";
 export type BrowserPresentation =
   | "balance-users"
@@ -85,6 +86,21 @@ export interface CliRuntime {
   update?: () => Promise<string>;
 }
 
+/** What a human identifier on a flag names: a currency, a group or a person. */
+export type ReferenceKind = "currency" | "group" | "user";
+
+/**
+ * A name the CLI turns into an id before sending the request. `field` is a
+ * dotted path into the body (`splits.0.userId`), or `path` to fill the `:ref`
+ * placeholder in the request path. An omitted `value` means the signed-in user.
+ */
+export type Reference = {
+  field: string;
+  flag: string;
+  kind: ReferenceKind;
+  value?: string;
+};
+
 export type RequestCommand = {
   kind: "request";
   path: string;
@@ -93,6 +109,9 @@ export type RequestCommand = {
   method?: "POST" | "PUT";
   body?: unknown;
   mergeExpense?: string;
+  references?: Reference[];
+  /** Narrows a listing the API cannot filter itself, before it is presented. */
+  postFilter?: (body: unknown) => unknown;
 };
 
 export type HelpCommand = {

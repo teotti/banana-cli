@@ -3,6 +3,8 @@ import { version as CLI_VERSION } from "../package.json";
 import { CliFailure, type Environment, type OptionConfig } from "./types";
 
 export const DEFAULT_LIST_LIMIT = 5;
+/** A search fetches this many rows before filtering them here. */
+export const SEARCH_LIMIT = 100;
 
 // The generic `CI` variable is the one most providers set, but not all of them,
 // so the well-known names are checked too.
@@ -173,6 +175,27 @@ export function asArray(value: unknown) {
   return Array.isArray(value) ? value : [];
 }
 
+/**
+ * Client-side narrowing for the list endpoints the API cannot filter itself.
+ * Works on both list shapes: a bare array, and `{items, hasMore, nextCursor}`.
+ */
+export function matchItems(
+  search: string,
+  labels: (item: Record<string, unknown>) => unknown[],
+) {
+  const wanted = search.trim().toLowerCase();
+  const keep = (value: unknown) =>
+    labels(asRecord(value)).some(
+      (label) =>
+        typeof label === "string" && label.toLowerCase().includes(wanted),
+    );
+  return (body: unknown) => {
+    if (Array.isArray(body)) return body.filter(keep);
+    const response = asRecord(body);
+    return { ...response, items: asArray(response.items).filter(keep) };
+  };
+}
+
 export function numeric(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (
@@ -185,9 +208,14 @@ export function numeric(value: unknown) {
   return null;
 }
 
-export function cleanUserSummary(value: unknown) {
+/**
+ * A reference to another row, flattened: `{paidById, paidBy}` rather than a
+ * nested `{paidBy: {id, name}}`. The id keys match the field names the write
+ * endpoints take, so a `--json` read feeds straight back into a write.
+ */
+export function userRef(idKey: string, nameKey: string, value: unknown) {
   const user = asRecord(value);
-  return { id: user.id ?? null, name: user.name ?? null };
+  return { [idKey]: user.id ?? null, [nameKey]: user.name ?? null };
 }
 
 export function currencyCode(value: unknown) {
@@ -203,15 +231,22 @@ export function display(value: unknown) {
 /**
  * Amounts arrive as 18-decimal strings and come back out of arithmetic as
  * floats, so both `"8.100000000000000000"` and `2397.5199999999995` have to
- * read as money. Values too small to survive two decimals keep more of them.
+ * read as money. Two decimals is the floor, not the ceiling: a stored
+ * `95.185` prints in full rather than rounding to a number nobody stored.
+ * Rounding to eight decimals first is what turns `2397.5199999999995` back
+ * into `2397.52` instead of printing the float artifact.
  */
 export function humanNumber(value: unknown) {
   const parsed = numeric(value);
   if (parsed === null) return display(value);
-  if (parsed !== 0 && Math.abs(parsed) < 0.01) {
-    return parsed.toFixed(8).replace(/0+$/, "").replace(/\.$/, "");
-  }
-  return parsed.toFixed(2);
+  const rounded = Number(parsed.toFixed(8));
+  const significant = rounded
+    .toFixed(8)
+    .replace(/0+$/, "")
+    .replace(/\.$/, "");
+  if (rounded !== 0 && Math.abs(rounded) < 0.01) return significant;
+  const decimals = significant.split(".")[1]?.length ?? 0;
+  return rounded.toFixed(Math.max(2, decimals));
 }
 
 export function humanAmount(amount: unknown, currency: unknown) {

@@ -56,9 +56,9 @@ edit endpoint" conclusion.
 - **No `PATCH` anywhere.** Edits are `PUT`, and `PUT` is a *full replace* — send
   every field or they get cleared. The CLI's `expenses edit` handles this by
   `GET`ting the row and merging the flags over it before the `PUT`.
-- **`PUT` responses are thin.** They return the flat DB row: no `shares`, no
-  `paidByUser` / `group` / `currency` expansions. `GET` again if you need those
-  for display.
+- **Write responses are thin.** `POST` and `PUT` return the flat DB row: no
+  `shares`, no `paidByUser` / `group` / `currency` expansions. `GET` again if
+  you need those for display — the CLI does this for you, see below.
 - **An expense is group-scoped or friendship-scoped, never both.** Setting
   `groupId` requires nulling `friendshipId`, and vice versa.
 - **Amounts are strings** with 18 decimal places (`"8.100000000000000000"`).
@@ -69,6 +69,12 @@ edit endpoint" conclusion.
 - Splits must sum to the amount, so changing an amount means recomputing them.
 - List endpoints page with `p` / `l` query params and return
   `{items, hasMore, nextCursor}`.
+- **No list endpoint filters by name.** `/currencies` takes no query params at
+  all, and `/groups` and `/friends` take only paging and sorting. `--search`,
+  `--code` and every `--group Lisbon`-style lookup therefore fetch a wide page
+  (`l=100`) and filter it in the CLI. If the API ever grows `q` on those
+  routes, move the filtering there — the client-side pass is a workaround, not
+  a design.
 
 ## Code layout
 
@@ -78,9 +84,42 @@ edit endpoint" conclusion.
 1. **Parse** — `parseCommand` dispatches to parsers in `src/commands/`,
    each returning a `ParsedCommand`: either `{kind: "help"}` or
    `{kind: "request", path, method?, body?, query?, presentation}`.
-2. **Request** — `src/request.ts` handles auth, timeout, and error mapping.
-3. **Present** — each command module exports presenters with `clean()` (the
+2. **Resolve** — `src/resolve.ts` turns the human identifiers on a command
+   into ids before anything is sent.
+3. **Request** — `src/request.ts` handles auth, timeout, and error mapping.
+4. **Present** — each command module exports presenters with `clean()` (the
    `--json` shape) and `format()` (the default output). `--raw` skips both.
+
+## Naming things instead of looking ids up
+
+Every flag that used to take an id (`--currency-id`, `--paid-by-id`,
+`--group-id`, `--from-user-id`) now takes a code, a name, a prefix of one, or
+an id: `--currency EUR`, `--group "Lisbon trip"`, `--paid-by me`,
+`--split Ana=20`. A `<group>` argument works the same way.
+
+A parser stays pure: it emits `references`, each naming the body field to fill
+(a dotted path like `splits.0.userId`, or `path` for the `:ref` placeholder in
+the request path), the flag it came from, and what kind of row to look in.
+`runCli` resolves them before the request. A value that is already a UUID costs
+no lookup at all; otherwise each kind of list is fetched once per run and
+matched exact → prefix → substring, with an ambiguous match reported rather
+than guessed. A `--paid-by` with no value at all resolves to the signed-in
+user, which is why adding an expense needs no `banana me` first.
+
+Two conventions keep the output cheap to read:
+
+- **Writes read their row back.** A `POST` answers with the flat DB row —
+  currency ids, no names, no shares — so `runCli` re-`GET`s the created
+  expense, payment or group (`CREATED_COLLECTIONS`) before presenting it. One
+  command shows the whole created object, in codes and names, with no
+  follow-up `get`.
+- **Ids live in `--json`, names in the terminal.** Cleaned shapes are flat and
+  carry both (`paidById` + `paidBy`, `groupId` + `group`, `userId` + `user`),
+  and the id keys match the field names the write endpoints take. Human tables
+  print the names; only an entity's own id is worth a row in a detail block.
+
+`postFilter` on a command narrows a listing the API cannot filter itself; it
+runs on the response before `clean()`.
 
 To add a command: update help and the relevant parser/presenter in
 `src/commands/`, and extend `Presentation` in `src/types.ts`. Register new

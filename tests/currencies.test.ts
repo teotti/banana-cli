@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { runCli } from "../src/index";
-import { harness } from "./helpers";
+import { CURRENCIES, harness } from "./helpers";
 
 describe("BananaSplit CLI", () => {
   it("lists currencies with both command forms", async () => {
@@ -25,10 +25,35 @@ describe("BananaSplit CLI", () => {
       "/base/currencies",
     ]);
     expect(stdout[0].split("\n")).toEqual([
-      "ID            Code  Name  Symbol  Type  Decimals  Rate to base",
-      "currency-eur  EUR   Euro  €       fiat         2             1",
+      "Code  Name  Symbol  Type  Decimals  Rate to base",
+      "EUR   Euro  €       fiat         2             1",
     ]);
     expect(JSON.parse(stdout[1])).toEqual(response);
   });
 
+  it("filters the currency list by code and by search", async () => {
+    const response = [
+      ...CURRENCIES,
+      {
+        id: "currency-sek",
+        name: "Swedish krona",
+        code: "SEK",
+        symbol: "kr",
+        type: "fiat",
+        decimals: 2,
+        exchangeRateToBase: "11",
+      },
+    ];
+    const { runtime, stdout } = harness(Response.json(response));
+
+    expect(await runCli(["currencies", "--code", "eur", "--json"], runtime)).toBe(0);
+    expect(JSON.parse(stdout[0])).toEqual(CURRENCIES);
+
+    expect(await runCli(["currencies", "--search", "krona"], runtime)).toBe(0);
+    expect(stdout[1]).toContain("SEK");
+    expect(stdout[1]).not.toContain("EUR");
+
+    expect(await runCli(["currencies", "--code", "gbp"], runtime)).toBe(0);
+    expect(stdout[2]).toContain("No currencies.");
+  });
 });

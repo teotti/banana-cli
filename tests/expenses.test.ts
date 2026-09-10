@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { runCli } from "../src/index";
-import { harness } from "./helpers";
+import { ANA, GROUP, ME, harness, lookup } from "./helpers";
 
 describe("BananaSplit CLI", () => {
   it("maps expense list sorting, recurring filters, and cursors to the API", async () => {
@@ -58,8 +58,9 @@ describe("BananaSplit CLI", () => {
     expect(JSON.parse(stdout[0])).toEqual({
       items: [{
         id: "expense-1", title: "Dinner", description: null, amount: 42,
-        currency: "EUR", paidBy: { id: "user-1", name: "Leonardo" },
-        group: { id: "group-1", name: "Lisbon trip" }, category: "Food",
+        currencyId: null, currency: "EUR",
+        paidById: "user-1", paidBy: "Leonardo",
+        groupId: "group-1", group: "Lisbon trip", category: "Food",
         date: "2026-09-01T00:00:00.000Z", splitType: null, createdAt: null,
         isRecurring: true, share: 20,
       }],
@@ -91,12 +92,12 @@ describe("BananaSplit CLI", () => {
     }));
     expect(await runCli(["expenses", "list", "--json"], runtime)).toBe(0);
     const { items } = JSON.parse(stdout[0]);
-    expect(items[0]).toMatchObject({ amount: 8.1, group: null, category: null,
-      share: null, isRecurring: false });
+    expect(items[0]).toMatchObject({ amount: 8.1, groupId: null, group: null,
+      category: null, share: null, isRecurring: false });
     expect(items[1]).toMatchObject({ share: 0, isRecurring: true });
     expect(await runCli(["expenses", "list"], runtime)).toBe(0);
-    expect(stdout[1]).toContain("8.10 EUR           —");
-    expect(stdout[1]).toContain("recurring  —     Rent   —        100.00 EUR");
+    expect(stdout[1]).toContain("Taxi   —          8.10           —");
+    expect(stdout[1]).toContain("recurring  —     Rent   —        100.00        0.00");
     expect(stdout[1]).toContain("End of expenses.");
   });
 
@@ -126,25 +127,29 @@ describe("BananaSplit CLI", () => {
     expect(calls).toHaveLength(0);
   });
 
-  it("adds an expense with repeated splits", async () => {
-    const { calls, runtime, stdout } = harness(
-      Response.json({
-        id: "expense-1",
-        title: "Dinner",
-        description: "Team meal",
-        amount: "42",
-        currencyId: "currency-eur",
-        paidById: "user-1",
-        groupId: "group-1",
-        date: "2026-09-01",
-        timezone: "UTC",
-        splitType: "custom",
-        shares: [
-          { userId: "user-1", amount: "22" },
-          { userId: "user-2", amount: "20" },
-        ],
-      }),
-    );
+  it("adds an expense, naming the currency, group and people", async () => {
+    const created = {
+      id: "expense-1",
+      title: "Dinner",
+      description: "Team meal",
+      amount: "42",
+      currencyId: "currency-eur",
+      currency: { code: "EUR" },
+      paidById: ME.id,
+      paidByUser: ME,
+      groupId: GROUP.id,
+      group: GROUP,
+      date: "2026-09-01",
+      splitType: "custom",
+      shares: [
+        { userId: ME.id, amount: "22", user: ME },
+        { userId: ANA.id, amount: "20", user: ANA },
+      ],
+    };
+    const { calls, runtime, stdout } = harness((url, init) => {
+      const answer = lookup(url, init);
+      return answer ?? Response.json(created);
+    });
 
     expect(
       await runCli(
@@ -155,66 +160,61 @@ describe("BananaSplit CLI", () => {
           "Dinner",
           "--amount",
           "42",
-          "--currency-id",
-          "currency-eur",
-          "--paid-by-id",
-          "user-1",
+          "--currency",
+          "EUR",
+          "--paid-by",
+          "me",
           "--date",
           "2026-09-01",
-          "--group-id",
-          "group-1",
+          "--group",
+          "Lisbon",
           "--description",
           "Team meal",
           "--split-type",
           "custom",
           "--split",
-          "user-1=22",
+          "me=22",
           "--split",
-          "user-2=20",
-          "--json",
+          "Ana=20",
         ],
         runtime,
       ),
     ).toBe(0);
-    expect(calls[0].url.pathname).toBe("/base/expenses");
-    expect(calls[0].init?.method).toBe("POST");
-    expect(new Headers(calls[0].init?.headers).get("content-type")).toBe(
+
+    const post = calls.find(({ init }) => init?.method === "POST")!;
+    expect(post.url.pathname).toBe("/base/expenses");
+    expect(new Headers(post.init?.headers).get("content-type")).toBe(
       "application/json",
     );
-    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+    expect(JSON.parse(String(post.init?.body))).toEqual({
       title: "Dinner",
       amount: "42",
-      currencyId: "currency-eur",
-      paidById: "user-1",
       date: "2026-09-01T00:00:00.000Z",
       splits: [
-        { userId: "user-1", amount: "22" },
-        { userId: "user-2", amount: "20" },
+        { userId: ME.id, amount: "22" },
+        { userId: ANA.id, amount: "20" },
       ],
-      groupId: "group-1",
       description: "Team meal",
       splitType: "custom",
-    });
-    expect(JSON.parse(stdout[0])).toEqual({
-      id: "expense-1",
-      title: "Dinner",
-      description: "Team meal",
-      amount: 42,
       currencyId: "currency-eur",
-      paidById: "user-1",
-      groupId: "group-1",
-      date: "2026-09-01",
-      timezone: "UTC",
-      splitType: "custom",
-      splits: [
-        { userId: "user-1", amount: 22 },
-        { userId: "user-2", amount: 20 },
-      ],
+      paidById: ME.id,
+      groupId: GROUP.id,
     });
+    // The created row is read back, so one command shows the whole expense.
+    expect(calls.at(-1)!.url.pathname).toBe("/base/expenses/expense-1");
+    expect(stdout[0]).toContain("Expense created");
+    expect(stdout[0]).toContain("Amount:      42.00 EUR");
+    expect(stdout[0]).toContain("Paid by:     Leonardo");
+    expect(stdout[0]).toContain("Group:       Lisbon trip");
+    expect(stdout[0]).toContain("Ana       20.00 EUR");
+    expect(stdout[0]).not.toContain(ANA.id);
   });
 
-  it("uses server defaults for group expense splits", async () => {
-    const { calls, runtime } = harness(Response.json({ id: "expense-1" }));
+  it("defaults the payer to the signed-in user", async () => {
+    const { calls, runtime } = harness((url, init) => {
+      const answer = lookup(url, init);
+      return answer ?? Response.json({ id: "expense-1" });
+    });
 
     expect(
       await runCli(
@@ -225,28 +225,96 @@ describe("BananaSplit CLI", () => {
           "Rent",
           "--amount",
           "1000",
-          "--currency-id",
-          "currency-eur",
-          "--paid-by-id",
-          "user-1",
+          "--currency",
+          "EUR",
           "--date",
           "01-09-2026",
-          "--group-id",
-          "group-1",
+          "--group",
+          "Lisbon trip",
         ],
         runtime,
       ),
     ).toBe(0);
-    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+    const post = calls.find(({ init }) => init?.method === "POST")!;
+    expect(JSON.parse(String(post.init?.body))).toEqual({
       title: "Rent",
       amount: "1000",
-      currencyId: "currency-eur",
-      paidById: "user-1",
       date: "2026-09-01T00:00:00.000Z",
       splits: [],
-      groupId: "group-1",
+      currencyId: "currency-eur",
+      paidById: ME.id,
+      groupId: GROUP.id,
     });
   });
+
+  it("keeps ids working and looks nothing up for them", async () => {
+    const { calls, runtime } = harness(Response.json({ id: "expense-1" }));
+
+    expect(
+      await runCli(
+        [
+          "expenses",
+          "add",
+          "--title",
+          "Taxi",
+          "--amount",
+          "20",
+          "--currency",
+          "44444444-4444-4444-8444-444444444444",
+          "--paid-by",
+          ME.id,
+          "--date",
+          "2026-09-01",
+          "--split",
+          `${ANA.id}=20`,
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+    expect(calls[0].init?.method).toBe("POST");
+    expect(JSON.parse(String(calls[0].init?.body))).toMatchObject({
+      currencyId: "44444444-4444-4444-8444-444444444444",
+      paidById: ME.id,
+      splits: [{ userId: ANA.id, amount: "20" }],
+    });
+  });
+
+  it("reports an ambiguous name instead of guessing", async () => {
+    const { runtime, stderr } = harness((url, init) => {
+      if (init?.method === undefined && url.pathname.endsWith("/groups")) {
+        return Response.json({
+          items: [
+            { id: "group-1", name: "Lisbon trip" },
+            { id: "group-2", name: "Lisbon flat" },
+          ],
+        });
+      }
+      return lookup(url, init) ?? Response.json({ id: "expense-1" });
+    });
+
+    expect(
+      await runCli(
+        [
+          "expenses",
+          "add",
+          "--title",
+          "Rent",
+          "--amount",
+          "1000",
+          "--currency",
+          "EUR",
+          "--date",
+          "2026-09-01",
+          "--group",
+          "Lisbon",
+        ],
+        runtime,
+      ),
+    ).toBe(2);
+    expect(stderr[0]).toContain("--group \"Lisbon\" matches 2 groups");
+    expect(stderr[0]).toContain("Lisbon trip, Lisbon flat");
+  });
+
   it("shows an expense by id with resolved names", async () => {
     const { calls, runtime, stdout } = harness(
       Response.json({
@@ -274,12 +342,11 @@ describe("BananaSplit CLI", () => {
     expect(calls[0].url.pathname).toBe("/base/expenses/expense-1");
     expect(calls[0].init?.method).toBeUndefined();
     expect(stdout[0]).toContain("Paid by:     Leonardo");
-    expect(stdout[0]).toContain("Paid by ID:  user-1");
     expect(stdout[0]).toContain("Group:       Lisbon trip");
-    expect(stdout[0]).toContain("Group ID:    group-1");
     expect(stdout[0]).toContain("Category:    Food & Drinks");
-    expect(stdout[0]).toContain("user-1   Leonardo  22.00 EUR");
-    expect(stdout[0]).toContain("user-2   Ana       20.00 EUR");
+    expect(stdout[0]).toContain("Leonardo  22.00 EUR");
+    expect(stdout[0]).toContain("Ana       20.00 EUR");
+    expect(stdout[0]).not.toContain("user-2");
   });
 
   it("merges edited fields over the current expense before the PUT", async () => {
@@ -308,7 +375,15 @@ describe("BananaSplit CLI", () => {
 
     expect(
       await runCli(
-        ["expenses", "edit", "expense-1", "--title", "Chinese dinner", "--group-id", "group-1"],
+        [
+          "expenses",
+          "edit",
+          "expense-1",
+          "--title",
+          "Chinese dinner",
+          "--group",
+          "44444444-4444-4444-8444-444444444444",
+        ],
         runtime,
       ),
     ).toBe(0);
@@ -324,7 +399,7 @@ describe("BananaSplit CLI", () => {
       amount: "42",
       currencyId: "currency-eur",
       paidById: "user-1",
-      groupId: "group-1",
+      groupId: "44444444-4444-4444-8444-444444444444",
       friendshipId: null,
       date: "2026-09-01T00:00:00.000Z",
       timezone: "Europe/Lisbon",
@@ -334,6 +409,34 @@ describe("BananaSplit CLI", () => {
         { userId: "user-1", amount: "22" },
         { userId: "user-2", amount: "20" },
       ],
+    });
+  });
+
+  it("edits an expense whose only change is a named currency", async () => {
+    const { calls, runtime } = harness((url, init) => {
+      const answer = lookup(url, init);
+      if (answer) return answer;
+      return init?.method === "PUT"
+        ? Response.json({ id: "expense-1" })
+        : Response.json({
+            id: "expense-1",
+            title: "Dinner",
+            amount: "42",
+            currencyId: "currency-usd",
+            paidById: ME.id,
+            splitType: "custom",
+            date: "2026-09-01T00:00:00.000Z",
+            shares: [{ userId: ME.id, amount: "42" }],
+          });
+    });
+
+    expect(
+      await runCli(["expenses", "edit", "expense-1", "--currency", "EUR"], runtime),
+    ).toBe(0);
+    const put = calls.find(({ init }) => init?.method === "PUT")!;
+    expect(JSON.parse(String(put.init?.body))).toMatchObject({
+      currencyId: "currency-eur",
+      amount: "42",
     });
   });
 
@@ -391,15 +494,13 @@ describe("BananaSplit CLI", () => {
     expect(await runCli(["expenses", "edit", "expense-1"], runtime)).toBe(2);
     expect(
       await runCli(
-        ["expenses", "edit", "expense-1", "--group-id", "group-1", "--no-group"],
+        ["expenses", "edit", "expense-1", "--group", "Lisbon", "--no-group"],
         runtime,
       ),
     ).toBe(2);
     expect(calls).toHaveLength(0);
     expect(stderr[0]).toContain("At least one field to change is required");
-    expect(stderr[1]).toContain(
-      "--group-id and --no-group cannot be used together",
-    );
+    expect(stderr[1]).toContain("--group and --no-group cannot be used together");
   });
 
 });

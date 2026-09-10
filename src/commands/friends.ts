@@ -1,20 +1,22 @@
 import {
   DEFAULT_LIST_LIMIT,
+  SEARCH_LIMIT,
   appendQuery,
   asArray,
   asRecord,
-  cleanUserSummary,
   currencyCode,
   display,
   encodedDetailId,
   enumValue,
   humanAmount,
   humanDate,
+  matchItems,
   numeric,
   parseOptions,
   positiveInteger,
   requirePositionals,
   usageFailure,
+  userRef,
   wantsHelp,
   yesNo,
 } from "../shared";
@@ -27,14 +29,18 @@ const LIST_HELP = helpText({
     "List the people you split expenses with, and your balance with each.",
   usage: ["banana friends list [flags]"],
   options: [
+    ["--search TEXT", "Only people whose name matches"],
     ["--limit N", `Friends to fetch (default: ${DEFAULT_LIST_LIMIT})`],
     ["--cursor CURSOR", "Continue from a cursor returned by a previous page"],
     ["--sort balance|lastActivity", "Order the list"],
     ["--filter all|guests", "Show everyone, or only guest accounts"],
   ],
+  notes: [
+    "--search matches on the name, case-insensitively. It fetches a wider\npage and filters it here, so pass --limit to widen it further.",
+  ],
   examples: [
     "banana friends",
-    "banana friends list --limit 20",
+    "banana friends --search ana",
     "banana friends list --sort balance --json",
   ],
 });
@@ -55,17 +61,21 @@ function parseFriendsList(args: string[]): ParsedCommand {
       cursor: { type: "string" },
       filter: { type: "string" },
       limit: { type: "string" },
+      search: { type: "string" },
       sort: { type: "string" },
     },
     LIST_HELP,
   );
   requirePositionals(positionals, 0, LIST_HELP);
 
+  const search = values.search as string | undefined;
   const query = new URLSearchParams();
   appendQuery(
     query,
     "l",
-    positiveInteger(values.limit, "--limit") ?? String(DEFAULT_LIST_LIMIT),
+    positiveInteger(values.limit, "--limit") ??
+      // The API has no name filter, so a search needs a wider page to narrow.
+      String(search === undefined ? DEFAULT_LIST_LIMIT : SEARCH_LIMIT),
   );
   appendQuery(query, "cursor", values.cursor as string | undefined);
   appendQuery(
@@ -84,14 +94,22 @@ function parseFriendsList(args: string[]): ParsedCommand {
     path: "/friends",
     presentation: "friend-list",
     query,
+    ...(search === undefined
+      ? {}
+      : {
+          postFilter: matchItems(search, (friendship) => [
+            asRecord(friendship.user).name,
+          ]),
+        }),
   };
 }
 
 export function parseFriends(args: string[]): ParsedCommand {
-  if (args.length === 0) return parseFriendsList(args);
   if (args[0] === "--help" || args[0] === "-h") {
     return { kind: "help", text: HELP };
   }
+  // `banana friends --search x` is the list, the same as `banana friends`.
+  if (args.length === 0 || args[0]!.startsWith("-")) return parseFriendsList(args);
   const [command, ...rest] = args;
   if (command === "list") return parseFriendsList(rest);
   throw usageFailure(`Unknown command: friends ${command}`, HELP);
@@ -105,7 +123,7 @@ function cleanFriendList(body: unknown) {
       const user = asRecord(friendship.user);
       return {
         id: friendship.id ?? null,
-        user: cleanUserSummary(user),
+        ...userRef("userId", "user", user),
         balance: numeric(friendship.balance),
         currency: currencyCode(friendship.currency),
         isGuest: user.isGuest === true,
@@ -128,7 +146,6 @@ export const friendPresenters = {
         items.length
           ? table(
               [
-                { label: "User ID", id: true },
                 { label: "Name", max: 24 },
                 { label: "Guest" },
                 { label: "Balance", align: "right" },
@@ -137,8 +154,7 @@ export const friendPresenters = {
               items.map((value) => {
                 const friendship = asRecord(value);
                 return [
-                  asRecord(friendship.user).id,
-                  asRecord(friendship.user).name,
+                  friendship.user,
                   yesNo(friendship.isGuest),
                   humanAmount(friendship.balance, friendship.currency),
                   humanDate(friendship.mostRecentActivity),
