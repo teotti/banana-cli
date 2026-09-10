@@ -48,9 +48,19 @@ banana login
 
 The CLI prints a short code and verification URL, then tries to open that URL
 in your browser. On SSH or a headless machine, open the printed URL on another
-device and confirm that the browser shows the same code. Credentials are stored
-only in the operating system credential store through `Bun.secrets`; there is
-no plaintext or environment-token fallback.
+device and confirm that the browser shows the same code. There is no plaintext
+or environment-token fallback.
+
+Credentials are stored per API origin:
+
+- **macOS** — the login keychain, reached by running `/usr/bin/security`. Going
+  through Apple's own binary keeps the keychain item usable after `banana
+  update` replaces the CLI binary; calling the keychain from the CLI itself
+  ties the item to that build and makes the next command block on a GUI
+  prompt. Set `BANANASPLIT_NO_KEYCHAIN=1` to use the file store instead.
+- **Everywhere else** — a `0600` JSON file at
+  `${XDG_DATA_HOME:-~/.local/share}/banana/credentials.json`, written through a
+  temporary file and renamed into place.
 
 To use a local loopback deployment:
 
@@ -62,8 +72,18 @@ banana login
 ```
 
 Non-loopback API, auth, and verification URLs must use HTTPS. Automated
-environments need a supported OS credential store populated through the same
-`banana login` flow.
+environments need credentials populated through the same `banana login` flow.
+
+The CLI reads these variables:
+
+| Variable | Effect |
+| --- | --- |
+| `BANANASPLIT_API_URL` | API base URL (default `https://api.bananasplit.net`) |
+| `BANANASPLIT_AUTH_URL` | Complete `/api` auth base, when auth runs at another origin |
+| `BANANASPLIT_NO_KEYCHAIN` | Use the credentials file on macOS too |
+| `BANANA_INSTALL_DIR` | Where the install script puts the binary |
+| `BANANA_VERSION` | Install a specific release instead of the latest |
+| `NO_COLOR` | Print help and listings without color |
 
 ## Usage
 
@@ -159,6 +179,20 @@ banana groups get GROUP_ID --raw
 The output flag may appear before or after the command. `--json` and `--raw`
 cannot be used together.
 
+Human output is laid out for reading: listings print as aligned tables with one
+column per field, and details print as `Label: value` blocks with ids last.
+Colors are tuned to stay legible on light and dark terminals, and are dropped
+entirely when output is not a TTY or `NO_COLOR` is set.
+
+Every command has its own help page — summary, usage, options, notes, and
+examples — and a usage mistake prints the reason with that page underneath:
+
+```sh
+banana --help
+banana expenses --help
+banana expenses edit --help
+```
+
 In an interactive terminal, `balance users`, `friends list`, `groups list`, `expenses list`,
 `groups members`, and `groups activities` open searchable browsers; type to
 filter, use the arrow keys to select an item, press Enter to open its details,
@@ -177,7 +211,7 @@ the BananaSplit API, and nothing about your machine leaves it except the
 `User-Agent` header that every HTTP request carries:
 
 ```
-bananasplit-cli/0.2.1 (darwin arm64; bun 1.3.9; tty)
+bananasplit-cli/0.2.4 (darwin arm64; bun 1.3.9; tty)
 ```
 
 That is the CLI version, your operating system and CPU architecture, the Bun
