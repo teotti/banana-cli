@@ -106,14 +106,18 @@ describe("BananaSplit CLI", () => {
     ).toBe(0);
     expect(groupsHarness.stdout[0]).toBe("No groups.\n\nEnd of groups.");
 
-    const activitiesHarness = harness(Response.json([]));
+    const activitiesHarness = harness(
+      Response.json({ items: [], hasMore: false, nextCursor: null }),
+    );
     expect(
       await runCli(
         ["groups", "activities", "group-1"],
         activitiesHarness.runtime,
       ),
     ).toBe(0);
-    expect(activitiesHarness.stdout[0]).toBe("No group activities.");
+    expect(activitiesHarness.stdout[0]).toBe(
+      "No group activities.\n\nEnd of activities.",
+    );
   });
 
   it("rejects invalid arguments without making a request", async () => {

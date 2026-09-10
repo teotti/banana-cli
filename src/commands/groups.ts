@@ -98,7 +98,7 @@ const ACTIVITIES_HELP = helpText({
   options: [
     ["--search QUERY", "Only activities matching a search"],
     ["--limit N", "Activities per page"],
-    ["--page N", "Page to fetch, 1-based"],
+    ["--cursor CURSOR", "Continue from a cursor returned by a previous page"],
     ["--type TYPE", "all|expenses|payments|recurring_expenses"],
     ["--sort date|amount", "Order the list"],
     ["--direction asc|desc", "Sort direction"],
@@ -204,9 +204,9 @@ function parseGroupsActivities(args: string[]): ParsedCommand {
   const { positionals, values } = parseOptions(
     args,
     {
+      cursor: { type: "string" },
       direction: { type: "string" },
       limit: { type: "string" },
-      page: { type: "string" },
       search: { type: "string" },
       sort: { type: "string" },
       type: { type: "string" },
@@ -217,7 +217,7 @@ function parseGroupsActivities(args: string[]): ParsedCommand {
 
   const query = new URLSearchParams();
   appendQuery(query, "l", positiveInteger(values.limit, "--limit"));
-  appendQuery(query, "p", positiveInteger(values.page, "--page"));
+  appendQuery(query, "cursor", values.cursor as string | undefined);
   appendQuery(
     query,
     "type",
@@ -336,7 +336,8 @@ function cleanMembers(body: unknown) {
 }
 
 function cleanActivities(body: unknown) {
-  return asArray(body).map((value) => {
+  const response = asRecord(body);
+  const items = asArray(response.items).map((value) => {
     const activity = asRecord(value);
     if (activity.entity === "payment") {
       return {
@@ -364,6 +365,11 @@ function cleanActivities(body: unknown) {
       isRecurring: activity.recurringExpenseRuleId != null,
     };
   });
+  return {
+    items,
+    hasMore: response.hasMore === true,
+    nextCursor: response.nextCursor ?? null,
+  };
 }
 
 function cleanCreatedGroup(body: unknown) {
@@ -595,6 +601,18 @@ export const groupPresenters = {
       detailPath(_command, item) {
         return `/groups/${encodedDetailId(item.id)}`;
       },
+      links(_command, item) {
+        const group = `/groups/${encodedDetailId(item.id)}`;
+        return [
+          { key: "m", label: "members", presentation: "members",
+            path: `${group}/members` },
+          { key: "e", label: "expenses", presentation: "activities",
+            path: `${group}/activities`,
+            query: new URLSearchParams({ type: "expenses" }) },
+          { key: "a", label: "activity", presentation: "activities",
+            path: `${group}/activities` },
+        ];
+      },
       formatDetail(item, body) {
         return formatGroup(cleanGroup({
           ...asRecord(body),
@@ -659,31 +677,40 @@ export const groupPresenters = {
   activities: {
     clean: cleanActivities,
     format(body) {
-      const items = asArray(body);
-      if (!items.length) return note("No group activities.");
-      return table(
-        [
-          { label: "ID", id: true },
-          { label: "Date" },
-          { label: "Kind" },
-          { label: "Title", max: 24 },
-          { label: "Who", max: 20 },
-          { label: "Amount", align: "right" },
-        ],
-        items.map((value) => {
-          const activity = asRecord(value);
-          const payment = activity.entity === "payment";
-          return [
-            activity.id,
-            humanDate(activity.date),
-            payment ? "payment" : "expense",
-            payment ? activity.description : activity.title,
-            payment
-              ? `${display(asRecord(activity.from).name)} → ${display(asRecord(activity.to).name)}`
-              : asRecord(activity.paidBy).name,
-            humanAmount(activity.amount, activity.currency),
-          ];
-        }),
+      const response = asRecord(body);
+      const items = asArray(response.items);
+      return section(
+        items.length
+          ? table(
+              [
+                { label: "ID", id: true },
+                { label: "Date" },
+                { label: "Kind" },
+                { label: "Title", max: 24 },
+                { label: "Who", max: 20 },
+                { label: "Amount", align: "right" },
+              ],
+              items.map((value) => {
+                const activity = asRecord(value);
+                const payment = activity.entity === "payment";
+                return [
+                  activity.id,
+                  humanDate(activity.date),
+                  payment ? "payment" : "expense",
+                  payment ? activity.description : activity.title,
+                  payment
+                    ? `${display(asRecord(activity.from).name)} → ${display(asRecord(activity.to).name)}`
+                    : asRecord(activity.paidBy).name,
+                  humanAmount(activity.amount, activity.currency),
+                ];
+              }),
+            )
+          : note("No group activities."),
+        note(
+          response.hasMore && response.nextCursor
+            ? `More activities available. Next page: banana groups activities <group-id> --cursor ${JSON.stringify(response.nextCursor)}`
+            : "End of activities.",
+        ),
       );
     },
     browser: {

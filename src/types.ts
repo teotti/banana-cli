@@ -31,11 +31,32 @@ export type BrowserDetailLoader = (
   item: Record<string, unknown>,
 ) => Promise<string>;
 export type BrowserPageLoader = (cursor: string) => Promise<unknown>;
+/** A collection reachable from an item's detail view, opened with `key`. */
+export type BrowserLink = {
+  key: string;
+  label: string;
+  presentation: BrowserPresentation;
+  path: string;
+  query?: URLSearchParams;
+};
+export type BrowserLinks = (item: Record<string, unknown>) => BrowserLink[];
+export type BrowserLevel = {
+  presentation: BrowserPresentation;
+  body: unknown;
+  loadDetail: BrowserDetailLoader;
+  loadPage?: BrowserPageLoader;
+  links?: BrowserLinks;
+};
+export type BrowserNesting = {
+  links?: BrowserLinks;
+  open: (link: BrowserLink) => Promise<BrowserLevel>;
+};
 export type Browser = (
   presentation: BrowserPresentation,
   body: unknown,
   loadDetail: BrowserDetailLoader,
   loadPage?: BrowserPageLoader,
+  nested?: BrowserNesting,
 ) => Promise<boolean>;
 export type Fetch = (
   input: RequestInfo | URL,
@@ -91,6 +112,11 @@ export type BrowserPresenter = {
     item: Record<string, unknown>,
   ) => string;
   formatDetail: (item: Record<string, unknown>, body: unknown) => string;
+  /** Collections the detail view of one item can drill into. */
+  links?: (
+    command: RequestCommand,
+    item: Record<string, unknown>,
+  ) => BrowserLink[];
 };
 
 export type Presenter = {

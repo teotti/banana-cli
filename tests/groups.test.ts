@@ -216,8 +216,8 @@ describe("BananaSplit CLI", () => {
           "dinner out",
           "--limit",
           "10",
-          "--page",
-          "2",
+          "--cursor",
+          "next-page",
           "--type",
           "expenses",
           "--sort",
@@ -233,7 +233,7 @@ describe("BananaSplit CLI", () => {
     );
     expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
       l: "10",
-      p: "2",
+      cursor: "next-page",
       type: "expenses",
       sort: "amount",
       direction: "desc",
@@ -243,7 +243,8 @@ describe("BananaSplit CLI", () => {
 
   it("presents expense and payment activities", async () => {
     const { runtime, stdout } = harness(
-      Response.json([
+      Response.json({
+        items: [
         {
           entity: "expense",
           id: "expense-1",
@@ -269,7 +270,10 @@ describe("BananaSplit CLI", () => {
           isSettlement: true,
           createdAt: "ignored",
         },
-      ]),
+        ],
+        hasMore: true,
+        nextCursor: "next-page",
+      }),
     );
 
     expect(
@@ -278,7 +282,8 @@ describe("BananaSplit CLI", () => {
         runtime,
       ),
     ).toBe(0);
-    expect(JSON.parse(stdout[0])).toEqual([
+    expect(JSON.parse(stdout[0])).toEqual({
+      items: [
       {
         entity: "expense",
         id: "expense-1",
@@ -302,7 +307,10 @@ describe("BananaSplit CLI", () => {
         to: { id: "user-1", name: "Leonardo" },
         isSettlement: true,
       },
-    ]);
+      ],
+      hasMore: true,
+      nextCursor: "next-page",
+    });
     expect(
       await runCli(["groups", "activities", "group-1"], runtime),
     ).toBe(0);
@@ -311,6 +319,9 @@ describe("BananaSplit CLI", () => {
         "ID         Date        Kind     Title   Who                Amount",
         "expense-1  2026-08-27  expense  Dinner  Leonardo        42.00 EUR",
         "payment-1  2026-08-28  payment  —       Ana → Leonardo  15.00 EUR",
+        "",
+        "More activities available. Next page: banana groups activities " +
+          '<group-id> --cursor "next-page"',
       ].join("\n"),
     );
   });

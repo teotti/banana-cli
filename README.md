@@ -196,8 +196,10 @@ banana expenses edit --help
 In an interactive terminal, `balance users`, `friends list`, `groups list`, `expenses list`,
 `groups members`, and `groups activities` open searchable browsers; type to
 filter, use the arrow keys to select an item, press Enter to open its details,
-Esc to return, and `q` to quit. In a non-interactive command card, friend and
-group lists fall back to five items and print a copyable `Next page` cursor
+Esc to return, and `q` to quit. A group's details drill further: press `m` for
+its members, `e` for its expenses, or `a` for all of its activity, each a
+browser of its own, with Esc stepping back up. In a non-interactive command
+card, friend and group lists fall back to five items and print a copyable `Next page` cursor
 command. Expense lists also default to five items outside the browser and show
 the next cursor. In the browser they use the API's default page size and load
 more as you reach the end. Search filters all loaded expenses; press ↓ at the
