@@ -281,13 +281,11 @@ describe("BananaSplit CLI", () => {
 
   it("reports an ambiguous name instead of guessing", async () => {
     const { runtime, stderr } = harness((url, init) => {
-      if (init?.method === undefined && url.pathname.endsWith("/groups")) {
-        return Response.json({
-          items: [
-            { id: "group-1", name: "Lisbon trip" },
-            { id: "group-2", name: "Lisbon flat" },
-          ],
-        });
+      if (init?.method === undefined && url.pathname.endsWith("/groups/search")) {
+        return Response.json([
+          { id: "group-1", name: "Lisbon trip" },
+          { id: "group-2", name: "Lisbon flat" },
+        ]);
       }
       return lookup(url, init) ?? Response.json({ id: "expense-1" });
     });

@@ -191,8 +191,8 @@ describe("BananaSplit CLI", () => {
 
   it("finds a group by name for get, members and activities", async () => {
     const { calls, runtime } = harness((url, init) => {
-      if (init?.method === undefined && url.pathname === "/base/groups") {
-        return Response.json({ items: [{ id: "group/one", name: "Lisbon trip" }] });
+      if (init?.method === undefined && url.pathname === "/base/groups/search") {
+        return Response.json([{ id: "group/one", name: "Lisbon trip" }]);
       }
       return lookup(url, init) ?? Response.json({});
     });
@@ -200,7 +200,9 @@ describe("BananaSplit CLI", () => {
     expect(await runCli(["groups", "get", "lisbon"], runtime)).toBe(0);
     expect(await runCli(["groups", "members", "Lisbon trip"], runtime)).toBe(0);
     expect(
-      calls.map(({ url }) => url.pathname).filter((path) => path !== "/base/groups"),
+      calls
+        .map(({ url }) => url.pathname)
+        .filter((path) => !path.endsWith("/search")),
     ).toEqual([
       "/base/groups/group%2Fone",
       "/base/groups/group%2Fone/members",

@@ -73,9 +73,9 @@ function pick(candidates: Candidate[], reference: Reference, value: string) {
 }
 
 /**
- * One run's lookups. `/groups` and `/friends` search on `q`, so a name is
- * asked for by name; `/currencies` has no filter, so its one list is fetched
- * whole. Every distinct query is fetched at most once per run.
+ * One run's lookups. Groups and friends have search endpoints of their own, so
+ * a name is asked for by name; `/currencies` has no filter, so its one list is
+ * fetched whole. Every distinct query is fetched at most once per run.
  */
 function lookups(runtime: AuthRuntime, env: Environment) {
   const get = async (path: string, query?: URLSearchParams) =>
@@ -90,12 +90,19 @@ function lookups(runtime: AuthRuntime, env: Environment) {
     cache.set(key, pending);
     return pending;
   };
-  const page = (search: string | undefined) =>
-    new URLSearchParams(
-      search === undefined
-        ? { l: SWEEP_LIMIT }
-        : { q: search, l: LOOKUP_LIMIT },
+  // Searching and listing are different routes with different shapes: the
+  // search endpoints answer with a bare array, the listings with `{items}`.
+  const load = async (collection: string, search: string | undefined) => {
+    const body = await get(
+      search === undefined ? collection : `${collection}/search`,
+      new URLSearchParams(
+        search === undefined
+          ? { l: SWEEP_LIMIT }
+          : { q: search, l: LOOKUP_LIMIT },
+      ),
     );
+    return Array.isArray(body) ? body : asArray(asRecord(body).items);
+  };
 
   const lists: Record<
     ReferenceKind,
@@ -115,12 +122,10 @@ function lookups(runtime: AuthRuntime, env: Environment) {
     group: (search) =>
       once(`group:${search ?? ""}`, async () =>
         collect(
-          asArray(asRecord(await get("/groups", page(search))).items).map(
-            (value) => {
-              const group = asRecord(value);
-              return candidate(group.id, group.name);
-            },
-          ),
+          (await load("/groups", search)).map((value) => {
+            const group = asRecord(value);
+            return candidate(group.id, group.name);
+          }),
         ),
       ),
     // A user can be named as a friend or as yourself; `me` is always you.
@@ -128,11 +133,11 @@ function lookups(runtime: AuthRuntime, env: Environment) {
       once(`user:${search ?? ""}`, async () => {
         const [me, friends] = await Promise.all([
           currentUser(),
-          get("/friends", page(search)),
+          load("/friends", search),
         ]);
         return collect([
           candidate(me.id, me.name, "me", me.username, me.email),
-          ...asArray(asRecord(friends).items).map((value) => {
+          ...friends.map((value) => {
             const user = asRecord(asRecord(value).user);
             return candidate(user.id, user.name, user.username, user.email);
           }),
