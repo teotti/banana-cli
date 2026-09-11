@@ -120,6 +120,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -291,6 +292,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -353,6 +355,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -710,6 +713,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -881,6 +885,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -943,6 +948,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -1132,6 +1138,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -1334,6 +1341,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -1505,6 +1513,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -1567,6 +1576,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -1756,6 +1766,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -1944,6 +1955,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -2146,6 +2158,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -2317,6 +2330,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -2379,6 +2393,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -2568,6 +2583,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -2756,6 +2772,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -2957,6 +2974,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -3128,6 +3146,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -3190,6 +3209,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -3379,6 +3399,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -3595,6 +3616,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -3766,6 +3788,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -3828,6 +3851,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -4017,6 +4041,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -4195,6 +4220,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -4247,6 +4273,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -4425,6 +4452,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -4490,6 +4518,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -4661,6 +4690,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -4723,6 +4753,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -4912,6 +4943,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -5128,6 +5160,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -5165,6 +5198,7 @@ export declare const appType: Elysia<"", {
                     username: string | null;
                     displayUsername: string | null;
                     bio: string | null;
+                    locale: import("./lib/i18n").Locale;
                     isGuest: boolean;
                     managedBy: string | null;
                     currencyId: string | null;
@@ -5197,6 +5231,7 @@ export declare const appType: Elysia<"", {
             post: {
                 body: {
                     username?: string | undefined;
+                    locale?: "en-US" | "pt-PT" | undefined;
                     currencyId?: string | undefined;
                     name: string;
                     email: string;
@@ -5218,6 +5253,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -5255,6 +5291,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -7746,6 +7783,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: import("./lib/i18n").Locale;
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -7854,6 +7892,33 @@ export declare const appType: Elysia<"", {
     };
 } & {
     users: {
+        get: {
+            body: {};
+            params: {};
+            query: {
+                q: string;
+            };
+            headers: {};
+            response: {
+                401: "Unauthorized";
+                403: {
+                    code: string;
+                    message: string;
+                };
+                422: {
+                    type: "validation";
+                    on: string;
+                    summary?: string;
+                    message?: string;
+                    found?: unknown;
+                    property?: string;
+                    expected?: string;
+                };
+            };
+        };
+    };
+} & {
+    users: {
         search: {
             get: {
                 body: {};
@@ -7888,6 +7953,7 @@ export declare const appType: Elysia<"", {
                 body: {
                     name?: string | undefined;
                     bio?: string | undefined;
+                    locale?: "en-US" | "pt-PT" | undefined;
                     currencyId?: string | undefined;
                     inviteToken?: string | undefined;
                 };
@@ -8013,6 +8079,7 @@ export declare const appType: Elysia<"", {
                 body: {
                     email?: string | undefined;
                     image?: string | null | undefined;
+                    locale?: "en-US" | "pt-PT" | undefined;
                     name: string;
                 };
                 params: {};
@@ -8046,6 +8113,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
+                        locale: "en-US" | "pt-PT";
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -8611,6 +8679,7 @@ export declare const appType: Elysia<"", {
                     body: {
                         name?: string | undefined;
                         image?: string | null | undefined;
+                        locale?: "en-US" | "pt-PT" | undefined;
                         currencyId?: string | undefined;
                     };
                     params: {
@@ -8646,6 +8715,7 @@ export declare const appType: Elysia<"", {
                             username: string | null;
                             displayUsername: string | null;
                             bio: string | null;
+                            locale: "en-US" | "pt-PT";
                             isGuest: boolean;
                             managedBy: string | null;
                             currencyId: string | null;
@@ -8975,6 +9045,7 @@ export declare const appType: Elysia<"", {
                 cursor?: string | undefined;
                 type?: ("all" | "groups" | "friends" | "payments" | "expenses" | "recurring_expenses")[] | undefined;
                 action?: ("created" | "updated" | "deleted" | "restored")[] | undefined;
+                q?: string | undefined;
                 entityStatus?: "deleted" | "active" | undefined;
             };
             headers: {};
@@ -10980,6 +11051,7 @@ export declare const appType: Elysia<"", {
                                     username: string | null;
                                     displayUsername: string | null;
                                     bio: string | null;
+                                    locale: import("./lib/i18n").Locale;
                                     isGuest: boolean;
                                     managedBy: string | null;
                                     currencyId: string | null;
@@ -11324,6 +11396,7 @@ export declare const appType: Elysia<"", {
                 cursor?: string | undefined;
                 sort?: import("./lib/groups").GROUP_SORT | undefined;
                 archived?: boolean | undefined;
+                q?: string | undefined;
             };
             headers: {};
             response: {
@@ -12048,6 +12121,7 @@ export declare const appType: Elysia<"", {
                         sort?: "date" | "amount" | undefined;
                         direction?: "asc" | "desc" | undefined;
                         type?: "all" | "payments" | "expenses" | "recurring_expenses" | undefined;
+                        q?: string | undefined;
                         categoryIds?: string[] | undefined;
                         paidByIds?: string[] | undefined;
                         participantIds?: string[] | undefined;
@@ -12075,6 +12149,7 @@ export declare const appType: Elysia<"", {
                                     username: string | null;
                                     displayUsername: string | null;
                                     bio: string | null;
+                                    locale: import("./lib/i18n").Locale;
                                     isGuest: boolean;
                                     managedBy: string | null;
                                     currencyId: string | null;
@@ -12327,6 +12402,7 @@ export declare const appType: Elysia<"", {
                                         username: string | null;
                                         displayUsername: string | null;
                                         bio: string | null;
+                                        locale: import("./lib/i18n").Locale;
                                         isGuest: boolean;
                                         managedBy: string | null;
                                         currencyId: string | null;
@@ -12579,6 +12655,7 @@ export declare const appType: Elysia<"", {
                                         username: string | null;
                                         displayUsername: string | null;
                                         bio: string | null;
+                                        locale: import("./lib/i18n").Locale;
                                         isGuest: boolean;
                                         managedBy: string | null;
                                         currencyId: string | null;
@@ -12831,6 +12908,7 @@ export declare const appType: Elysia<"", {
                                         username: string | null;
                                         displayUsername: string | null;
                                         bio: string | null;
+                                        locale: import("./lib/i18n").Locale;
                                         isGuest: boolean;
                                         managedBy: string | null;
                                         currencyId: string | null;
@@ -13477,6 +13555,7 @@ export declare const appType: Elysia<"", {
                                 username: string | null;
                                 displayUsername: string | null;
                                 bio: string | null;
+                                locale: import("./lib/i18n").Locale;
                                 isGuest: boolean;
                                 managedBy: string | null;
                                 currencyId: string | null;
@@ -13723,6 +13802,7 @@ export declare const appType: Elysia<"", {
                                     username: string | null;
                                     displayUsername: string | null;
                                     bio: string | null;
+                                    locale: import("./lib/i18n").Locale;
                                     isGuest: boolean;
                                     managedBy: string | null;
                                     currencyId: string | null;
@@ -13984,6 +14064,7 @@ export declare const appType: Elysia<"", {
                 cursor?: string | undefined;
                 sort?: import("./lib/friendships").FRIENDSHIP_SORT | undefined;
                 filter?: import("./lib/friendships").FRIENDSHIP_FILTER | undefined;
+                q?: string | undefined;
             };
             headers: {};
             response: {
@@ -14366,6 +14447,7 @@ export declare const appType: Elysia<"", {
                         paidById?: string | undefined;
                         categoryId?: string | undefined;
                         group?: "all" | "group" | "non_group" | undefined;
+                        q?: string | undefined;
                         categoryIds?: string[] | undefined;
                         paidByIds?: string[] | undefined;
                         participantIds?: string[] | undefined;
@@ -15083,8 +15165,8 @@ export declare const appType: Elysia<"", {
             post: {
                 body: {
                     date?: string | undefined;
-                    context?: string | undefined;
                     locale?: string | undefined;
+                    context?: string | undefined;
                     image: File;
                 };
                 params: {};
@@ -15159,8 +15241,8 @@ export declare const appType: Elysia<"", {
             post: {
                 body: {
                     date?: string | undefined;
-                    context?: string | undefined;
                     locale?: string | undefined;
+                    context?: string | undefined;
                     image: File;
                 };
                 params: {};
@@ -15211,8 +15293,8 @@ export declare const appType: Elysia<"", {
                 post: {
                     body: {
                         date?: string | undefined;
-                        context?: string | undefined;
                         locale?: string | undefined;
+                        context?: string | undefined;
                         image: File;
                     };
                     params: {};
@@ -15269,8 +15351,8 @@ export declare const appType: Elysia<"", {
                 post: {
                     body: {
                         date?: string | undefined;
-                        context?: string | undefined;
                         locale?: string | undefined;
+                        context?: string | undefined;
                         image: File;
                     };
                     params: {};

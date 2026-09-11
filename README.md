@@ -258,26 +258,22 @@ The repository must be public and the `@bananasplitapp` npm organization must
 exist before the first release. Store a temporary granular npm publishing
 token with bypass 2FA as the `NPM_TOKEN` repository secret.
 
-A release goes out against production, so check the API contract against
-production first — development happens against staging, which runs ahead:
+The contract snapshot comes from staging (`bun run contract`), which runs ahead
+of production, while a released binary talks to production. So before tagging,
+check that anything the release depends on is live in production — run the new
+commands against a real account rather than trusting `server.d.ts`:
 
 ```sh
-bun run contract        # re-download server.d.ts from production
-git diff --stat server.d.ts
 bun test && bun run typecheck
+bun run banana <the new command>   # against production, with a throwaway row
 ```
 
-Commit the refreshed snapshot if it moved, and make sure nothing in the release
-depends on a route production does not have yet. Then update the version in
-`package.json` and push its matching stable tag:
+Then update the version in `package.json` and push its matching stable tag:
 
 ```sh
 git tag v0.1.0
 git push origin v0.1.0
 ```
-
-The tag workflow repeats the production comparison and prints the diff as a
-warning, so a drifted snapshot is visible in the release run.
 
 The tag workflow tests all targets, publishes the GitHub release, and publishes
 the npm package. After the first npm release, configure `release.yml` as the

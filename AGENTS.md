@@ -46,36 +46,33 @@ response shapes.
 
 Do not probe the live API to find out what exists. **Read the snapshot
 properly instead** — a route missing a parameter you want often means the
-parameter lives on a sibling route. Searching is `/groups/search` and
-`/friends/search`, not a `q` on the listings. Reading only the list routes
-produced a confident, wrong "the API cannot filter by name" and a commit that
-sent `q` where production reads nothing.
+parameter lives on a sibling route. `/groups/search` and `/friends/search` sit
+right next to the listings they search. Reading only the list routes produced a
+confident, wrong "the API cannot filter by name", and then a commit that sent
+`q` to the listings, which production ignores.
 
-### Two environments, both downloadable
+### Refreshing the snapshot
+
+Staging publishes the export; production does not. So there is one command,
+and it is the only way the file should ever change — never hand-edit it:
 
 ```sh
-# staging: what the API is about to have. Develop against this.
-curl -sS -o server.d.ts https://staging.api.bananasplit.net/public/server.d.ts
-
-# production: what every released CLI talks to. Check against this before a
-# release, and commit this one.
-curl -sS -o server.d.ts https://api.bananasplit.net/public/server.d.ts
+bun run contract   # curl -fsS -o server.d.ts <staging>/public/server.d.ts
 ```
 
-Never hand-edit the snapshot; re-download it.
+**Staging runs ahead of production, and the CLI talks to production.** A route
+that is in the snapshot is not necessarily one a released binary can call. At
+the time of writing staging has `q` on `/groups` and `/friends`, types `locale`
+as `"en-US" | "pt-PT"` where production still says `string`, and adds a
+`/users?q=` search — none of which production had. That gap is why `--search`
+uses `/groups/search` and `/friends/search`: those exist in both, so the CLI
+works either way. When `q` reaches production the listings become the better
+route — they keep `--sort` and `--cursor`, which the search routes have no
+room for.
 
-**The checked-in `server.d.ts` is production.** A released binary talks to
-production, so that is the contract the code has to satisfy. Pull staging while
-building against something production has not shipped yet — and say so in the
-commit, because the feature stays dark until the API ships.
-
-The two really do differ. At the time of writing, staging has `q` on `/groups`
-and `/friends` while production does not; it also types `locale` as
-`"en-US" | "pt-PT"` where production still says `string`, and adds a
-`/users?q=` search. That gap is why `--search` uses `/groups/search` and
-`/friends/search`: those exist in both, so the CLI works either way. When `q`
-reaches production the listings become the better route — they keep `--sort`
-and `--cursor`, which the search routes have no room for.
+The snapshot cannot tell you what production has shipped. Before a release,
+check anything new against production directly — run the command against a
+real account (the CLI defaults to production) rather than trusting the types.
 
 **If you do probe the live API, use a real id.** A bogus UUID returns 404 for
 both "route does not exist" and "row does not exist", so a 404 on a made-up id
