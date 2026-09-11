@@ -183,6 +183,21 @@ blue), plus `heading()`, `note()` and `section()`. Errors throw `CliFailure` wit
 Interactive TTYs get a searchable browser for list presentations; non-TTY falls
 back to plain cards. Keep both paths working.
 
+## The agent skill
+
+`skills/banana/SKILL.md` is the skill `banana skill install` writes into an
+agent's skills directory. `src/skill.ts` imports it with `with { type: "text" }`,
+so the markdown is embedded at build time and a standalone binary installs the
+skill it was built from — there is no second copy to keep in sync, but
+`package.json` `files` has to keep listing `skills` or the npm package installs
+a skill it cannot read.
+
+It documents the CLI's surface as agents meet it: the `banana me --json` auth
+check, naming instead of ids, `--json` over the tables, and the rules that bite
+(splits summing to the amount, a payment that cannot be deleted). **A command
+or flag change is not finished until the skill matches it** — a stale skill is
+worse than none, because an agent follows it instead of reading `--help`.
+
 ## Usage tracking
 
 There is **no client-side telemetry** and no analytics SDK. Usage is measured on

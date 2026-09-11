@@ -34,6 +34,7 @@ import {
   type Presenter,
   type RequestCommand,
 } from "./types";
+import { installSkill, parseSkill, SKILL_TEXT } from "./skill";
 import { updateCli } from "./update";
 
 const ROOT_HELP = helpText({
@@ -77,6 +78,7 @@ const ROOT_HELP = helpText({
         ["login", "Sign in with a browser and store credentials securely"],
         ["logout", "Revoke and delete stored credentials"],
         ["update", "Update the CLI to the latest stable release"],
+        ["skill install", "Install the agent skill for driving this CLI"],
       ],
     },
     {
@@ -186,6 +188,7 @@ ${ROOT_HELP}` };
     }
     throw usageFailure(`Unexpected argument: ${rest[0]}`, UPDATE_HELP);
   }
+  if (name === "skill") return parseSkill(rest);
   if (name === "login" || name === "logout") {
     if (rest.length === 0) return { action: name, kind: "auth" as const };
     if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
@@ -249,18 +252,32 @@ export async function runCli(
       return 0;
     }
     if (
-      (command.kind === "auth" || command.kind === "update") &&
+      (command.kind === "auth" ||
+        command.kind === "update" ||
+        command.kind === "skill") &&
       output.mode !== "human"
     ) {
       throw new CliFailure(
         "usage",
         `--${output.mode} is not supported for banana ${
-          command.kind === "auth" ? command.action : "update"
+          command.kind === "auth"
+            ? command.action
+            : command.kind === "skill"
+              ? "skill"
+              : "update"
         }`,
       );
     }
 
     const env = runtime.env ?? process.env;
+    if (command.kind === "skill") {
+      stdout(
+        command.print
+          ? SKILL_TEXT
+          : await (runtime.installSkill ?? installSkill)(command, { env }),
+      );
+      return 0;
+    }
     if (command.kind === "update") {
       stdout(await (runtime.update ?? updateCli)());
       return 0;
