@@ -299,8 +299,6 @@ export async function runCli(
     );
     if (
       (pager || browser) &&
-      // A filtered listing needs the wide page it asked for to filter.
-      command.postFilter === undefined &&
       (command.presentation === "group-list" ||
         command.presentation === "expense-list" ||
         command.presentation === "friend-list") &&

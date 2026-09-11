@@ -1,6 +1,5 @@
 import {
   DEFAULT_LIST_LIMIT,
-  SEARCH_LIMIT,
   appendQuery,
   asArray,
   asRecord,
@@ -10,7 +9,6 @@ import {
   enumValue,
   humanAmount,
   humanDate,
-  matchItems,
   numeric,
   parseJsonBody,
   parseOptions,
@@ -64,9 +62,7 @@ const LIST_HELP = helpText({
     ["--archived", "Include archived groups"],
     ["--sort balance|lastActivity", "Order the list"],
   ],
-  notes: [
-    "--search matches on the name, case-insensitively. It fetches a wider\npage and filters it here, so pass --limit to widen it further.",
-  ],
+  notes: ["--search asks the API for the groups whose name matches."],
   examples: [
     "banana groups list",
     "banana groups list --search lisbon",
@@ -148,16 +144,13 @@ function parseGroupsList(args: string[]): ParsedCommand {
   );
   requirePositionals(positionals, 0, LIST_HELP);
 
-  const search = values.search as string | undefined;
   const query = new URLSearchParams();
   appendQuery(
     query,
     "l",
-    positiveInteger(values.limit, "--limit") ??
-      // The API has no name filter, so a search has to see more than one
-      // default page of groups to filter anything worth filtering.
-      String(search === undefined ? DEFAULT_LIST_LIMIT : SEARCH_LIMIT),
+    positiveInteger(values.limit, "--limit") ?? String(DEFAULT_LIST_LIMIT),
   );
+  appendQuery(query, "q", values.search as string | undefined);
   appendQuery(query, "cursor", values.cursor as string | undefined);
   appendQuery(query, "archived", values.archived as boolean | undefined);
   appendQuery(
@@ -170,11 +163,6 @@ function parseGroupsList(args: string[]): ParsedCommand {
     path: "/groups",
     presentation: "group-list",
     query,
-    ...(search === undefined
-      ? {}
-      : { postFilter: matchItems(search, (group: Record<string, unknown>) => [
-            group.name,
-          ]) }),
   };
 }
 

@@ -69,12 +69,10 @@ edit endpoint" conclusion.
 - Splits must sum to the amount, so changing an amount means recomputing them.
 - List endpoints page with `p` / `l` query params and return
   `{items, hasMore, nextCursor}`.
-- **No list endpoint filters by name.** `/currencies` takes no query params at
-  all, and `/groups` and `/friends` take only paging and sorting. `--search`,
-  `--code` and every `--group Lisbon`-style lookup therefore fetch a wide page
-  (`l=100`) and filter it in the CLI. If the API ever grows `q` on those
-  routes, move the filtering there — the client-side pass is a workaround, not
-  a design.
+- **`/groups` and `/friends` search on `q`; `/currencies` takes no query
+  params at all.** So `--search` on groups and friends is the API's own filter,
+  while `banana currencies --code`/`--search` fetches the one list and narrows
+  it here. Group activities use `q` too, on their own `/search` path.
 
 ## Code layout
 
@@ -101,10 +99,14 @@ A parser stays pure: it emits `references`, each naming the body field to fill
 (a dotted path like `splits.0.userId`, or `path` for the `:ref` placeholder in
 the request path), the flag it came from, and what kind of row to look in.
 `runCli` resolves them before the request. A value that is already a UUID costs
-no lookup at all; otherwise each kind of list is fetched once per run and
-matched exact → prefix → substring, with an ambiguous match reported rather
-than guessed. A `--paid-by` with no value at all resolves to the signed-in
-user, which is why adding an expense needs no `banana me` first.
+no lookup at all. Otherwise one name of a kind is asked for by name (`q`),
+while several of a kind — `--split Ana=20 --split Bruno=10` — fetch one wide
+page instead of one request each; either way the rows are matched
+exact → prefix → substring, and an ambiguous name is reported rather than
+guessed. Because `q` searches names and the CLI also answers to usernames and
+emails, a `q` search that finds nothing falls back to one wide sweep before
+failing. A `--paid-by` with no value at all resolves to the signed-in user,
+which is why adding an expense needs no `banana me` first.
 
 Two conventions keep the output cheap to read:
 
@@ -118,8 +120,9 @@ Two conventions keep the output cheap to read:
   and the id keys match the field names the write endpoints take. Human tables
   print the names; only an entity's own id is worth a row in a detail block.
 
-`postFilter` on a command narrows a listing the API cannot filter itself; it
-runs on the response before `clean()`.
+`postFilter` on a command narrows a listing the API cannot filter itself —
+`/currencies` is the only one left — and runs on the response before
+`clean()`.
 
 To add a command: update help and the relevant parser/presenter in
 `src/commands/`, and extend `Presentation` in `src/types.ts`. Register new
