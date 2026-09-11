@@ -1,7 +1,6 @@
 import {
   DEFAULT_LIST_LIMIT,
   appendQuery,
-  asListPage,
   asArray,
   asRecord,
   currencyCode,
@@ -63,9 +62,7 @@ const LIST_HELP = helpText({
     ["--archived", "Include archived groups"],
     ["--sort balance|lastActivity", "Order the list"],
   ],
-  notes: [
-    "--search runs against the group search endpoint, which pages on its own:\nit takes --limit and --archived, but not --cursor or --sort.",
-  ],
+  notes: ["--search matches on the name, and combines with the other options."],
   examples: [
     "banana groups list",
     "banana groups list --search lisbon",
@@ -147,34 +144,15 @@ function parseGroupsList(args: string[]): ParsedCommand {
   );
   requirePositionals(positionals, 0, LIST_HELP);
 
-  const search = values.search as string | undefined;
   const query = new URLSearchParams();
   appendQuery(
     query,
     "l",
     positiveInteger(values.limit, "--limit") ?? String(DEFAULT_LIST_LIMIT),
   );
-  appendQuery(query, "archived", values.archived as boolean | undefined);
-
-  // Searching is its own endpoint, and it answers with one plain array.
-  if (search !== undefined) {
-    if (values.cursor !== undefined || values.sort !== undefined) {
-      throw usageFailure(
-        "--search cannot be combined with --cursor or --sort",
-        LIST_HELP,
-      );
-    }
-    query.set("q", search);
-    return {
-      kind: "request",
-      path: "/groups/search",
-      presentation: "group-list",
-      query,
-      postFilter: asListPage,
-    };
-  }
-
+  appendQuery(query, "q", values.search as string | undefined);
   appendQuery(query, "cursor", values.cursor as string | undefined);
+  appendQuery(query, "archived", values.archived as boolean | undefined);
   appendQuery(
     query,
     "sort",

@@ -1,7 +1,6 @@
 import {
   DEFAULT_LIST_LIMIT,
   appendQuery,
-  asListPage,
   asArray,
   asRecord,
   currencyCode,
@@ -34,9 +33,7 @@ const LIST_HELP = helpText({
     ["--sort balance|lastActivity", "Order the list"],
     ["--filter all|guests", "Show everyone, or only guest accounts"],
   ],
-  notes: [
-    "--search runs against the friend search endpoint, which pages on its own:\nit takes --limit, but not --cursor, --sort or --filter.",
-  ],
+  notes: ["--search matches on the name, and combines with the other options."],
   examples: [
     "banana friends",
     "banana friends --search ana",
@@ -67,36 +64,13 @@ function parseFriendsList(args: string[]): ParsedCommand {
   );
   requirePositionals(positionals, 0, LIST_HELP);
 
-  const search = values.search as string | undefined;
   const query = new URLSearchParams();
   appendQuery(
     query,
     "l",
     positiveInteger(values.limit, "--limit") ?? String(DEFAULT_LIST_LIMIT),
   );
-
-  // Searching is its own endpoint, and it answers with one plain array.
-  if (search !== undefined) {
-    if (
-      values.cursor !== undefined ||
-      values.sort !== undefined ||
-      values.filter !== undefined
-    ) {
-      throw usageFailure(
-        "--search cannot be combined with --cursor, --sort or --filter",
-        LIST_HELP,
-      );
-    }
-    query.set("q", search);
-    return {
-      kind: "request",
-      path: "/friends/search",
-      presentation: "friend-list",
-      query,
-      postFilter: asListPage,
-    };
-  }
-
+  appendQuery(query, "q", values.search as string | undefined);
   appendQuery(query, "cursor", values.cursor as string | undefined);
   appendQuery(
     query,

@@ -73,9 +73,9 @@ function pick(candidates: Candidate[], reference: Reference, value: string) {
 }
 
 /**
- * One run's lookups. Groups and friends have search endpoints of their own, so
- * a name is asked for by name; `/currencies` has no filter, so its one list is
- * fetched whole. Every distinct query is fetched at most once per run.
+ * One run's lookups. Groups and friends filter on `q`, so a name is asked for
+ * by name; `/currencies` has no filter, so its one list is fetched whole.
+ * Every distinct query is fetched at most once per run.
  */
 function lookups(runtime: AuthRuntime, env: Environment) {
   const get = async (path: string, query?: URLSearchParams) =>
@@ -90,18 +90,16 @@ function lookups(runtime: AuthRuntime, env: Environment) {
     cache.set(key, pending);
     return pending;
   };
-  // Searching and listing are different routes with different shapes: the
-  // search endpoints answer with a bare array, the listings with `{items}`.
   const load = async (collection: string, search: string | undefined) => {
     const body = await get(
-      search === undefined ? collection : `${collection}/search`,
+      collection,
       new URLSearchParams(
         search === undefined
           ? { l: SWEEP_LIMIT }
           : { q: search, l: LOOKUP_LIMIT },
       ),
     );
-    return Array.isArray(body) ? body : asArray(asRecord(body).items);
+    return asArray(asRecord(body).items);
   };
 
   const lists: Record<
