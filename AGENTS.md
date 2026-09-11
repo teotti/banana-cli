@@ -48,8 +48,8 @@ Do not probe the live API to find out what exists. **Read the snapshot
 properly instead** — a route missing a parameter you want often means the
 parameter lives on a sibling route. `/groups/search` and `/friends/search` sit
 right next to the listings they search. Reading only the list routes produced a
-confident, wrong "the API cannot filter by name", and then a commit that sent
-`q` to the listings, which production ignores.
+confident, wrong "the API cannot filter by name", and a commit that searched on
+the wrong route for it.
 
 ### Refreshing the snapshot
 
@@ -61,14 +61,11 @@ bun run contract:download   # curl -fsS -o server.d.ts <staging>/public/server.d
 ```
 
 **Staging runs ahead of production, and the CLI talks to production.** A route
-that is in the snapshot is not necessarily one a released binary can call. At
-the time of writing staging has `q` on `/groups` and `/friends`, types `locale`
-as `"en-US" | "pt-PT"` where production still says `string`, and adds a
-`/users?q=` search — none of which production had. That gap is why `--search`
-uses `/groups/search` and `/friends/search`: those exist in both, so the CLI
-works either way. When `q` reaches production the listings become the better
-route — they keep `--sort` and `--cursor`, which the search routes have no
-room for.
+that is in the snapshot is not necessarily one a released binary can call. An
+unknown query parameter is ignored rather than rejected, so calling ahead of
+production does not fail — it silently returns unfiltered rows. `--search`
+sends `q` to `/groups` and `/friends`, which is staging-only until the API
+ships it; do not release this CLI before then.
 
 The snapshot cannot tell you what production has shipped. Before a release,
 check anything new against production directly — run the command against a
@@ -151,9 +148,8 @@ Two conventions keep the output cheap to read:
   and the id keys match the field names the write endpoints take. Human tables
   print the names; only an entity's own id is worth a row in a detail block.
 
-`postFilter` on a command reshapes or narrows a response before `clean()` sees
-it: `asListPage` for the search routes, and the client-side narrowing that
-`/currencies` still needs.
+`postFilter` on a command narrows a response before `clean()` sees it, which
+`/currencies` is the only listing still to need.
 
 To add a command: update help and the relevant parser/presenter in
 `src/commands/`, and extend `Presentation` in `src/types.ts`. Register new
