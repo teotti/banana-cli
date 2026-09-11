@@ -44,7 +44,19 @@ The exported Elysia server type lives in `server.d.ts` at the repo root.
 Consult this local contract snapshot for routes, params, request bodies and
 response shapes.
 
-Do not probe the live API to find out what exists.
+Do not probe the live API to find out what exists. **Read the snapshot
+properly instead** — a route missing a parameter you want often means the
+parameter lives on a sibling route. `/groups` and `/friends` take no `q`; the
+search is `/groups/search` and `/friends/search`, which answer with a bare
+array rather than `{items, hasMore, nextCursor}`. Reading only the list routes
+produced a confident, wrong "the API cannot filter by name" and a release that
+sent `q` where nothing read it.
+
+The snapshot is always downloadable, so refresh it rather than hand-editing:
+
+```sh
+curl -sS -o server.d.ts https://api.bananasplit.net/public/server.d.ts
+```
 
 **If you do probe the live API, use a real id.** A bogus UUID returns 404 for
 both "route does not exist" and "row does not exist", so a 404 on a made-up id
@@ -69,10 +81,13 @@ edit endpoint" conclusion.
 - Splits must sum to the amount, so changing an amount means recomputing them.
 - List endpoints page with `p` / `l` query params and return
   `{items, hasMore, nextCursor}`.
-- **`/groups` and `/friends` search on `q`; `/currencies` takes no query
-  params at all.** So `--search` on groups and friends is the API's own filter,
-  while `banana currencies --code`/`--search` fetches the one list and narrows
-  it here. Group activities use `q` too, on their own `/search` path.
+- **Searching is a separate route, not a parameter.** `/groups/search`,
+  `/friends/search` and `/groups/:id/activities/search` take `q`; their list
+  counterparts do not. The search routes page with `p`, take no `cursor` or
+  `sort`, and return a bare array — `asListPage` in `src/shared.ts` wraps that
+  back into the `{items, hasMore, nextCursor}` the presenters read.
+- **`/currencies` takes no query params at all**, so `banana currencies
+  --code`/`--search` fetches the one list and narrows it in the CLI.
 
 ## Code layout
 
@@ -99,8 +114,8 @@ A parser stays pure: it emits `references`, each naming the body field to fill
 (a dotted path like `splits.0.userId`, or `path` for the `:ref` placeholder in
 the request path), the flag it came from, and what kind of row to look in.
 `runCli` resolves them before the request. A value that is already a UUID costs
-no lookup at all. Otherwise one name of a kind is asked for by name (`q`),
-while several of a kind — `--split Ana=20 --split Bruno=10` — fetch one wide
+no lookup at all. Otherwise one name of a kind is asked for by name (on the
+search route), while several of a kind — `--split Ana=20 --split Bruno=10` — fetch one wide
 page instead of one request each; either way the rows are matched
 exact → prefix → substring, and an ambiguous name is reported rather than
 guessed. Because `q` searches names and the CLI also answers to usernames and
@@ -120,9 +135,9 @@ Two conventions keep the output cheap to read:
   and the id keys match the field names the write endpoints take. Human tables
   print the names; only an entity's own id is worth a row in a detail block.
 
-`postFilter` on a command narrows a listing the API cannot filter itself —
-`/currencies` is the only one left — and runs on the response before
-`clean()`.
+`postFilter` on a command reshapes or narrows a response before `clean()` sees
+it: `asListPage` for the search routes, and the client-side narrowing that
+`/currencies` still needs.
 
 To add a command: update help and the relevant parser/presenter in
 `src/commands/`, and extend `Presentation` in `src/types.ts`. Register new

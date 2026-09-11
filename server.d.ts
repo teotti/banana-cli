@@ -17,55 +17,11 @@ export declare const appType: Elysia<"", {
     } & {
         currenciesRepository: import("./lib/repositories").CurrenciesRepository;
     } & {
-        invitesRepository: import("./lib/repositories").InvitesRepository;
-    } & {
         notificationsRepository: import("./lib/repositories").NotificationsRepository;
     } & {
         categoriesRepository: import("./lib/repositories").CategoriesRepository;
     };
-    store: {
-        sessionUser: Omit<{
-            id: string;
-            name: string;
-            email: string | null;
-            emailVerified: boolean;
-            image: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            username: string | null;
-            displayUsername: string | null;
-            bio: string | null;
-            isGuest: boolean;
-            managedBy: string | null;
-            currencyId: string | null;
-            inviteToken: string | null;
-            role: string | null;
-            banned: boolean | null;
-            banReason: string | null;
-            banExpires: Date | null;
-            lastLoginMethod: string | null;
-            profileCompletedAt: Date | null;
-            deletedAt: Date | null;
-            guestState: "managed" | "archived" | "merged" | null;
-            guestClaimedAt: Date | null;
-            guestArchivedAt: Date | null;
-            guestMergedAt: Date | null;
-            mergedIntoUserId: string | null;
-        }, "email" | "image"> & {
-            email: string;
-            image?: string | null;
-        };
-        session: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            userId: string;
-            expiresAt: Date;
-            token: string;
-            ipAddress?: string | null | undefined;
-            userAgent?: string | null | undefined;
-        } | null;
-    };
+    store: any;
     derive: {};
     resolve: {};
 }, {
@@ -98,6 +54,18 @@ export declare const appType: Elysia<"", {
     macroFn: {};
     parser: {};
     response: {};
+} & {
+    schema: {};
+    standaloneSchema: {};
+    macro: {};
+    macroFn: {};
+    parser: {};
+    response: {
+        503: {
+            readonly code: "MAINTENANCE_MODE";
+            readonly message: "Server is under maintenance";
+        };
+    };
 } & {
     schema: {};
     standaloneSchema: {};
@@ -6347,6 +6315,64 @@ export declare const appType: Elysia<"", {
 } & {
     admin: {
         metrics: {
+            "gold-members": {};
+        } & {
+            "gold-members": {
+                insights: {
+                    get: {
+                        body: {};
+                        params: {};
+                        query: {
+                            months?: number | undefined;
+                        };
+                        headers: {};
+                        response: {
+                            200: {
+                                period: "calendar_month";
+                                metric: "insights";
+                                buckets: {
+                                    periodStart: string;
+                                    periodEnd: string;
+                                    startedMemberCount: number;
+                                }[];
+                                months: number;
+                                currentMembers: {
+                                    count: number;
+                                    providers: {
+                                        count: number;
+                                        provider: "stripe" | "revenuecat" | "admin" | "reward";
+                                    }[];
+                                };
+                                currentMonth: {
+                                    periodStart: string;
+                                    periodEnd: string;
+                                    startedMemberCount: number;
+                                };
+                                previousMonth: {
+                                    periodStart: string;
+                                    periodEnd: string;
+                                    startedMemberCount: number;
+                                };
+                            };
+                            403: "Unauthorized" | "Forbidden";
+                            422: {
+                                type: "validation";
+                                on: string;
+                                summary?: string;
+                                message?: string;
+                                found?: unknown;
+                                property?: string;
+                                expected?: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+    };
+} & {
+    admin: {
+        metrics: {
             payments: {};
         } & {
             payments: {
@@ -9053,6 +9079,12 @@ export declare const appType: Elysia<"", {
                         } | null | undefined;
                         action?: import("./lib/activities").ACTIVITY_ACTION | undefined;
                         entityRevisionId?: string | null | undefined;
+                        friend?: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                            username: string | null;
+                        } | null | undefined;
                         currency?: {
                             symbol?: string | null | undefined;
                             id?: string | undefined;
@@ -9141,12 +9173,6 @@ export declare const appType: Elysia<"", {
                             groupId: string;
                         } | null | undefined;
                         guestUser?: {
-                            id: string;
-                            name: string;
-                            image: string | null;
-                            username: string | null;
-                        } | null | undefined;
-                        friend?: {
                             id: string;
                             name: string;
                             image: string | null;
@@ -9300,6 +9326,12 @@ export declare const appType: Elysia<"", {
                             } | null | undefined;
                             action?: import("./lib/activities").ACTIVITY_ACTION | undefined;
                             entityRevisionId?: string | null | undefined;
+                            friend?: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            } | null | undefined;
                             currency?: {
                                 symbol?: string | null | undefined;
                                 id?: string | undefined;
@@ -9388,12 +9420,6 @@ export declare const appType: Elysia<"", {
                                 groupId: string;
                             } | null | undefined;
                             guestUser?: {
-                                id: string;
-                                name: string;
-                                image: string | null;
-                                username: string | null;
-                            } | null | undefined;
-                            friend?: {
                                 id: string;
                                 name: string;
                                 image: string | null;
@@ -11298,7 +11324,6 @@ export declare const appType: Elysia<"", {
                 cursor?: string | undefined;
                 sort?: import("./lib/groups").GROUP_SORT | undefined;
                 archived?: boolean | undefined;
-                q?: string | undefined;
             };
             headers: {};
             response: {
@@ -13959,7 +13984,6 @@ export declare const appType: Elysia<"", {
                 cursor?: string | undefined;
                 sort?: import("./lib/friendships").FRIENDSHIP_SORT | undefined;
                 filter?: import("./lib/friendships").FRIENDSHIP_FILTER | undefined;
-                q?: string | undefined;
             };
             headers: {};
             response: {
@@ -15307,7 +15331,9 @@ export declare const appType: Elysia<"", {
                 401: "Unauthorized";
                 200: {
                     id: string;
-                    inviterId: string;
+                    inviterId: string | null;
+                    campaignId: string | null;
+                    type: "friend" | "promotion";
                     token: string;
                     createdAt: Date;
                     expiresAt: Date | null;
@@ -15331,8 +15357,8 @@ export declare const appType: Elysia<"", {
                 response: {
                     401: "Unauthorized";
                     200: {
-                        id: string | null;
-                        name: string | null;
+                        id: string;
+                        name: string;
                         image: string | null;
                         username: string | null;
                     }[];
@@ -15354,9 +15380,66 @@ export declare const appType: Elysia<"", {
                 headers: {};
                 response: {
                     401: "Unauthorized";
+                    200: {
+                        inviteLink: string;
+                        id: string;
+                        inviterId: string | null;
+                        campaignId: string | null;
+                        type: "friend" | "promotion";
+                        token: string;
+                        createdAt: Date;
+                        expiresAt: Date | null;
+                        expiryMode: "soft" | "hard" | null;
+                    };
                     403: {
                         code: string;
                         message: string;
+                    };
+                };
+            };
+        };
+    };
+} & {
+    invites: {
+        redeem: {
+            post: {
+                body: {
+                    token: string;
+                };
+                params: {};
+                query: {};
+                headers: {};
+                response: {
+                    410: {
+                        readonly code: import("./lib/services/invites").InviteServiceErrorCode;
+                        readonly message: string;
+                    };
+                    401: "Unauthorized";
+                    200: import("./lib/services/invites").InviteRedemptionResult;
+                    400: {
+                        readonly code: import("./lib/services/invites").InviteServiceErrorCode;
+                        readonly message: string;
+                    };
+                    403: {
+                        code: string;
+                        message: string;
+                    };
+                    404: {
+                        readonly code: import("./lib/services/invites").InviteServiceErrorCode;
+                        readonly message: string;
+                    };
+                    409: {
+                        readonly code: import("./lib/services/invites").InviteServiceErrorCode;
+                        readonly message: string;
+                    };
+                    422: {
+                        type: "validation";
+                        on: string;
+                        summary?: string;
+                        message?: string;
+                        found?: unknown;
+                        property?: string;
+                        expected?: string;
                     };
                 };
             };
@@ -15371,6 +15454,17 @@ export declare const appType: Elysia<"", {
             headers: {};
             response: {
                 401: "Unauthorized";
+                200: {
+                    inviteLink: string;
+                    id: string;
+                    createdAt: Date;
+                    type: "friend" | "promotion";
+                    expiresAt: Date | null;
+                    token: string;
+                    campaignId: string | null;
+                    inviterId: string | null;
+                    expiryMode: "soft" | "hard" | null;
+                };
                 403: {
                     code: string;
                     message: string;
@@ -16504,6 +16598,10 @@ export declare const appType: Elysia<"", {
             headers: {};
             response: {
                 200: string;
+                503: {
+                    readonly code: "MAINTENANCE_MODE";
+                    readonly message: "Server is under maintenance";
+                };
             };
         };
     };
@@ -16515,6 +16613,10 @@ export declare const appType: Elysia<"", {
         headers: {};
         response: {
             200: string;
+            503: {
+                readonly code: "MAINTENANCE_MODE";
+                readonly message: "Server is under maintenance";
+            };
         };
     };
 }, {

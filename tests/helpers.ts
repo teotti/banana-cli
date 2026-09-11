@@ -55,6 +55,11 @@ export function lookup(url: URL, init?: RequestInit) {
   if (init?.method !== undefined) return undefined;
   if (url.pathname.endsWith("/currencies")) return Response.json(CURRENCIES);
   if (url.pathname.endsWith("/current-user")) return Response.json(ME);
+  // The search routes answer with a bare array; the listings with `{items}`.
+  if (url.pathname.endsWith("/friends/search")) {
+    return Response.json([{ id: "friendship-1", user: ANA }]);
+  }
+  if (url.pathname.endsWith("/groups/search")) return Response.json([GROUP]);
   if (url.pathname.endsWith("/friends")) {
     return Response.json({ items: [{ id: "friendship-1", user: ANA }] });
   }

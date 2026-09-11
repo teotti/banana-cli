@@ -174,8 +174,16 @@ export function asArray(value: unknown) {
 }
 
 /**
- * Client-side narrowing for `/currencies`, the one list endpoint that takes no
- * query parameters at all — everything else filters on the server with `q`.
+ * The search endpoints answer with a bare array, while the listings they stand
+ * in for read `{items, hasMore, nextCursor}`. One page, so there is no cursor.
+ */
+export function asListPage(body: unknown) {
+  return { items: asArray(body), hasMore: false, nextCursor: null };
+}
+
+/**
+ * Client-side narrowing for `/currencies`, the one list endpoint with no query
+ * parameters and no search route of its own.
  * Works on both list shapes: a bare array, and `{items, hasMore, nextCursor}`.
  */
 export function matchItems(

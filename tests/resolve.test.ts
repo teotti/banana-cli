@@ -41,13 +41,11 @@ describe("BananaSplit CLI", () => {
 
   it("matches a name exactly before matching it as a prefix", async () => {
     const { calls, runtime } = harness((url, init) => {
-      if (init?.method === undefined && url.pathname === "/base/groups") {
-        return Response.json({
-          items: [
-            { id: "group-long", name: "Amália 26" },
-            { id: "group-exact", name: "Amália" },
-          ],
-        });
+      if (init?.method === undefined && url.pathname === "/base/groups/search") {
+        return Response.json([
+          { id: "group-long", name: "Amália 26" },
+          { id: "group-exact", name: "Amália" },
+        ]);
       }
       return lookup(url, init) ?? Response.json({ id: "expense-1" });
     });
@@ -120,24 +118,42 @@ describe("BananaSplit CLI", () => {
     expect(calls.every(({ init }) => init?.method === undefined)).toBe(true);
   });
 
-  it("asks the API to filter groups and friends by name", async () => {
+  it("searches groups and friends on their own search endpoints", async () => {
+    // Both answer with a bare array, not the `{items, hasMore}` a listing gives.
     const { calls, runtime, stdout } = harness((url) =>
-      url.pathname === "/base/groups"
-        ? Response.json({
-            items: [{ id: "group-1", name: "Lisbon trip", type: "travel" }],
-          })
-        : Response.json({ items: [{ id: "friendship-1", user: ANA }] }),
+      url.pathname === "/base/groups/search"
+        ? Response.json([{ id: "group-1", name: "Lisbon trip", type: "travel" }])
+        : Response.json([{ id: "friendship-1", user: ANA }]),
     );
 
     expect(await runCli(["groups", "--search", "lisbon"], runtime)).toBe(0);
+    expect(calls[0].url.pathname).toBe("/base/groups/search");
     expect(calls[0].url.searchParams.get("q")).toBe("lisbon");
     expect(calls[0].url.searchParams.get("l")).toBe("5");
     expect(stdout[0]).toContain("Lisbon trip");
+    expect(stdout[0]).toContain("End of groups.");
 
     expect(await runCli(["friends", "--search", "ana", "--json"], runtime)).toBe(0);
+    expect(calls[1].url.pathname).toBe("/base/friends/search");
     expect(calls[1].url.searchParams.get("q")).toBe("ana");
     const { items } = JSON.parse(stdout[1]);
     expect(items[0].user).toBe("Ana");
+  });
+
+  it("refuses a search combined with options its endpoint has no room for", async () => {
+    const { calls, runtime, stderr } = harness();
+
+    expect(
+      await runCli(["groups", "--search", "lisbon", "--sort", "balance"], runtime),
+    ).toBe(2);
+    expect(
+      await runCli(["friends", "--search", "ana", "--filter", "guests"], runtime),
+    ).toBe(2);
+    expect(calls).toHaveLength(0);
+    expect(stderr[0]).toContain("--search cannot be combined with --cursor or --sort");
+    expect(stderr[1]).toContain(
+      "--search cannot be combined with --cursor, --sort or --filter",
+    );
   });
 
   it("asks for one name by name, and sweeps a page for several", async () => {
@@ -172,8 +188,8 @@ describe("BananaSplit CLI", () => {
         .filter(({ url }) => url.pathname === path)
         .map(({ url }) => url.searchParams.get("q"));
     // One group name and one person: each is asked for by name.
-    expect(searched("/base/groups")).toEqual(["Lisbon trip"]);
-    expect(searched("/base/friends")).toEqual(["Ana"]);
+    expect(searched("/base/groups/search")).toEqual(["Lisbon trip"]);
+    expect(searched("/base/friends/search")).toEqual(["Ana"]);
 
     const { calls: sweptCalls, runtime: sweptRuntime } = harness((url, init) => {
       const answer = lookup(url, init);
@@ -212,10 +228,8 @@ describe("BananaSplit CLI", () => {
   it("sweeps a wide page when the API search and a username disagree", async () => {
     const { calls, runtime } = harness((url, init) => {
       // The API searches on the name, so an email finds nothing.
-      if (init?.method === undefined && url.pathname === "/base/friends") {
-        return Response.json({
-          items: url.searchParams.has("q") ? [] : [{ id: "f-1", user: ANA }],
-        });
+      if (init?.method === undefined && url.pathname === "/base/friends/search") {
+        return Response.json([]);
       }
       return lookup(url, init) ?? Response.json({ id: "payment-1" });
     });
@@ -239,10 +253,11 @@ describe("BananaSplit CLI", () => {
         runtime,
       ),
     ).toBe(2);
-    const friends = calls.filter(({ url }) => url.pathname === "/base/friends");
-    expect(friends.map(({ url }) => url.searchParams.get("q"))).toEqual([
-      "ana@example.test",
-      null,
-    ]);
+    // The search route is asked first, then the listing is swept.
+    expect(
+      calls
+        .filter(({ url }) => url.pathname.includes("/friends"))
+        .map(({ url }) => url.pathname),
+    ).toEqual(["/base/friends/search", "/base/friends"]);
   });
 });
