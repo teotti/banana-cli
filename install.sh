@@ -58,3 +58,16 @@ case ":${PATH}:" in
   *":${INSTALL_DIR}:"*) ;;
   *) echo "Add ${INSTALL_DIR} to PATH to run banana from any shell." ;;
 esac
+
+# Only worth saying to someone who runs an agent, so look before offering.
+for AGENT_HOME in \
+  "${HOME}/.claude" \
+  "${HOME}/.codex" \
+  "${HOME}/.cursor" \
+  "${HOME}/.gemini" \
+  "${XDG_CONFIG_HOME:-${HOME}/.config}/opencode"; do
+  if [ -d "$AGENT_HOME" ]; then
+    echo "Run 'banana skill install' to teach your coding agents this CLI."
+    break
+  fi
+done

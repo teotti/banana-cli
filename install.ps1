@@ -71,6 +71,13 @@ try {
 
   Write-Host "Installed banana to $(Join-Path $InstallDir 'banana.exe')"
   Write-Host "Open a new terminal to run banana."
+
+  # Only worth saying to someone who runs an agent, so look before offering.
+  $AgentHomes = @(".claude", ".codex", ".cursor", ".gemini") |
+    ForEach-Object { Join-Path $HOME $_ }
+  if ($AgentHomes | Where-Object { Test-Path $_ }) {
+    Write-Host "Run 'banana skill install' to teach your coding agents this CLI."
+  }
 } finally {
   Remove-Item $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 }

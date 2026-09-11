@@ -220,25 +220,48 @@ to retry. Use `--limit N` to choose a page size.
 
 The CLI ships an agent skill: the auth check, the naming-instead-of-ids rule,
 the `--json` shapes, split and paging rules, exit codes, and recipes for the
-common asks. Install it with one command:
+common asks. One command installs it for every agent you run:
 
 ```sh
 banana skill install
 ```
 
-That writes `~/.claude/skills/banana/SKILL.md`, and an agent picks it up on its
-next session. `--dir PATH` installs somewhere else, `--force` replaces a copy
-that has been edited, and `--print` writes the skill to stdout for an agent
-whose skills live elsewhere or in version control:
+Claude Code, Codex, Cursor, Gemini CLI and opencode all read the same
+`<skills>/banana/SKILL.md` layout, so the skill is one file and only the
+directory differs. With no flags, the command installs for each of those whose
+home directory exists on the machine, and leaves the rest alone:
+
+```console
+$ banana skill install
+Installed the banana skill.
+  Claude Code  installed
+               ~/.claude/skills/banana/SKILL.md
+  Cursor       installed
+               ~/.cursor/skills/banana/SKILL.md
+Agents pick it up on their next session.
+```
+
+`banana skill install --list` shows every agent and where its skill would go.
+`--agent NAME` installs for one (repeat it for several), `--all` covers all of
+them whether or not they are there yet, and `--force` replaces a skill that has
+been edited — an edited one is reported and left alone otherwise.
+
+For anything else — an agent that keeps skills elsewhere, or a skill you want
+in version control — `--dir` chooses the directory and `--print` writes the
+skill to stdout:
 
 ```sh
+banana skill install --agent claude --agent cursor
 banana skill install --dir ~/.config/agent/skills
 banana skill install --print > .agent/skills/banana/SKILL.md
 ```
 
-The source of truth is `skills/banana/SKILL.md` in this repo; the binary
-embeds it at build time, so the installed skill always matches the CLI that
-installed it.
+`CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `XDG_CONFIG_HOME` are honoured, so an
+agent whose home has moved still gets its skill in the right place.
+
+The source of truth is `skills/banana/SKILL.md` in this repo; the binary embeds
+it at build time, so the installed skill always matches the CLI that installed
+it.
 
 ## What we collect
 

@@ -85,7 +85,13 @@ export interface CliRuntime {
   timeoutMs?: number;
   update?: () => Promise<string>;
   installSkill?: (
-    command: { dir?: string; force: boolean },
+    command: {
+      agents?: string[];
+      all: boolean;
+      dir?: string;
+      force: boolean;
+      list: boolean;
+    },
     overrides: { env: Environment },
   ) => Promise<string>;
 }

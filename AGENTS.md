@@ -194,9 +194,22 @@ a skill it cannot read.
 
 It documents the CLI's surface as agents meet it: the `banana me --json` auth
 check, naming instead of ids, `--json` over the tables, and the rules that bite
-(splits summing to the amount, a payment that cannot be deleted). **A command
-or flag change is not finished until the skill matches it** — a stale skill is
-worse than none, because an agent follows it instead of reading `--help`.
+(splits summing to the amount, a payment that cannot be deleted).
+
+**A command or flag change is not finished until the skill matches it.** Two
+tests in `tests/skill.test.ts` enforce that rather than trusting it: one runs
+every `banana …` line in the skill through the CLI and fails on exit 2, the
+other collects every `--flag` the skill names and fails if one is missing from
+the help pages. Both were checked by breaking the skill on purpose.
+
+`AGENTS` in `src/skill.ts` is the table of agents and their home directories:
+Claude Code, Codex, Cursor, Gemini CLI and opencode all read the same
+`<home>/skills/<name>/SKILL.md` layout, so adding one is a row, not a code
+path. With no flags the command installs for the agents whose home directory
+is actually on the machine — **detection is a directory stat, because
+`Bun.file().exists()` answers false for a directory**, which made a first
+version report every agent as missing. The unit tests stub that call, so they
+cannot catch it; check `banana skill install --list` against a real machine.
 
 ## Usage tracking
 
