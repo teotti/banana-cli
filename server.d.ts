@@ -11298,6 +11298,7 @@ export declare const appType: Elysia<"", {
                 cursor?: string | undefined;
                 sort?: import("./lib/groups").GROUP_SORT | undefined;
                 archived?: boolean | undefined;
+                q?: string | undefined;
             };
             headers: {};
             response: {
@@ -13958,6 +13959,7 @@ export declare const appType: Elysia<"", {
                 cursor?: string | undefined;
                 sort?: import("./lib/friendships").FRIENDSHIP_SORT | undefined;
                 filter?: import("./lib/friendships").FRIENDSHIP_FILTER | undefined;
+                q?: string | undefined;
             };
             headers: {};
             response: {

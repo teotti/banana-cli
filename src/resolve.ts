@@ -7,8 +7,10 @@ import type { Environment, Reference, ReferenceKind } from "./types";
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** How many rows a lookup list fetches before giving up on a name. */
-const LOOKUP_LIMIT = "100";
+/** How many rows a narrowed lookup keeps; a name that needs more is ambiguous. */
+const LOOKUP_LIMIT = "25";
+/** How many rows the fallback sweep fetches when a search finds nothing. */
+const SWEEP_LIMIT = "100";
 
 type Candidate = {
   id: string;
@@ -43,7 +45,8 @@ const HINTS: Record<ReferenceKind, string> = {
 /**
  * Exact match first, then prefix, then substring — so `--group Amália` wins
  * outright over `Amália 26` when both exist, and a short prefix still works
- * when it doesn't.
+ * when it doesn't. Nothing matched is not an error here: the caller widens the
+ * search before giving up.
  */
 function pick(candidates: Candidate[], reference: Reference, value: string) {
   const wanted = value.trim().toLowerCase();
@@ -66,14 +69,14 @@ function pick(candidates: Candidate[], reference: Reference, value: string) {
       );
     }
   }
-  throw usageFailure(
-    `No ${reference.kind} matches ${JSON.stringify(value)}. Find it with ${
-      HINTS[reference.kind]
-    } ${JSON.stringify(value)}.`,
-  );
+  return undefined;
 }
 
-/** One run's lookups: each list is fetched at most once, and only if needed. */
+/**
+ * One run's lookups. `/groups` and `/friends` search on `q`, so a name is
+ * asked for by name; `/currencies` has no filter, so its one list is fetched
+ * whole. Every distinct query is fetched at most once per run.
+ */
 function lookups(runtime: AuthRuntime, env: Environment) {
   const get = async (path: string, query?: URLSearchParams) =>
     await request(
@@ -81,48 +84,69 @@ function lookups(runtime: AuthRuntime, env: Environment) {
       runtime,
       env,
     );
-  const once = <T>(load: () => Promise<T>) => {
-    let pending: Promise<T> | undefined;
-    return () => (pending ??= load());
+  const cache = new Map<string, Promise<Candidate[]>>();
+  const once = (key: string, load: () => Promise<Candidate[]>) => {
+    const pending = cache.get(key) ?? load();
+    cache.set(key, pending);
+    return pending;
+  };
+  const page = (search: string | undefined) =>
+    new URLSearchParams(
+      search === undefined
+        ? { l: SWEEP_LIMIT }
+        : { q: search, l: LOOKUP_LIMIT },
+    );
+
+  const lists: Record<
+    ReferenceKind,
+    (search: string | undefined) => Promise<Candidate[]>
+  > = {
+    // The currency list takes no query parameters, so it is fetched whole and
+    // the same list answers every currency name in the run.
+    currency: () =>
+      once("currency", async () =>
+        collect(
+          asArray(await get("/currencies")).map((value) => {
+            const currency = asRecord(value);
+            return candidate(currency.id, currency.code, currency.name);
+          }),
+        ),
+      ),
+    group: (search) =>
+      once(`group:${search ?? ""}`, async () =>
+        collect(
+          asArray(asRecord(await get("/groups", page(search))).items).map(
+            (value) => {
+              const group = asRecord(value);
+              return candidate(group.id, group.name);
+            },
+          ),
+        ),
+      ),
+    // A user can be named as a friend or as yourself; `me` is always you.
+    user: (search) =>
+      once(`user:${search ?? ""}`, async () => {
+        const [me, friends] = await Promise.all([
+          currentUser(),
+          get("/friends", page(search)),
+        ]);
+        return collect([
+          candidate(me.id, me.name, "me", me.username, me.email),
+          ...asArray(asRecord(friends).items).map((value) => {
+            const user = asRecord(asRecord(value).user);
+            return candidate(user.id, user.name, user.username, user.email);
+          }),
+        ]);
+      }),
   };
 
-  const self = once(async () => asRecord(await get("/current-user")));
-  const lists: Record<ReferenceKind, () => Promise<Candidate[]>> = {
-    currency: once(async () =>
-      collect(
-        asArray(await get("/currencies")).map((value) => {
-          const currency = asRecord(value);
-          return candidate(currency.id, currency.code, currency.name);
-        }),
-      ),
-    ),
-    group: once(async () =>
-      collect(
-        asArray(
-          asRecord(await get("/groups", new URLSearchParams({ l: LOOKUP_LIMIT })))
-            .items,
-        ).map((value) => {
-          const group = asRecord(value);
-          return candidate(group.id, group.name);
-        }),
-      ),
-    ),
-    // A user can be named as a friend or as yourself; `me` is always you.
-    user: once(async () => {
-      const [me, friends] = await Promise.all([
-        self(),
-        get("/friends", new URLSearchParams({ l: LOOKUP_LIMIT })),
-      ]);
-      return collect([
-        candidate(me.id, me.name, "me", me.username, me.email),
-        ...asArray(asRecord(friends).items).map((value) => {
-          const user = asRecord(asRecord(value).user);
-          return candidate(user.id, user.name, user.username, user.email);
-        }),
-      ]);
-    }),
-  };
-  return { lists, self };
+  let me: Promise<Record<string, unknown>> | undefined;
+  function currentUser() {
+    me ??= get("/current-user").then(asRecord);
+    return me;
+  }
+
+  return { lists, currentUser };
 }
 
 /** Sets `splits.0.userId`-style paths, so a split names a person too. */
@@ -152,14 +176,24 @@ export async function resolveReferences(
   runtime: AuthRuntime,
   env: Environment,
 ) {
-  const { lists, self } = lookups(runtime, env);
+  const { lists, currentUser } = lookups(runtime, env);
   let resolvedPath = path;
 
+  // One name asks the API for that name; several names of the same kind —
+  // `--split Ana=20 --split Bruno=10` — are cheaper as one page matched here
+  // than as one request each.
+  const names = new Map<ReferenceKind, Set<string>>();
   for (const reference of references) {
-    let id: string;
+    if (reference.value === undefined || UUID.test(reference.value)) continue;
+    const seen = names.get(reference.kind) ?? new Set<string>();
+    names.set(reference.kind, seen.add(reference.value.toLowerCase()));
+  }
+
+  for (const reference of references) {
+    let id: string | undefined;
     if (reference.value === undefined) {
       // Only a user reference defaults, and it defaults to whoever is signed in.
-      const me = await self();
+      const me = await currentUser();
       if (typeof me.id !== "string") {
         throw usageFailure(`${reference.flag} is required`);
       }
@@ -167,7 +201,22 @@ export async function resolveReferences(
     } else if (UUID.test(reference.value)) {
       id = reference.value;
     } else {
-      id = pick(await lists[reference.kind](), reference, reference.value);
+      const value = reference.value;
+      const search =
+        (names.get(reference.kind)?.size ?? 0) > 1 ? undefined : value;
+      id = pick(await lists[reference.kind](search), reference, value);
+      if (id === undefined && search !== undefined) {
+        // The server's search and this one disagree — a username, an email, a
+        // middle-of-the-name match. Sweep a wide page before giving up.
+        id = pick(await lists[reference.kind](undefined), reference, value);
+      }
+      if (id === undefined) {
+        throw usageFailure(
+          `No ${reference.kind} matches ${JSON.stringify(value)}. Find it with ${
+            HINTS[reference.kind]
+          } ${JSON.stringify(value)}.`,
+        );
+      }
     }
 
     if (reference.field === "path") {

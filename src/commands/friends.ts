@@ -1,6 +1,5 @@
 import {
   DEFAULT_LIST_LIMIT,
-  SEARCH_LIMIT,
   appendQuery,
   asArray,
   asRecord,
@@ -10,7 +9,6 @@ import {
   enumValue,
   humanAmount,
   humanDate,
-  matchItems,
   numeric,
   parseOptions,
   positiveInteger,
@@ -35,9 +33,7 @@ const LIST_HELP = helpText({
     ["--sort balance|lastActivity", "Order the list"],
     ["--filter all|guests", "Show everyone, or only guest accounts"],
   ],
-  notes: [
-    "--search matches on the name, case-insensitively. It fetches a wider\npage and filters it here, so pass --limit to widen it further.",
-  ],
+  notes: ["--search asks the API for the people whose name matches."],
   examples: [
     "banana friends",
     "banana friends --search ana",
@@ -68,15 +64,13 @@ function parseFriendsList(args: string[]): ParsedCommand {
   );
   requirePositionals(positionals, 0, LIST_HELP);
 
-  const search = values.search as string | undefined;
   const query = new URLSearchParams();
   appendQuery(
     query,
     "l",
-    positiveInteger(values.limit, "--limit") ??
-      // The API has no name filter, so a search needs a wider page to narrow.
-      String(search === undefined ? DEFAULT_LIST_LIMIT : SEARCH_LIMIT),
+    positiveInteger(values.limit, "--limit") ?? String(DEFAULT_LIST_LIMIT),
   );
+  appendQuery(query, "q", values.search as string | undefined);
   appendQuery(query, "cursor", values.cursor as string | undefined);
   appendQuery(
     query,
@@ -94,13 +88,6 @@ function parseFriendsList(args: string[]): ParsedCommand {
     path: "/friends",
     presentation: "friend-list",
     query,
-    ...(search === undefined
-      ? {}
-      : {
-          postFilter: matchItems(search, (friendship) => [
-            asRecord(friendship.user).name,
-          ]),
-        }),
   };
 }
 

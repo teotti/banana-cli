@@ -3,8 +3,6 @@ import { version as CLI_VERSION } from "../package.json";
 import { CliFailure, type Environment, type OptionConfig } from "./types";
 
 export const DEFAULT_LIST_LIMIT = 5;
-/** A search fetches this many rows before filtering them here. */
-export const SEARCH_LIMIT = 100;
 
 // The generic `CI` variable is the one most providers set, but not all of them,
 // so the well-known names are checked too.
@@ -176,7 +174,8 @@ export function asArray(value: unknown) {
 }
 
 /**
- * Client-side narrowing for the list endpoints the API cannot filter itself.
+ * Client-side narrowing for `/currencies`, the one list endpoint that takes no
+ * query parameters at all — everything else filters on the server with `q`.
  * Works on both list shapes: a bare array, and `{items, hasMore, nextCursor}`.
  */
 export function matchItems(
