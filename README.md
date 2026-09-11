@@ -256,13 +256,28 @@ bun run typecheck
 
 The repository must be public and the `@bananasplitapp` npm organization must
 exist before the first release. Store a temporary granular npm publishing
-token with bypass 2FA as the `NPM_TOKEN` repository secret, update the version
-in `package.json`, then push its matching stable tag:
+token with bypass 2FA as the `NPM_TOKEN` repository secret.
+
+A release goes out against production, so check the API contract against
+production first — development happens against staging, which runs ahead:
+
+```sh
+bun run contract        # re-download server.d.ts from production
+git diff --stat server.d.ts
+bun test && bun run typecheck
+```
+
+Commit the refreshed snapshot if it moved, and make sure nothing in the release
+depends on a route production does not have yet. Then update the version in
+`package.json` and push its matching stable tag:
 
 ```sh
 git tag v0.1.0
 git push origin v0.1.0
 ```
+
+The tag workflow repeats the production comparison and prints the diff as a
+warning, so a drifted snapshot is visible in the release run.
 
 The tag workflow tests all targets, publishes the GitHub release, and publishes
 the npm package. After the first npm release, configure `release.yml` as the
