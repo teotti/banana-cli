@@ -22,6 +22,8 @@
   },
   "scripts": {
     "banana": "bun run ./src/index.ts",
+    "contract": "curl -fsS -o server.d.ts https://api.bananasplit.net/public/server.d.ts",
+    "contract:staging": "curl -fsS -o server.d.ts https://staging.api.bananasplit.net/public/server.d.ts",
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
