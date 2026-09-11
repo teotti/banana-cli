@@ -57,7 +57,7 @@ Staging publishes the export; production does not. So there is one command,
 and it is the only way the file should ever change — never hand-edit it:
 
 ```sh
-bun run contract   # curl -fsS -o server.d.ts <staging>/public/server.d.ts
+bun run contract:download   # curl -fsS -o server.d.ts <staging>/public/server.d.ts
 ```
 
 **Staging runs ahead of production, and the CLI talks to production.** A route

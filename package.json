@@ -22,7 +22,7 @@
   },
   "scripts": {
     "banana": "bun run ./src/index.ts",
-    "contract": "curl -fsS -o server.d.ts https://staging.api.bananasplit.net/public/server.d.ts",
+    "contract:download": "curl -fsS -o server.d.ts https://staging.api.bananasplit.net/public/server.d.ts",
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

@@ -258,10 +258,11 @@ The repository must be public and the `@bananasplitapp` npm organization must
 exist before the first release. Store a temporary granular npm publishing
 token with bypass 2FA as the `NPM_TOKEN` repository secret.
 
-The contract snapshot comes from staging (`bun run contract`), which runs ahead
-of production, while a released binary talks to production. So before tagging,
-check that anything the release depends on is live in production — run the new
-commands against a real account rather than trusting `server.d.ts`:
+The contract snapshot comes from staging (`bun run contract:download`), which
+runs ahead of production, while a released binary talks to production. So
+before tagging, check that anything the release depends on is live in
+production — run the new commands against a real account rather than trusting
+`server.d.ts`:
 
 ```sh
 bun test && bun run typecheck
