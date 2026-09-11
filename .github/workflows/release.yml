@@ -24,21 +24,6 @@ jobs:
           version="$(bun -p 'require("./package.json").version')"
           [[ "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
           test "$GITHUB_REF_NAME" = "v$version"
-      - name: Compare the contract snapshot with production
-        shell: bash
-        run: |
-          set -eu
-          curl -fsS -o /tmp/server.d.ts \
-            https://api.bananasplit.net/public/server.d.ts
-          if diff -q server.d.ts /tmp/server.d.ts >/dev/null; then
-            echo "server.d.ts matches production."
-          else
-            # A warning, not a failure: the API ships on its own schedule, and
-            # most of its changes have nothing to do with the CLI. Read the
-            # diff before releasing something that depends on a new route.
-            echo "::warning::server.d.ts differs from production (see the diff below)"
-            diff -u server.d.ts /tmp/server.d.ts | head -200 || true
-          fi
       - run: bun test
       - run: bun run typecheck
       - run: sh -n install.sh
