@@ -98,13 +98,19 @@ banana balances
 banana currencies
 banana friends
 banana groups
-banana groups members GROUP_ID
-banana groups activities GROUP_ID --search dinner
+banana groups members "Lisbon trip"
+banana groups activities Lisbon --search dinner
 banana expenses list
 banana expenses get EXPENSE_ID
 banana payments get PAYMENT_ID
+banana skill install
 banana logout
 ```
+
+Currencies, groups and people are named wherever a command takes one — by
+code, by name, or by a prefix of either. `banana groups get Lisbon` finds the
+Lisbon trip, `--paid-by me` is you, and an id still works if you have one.
+Ambiguous names are reported rather than guessed.
 
 Run `banana update` to install the latest stable release, which reports the
 version it installed — `v0.2.4 → v0.2.5` — or tells you the version you were
@@ -126,18 +132,18 @@ same options to retrieve the next page. JSON output includes `items`, `hasMore`,
 `nextCursor`. Each item includes `share`, the current user's share amount,
 and `isRecurring`. Full splits are available through expense details.
 
-Create groups, expenses, and payments with explicit API IDs:
+Create groups, expenses, and payments without looking an id up first:
 
 ```sh
-banana groups create --name "Lisbon trip" --currency-id CURRENCY_ID \
-  --type travel --member USER_ID
+banana groups create --name "Lisbon trip" --currency EUR \
+  --type travel --member Ana
 
-banana expenses add --title Dinner --amount 42 --currency-id CURRENCY_ID \
-  --paid-by-id USER_ID --date 2026-09-01 --group-id GROUP_ID \
-  --split-type custom --split USER_ID=22 --split FRIEND_ID=20
+banana expenses add --title Dinner --amount 42 --currency EUR \
+  --paid-by me --date 2026-09-01 --group "Lisbon trip" \
+  --split-type custom --split me=22 --split Ana=20
 
-banana payments add --amount 20 --currency-id CURRENCY_ID \
-  --from-user-id USER_ID --to-user-id FRIEND_ID --date 2026-09-01 \
+banana payments add --amount 20 --currency EUR \
+  --from me --to Ana --date 2026-09-01 \
   --description "Settle up"
 ```
 
@@ -146,17 +152,18 @@ keeps its current value:
 
 ```sh
 banana expenses edit EXPENSE_ID --title "Chinese dinner"
-banana expenses edit EXPENSE_ID --group-id GROUP_ID
-banana expenses edit EXPENSE_ID --amount 60 --split USER_ID=30 --split FRIEND_ID=30
+banana expenses edit EXPENSE_ID --group "Lisbon trip"
+banana expenses edit EXPENSE_ID --amount 60 --split me=30 --split Ana=30
 banana expenses edit EXPENSE_ID '{"description":null}'
 ```
 
-Moving an expense into a group with `--group-id` clears its direct friendship
+Moving an expense into a group with `--group` clears its direct friendship
 link; `--no-group` does the reverse. Changing `--amount` on an equal split
 redistributes the splits automatically; any other split type needs matching
 `--split` values.
 
-Each create command also accepts its API body as one quoted JSON object:
+Each create command also accepts its API body as one quoted JSON object. This
+form is the raw API shape, so it takes ids, not names:
 
 ```sh
 banana groups create '{"name":"Lisbon trip","currencyId":"CURRENCY_ID"}'
@@ -164,7 +171,7 @@ banana expenses add '{"title":"Dinner","amount":"42","currencyId":"CURRENCY_ID",
 banana payments add '{"amount":"20","currencyId":"CURRENCY_ID","fromUserId":"USER_ID","toUserId":"FRIEND_ID","date":"2026-09-01"}'
 ```
 
-Direct expenses require at least one `--split USER_ID=AMOUNT`. Group expenses
+Direct expenses require at least one `--split WHO=AMOUNT`. Group expenses
 may omit `--split` to use the group's configured default split.
 
 Commands print a clean, human-readable summary by default. Use `--json` for
@@ -174,7 +181,7 @@ response:
 ```sh
 banana me
 banana --json groups list --limit 10
-banana groups get GROUP_ID --raw
+banana groups get Lisbon --raw
 ```
 
 The output flag may appear before or after the command. `--json` and `--raw`
@@ -208,6 +215,53 @@ the next cursor. In the browser they use the API's default page size and load
 more as you reach the end. Search filters all loaded expenses; press ↓ at the
 end (or when no items match) to load another page. If loading fails, press ↓
 to retry. Use `--limit N` to choose a page size.
+
+## For agents
+
+The CLI ships an agent skill: the auth check, the naming-instead-of-ids rule,
+the `--json` shapes, split and paging rules, exit codes, and recipes for the
+common asks. One command installs it for every agent you run:
+
+```sh
+banana skill install
+```
+
+Claude Code, Codex, Cursor, Gemini CLI and opencode all read the same
+`<skills>/banana/SKILL.md` layout, so the skill is one file and only the
+directory differs. With no flags, the command installs for each of those whose
+home directory exists on the machine, and leaves the rest alone:
+
+```console
+$ banana skill install
+Installed the banana skill.
+  Claude Code  installed
+               ~/.claude/skills/banana/SKILL.md
+  Cursor       installed
+               ~/.cursor/skills/banana/SKILL.md
+Agents pick it up on their next session.
+```
+
+`banana skill install --list` shows every agent and where its skill would go.
+`--agent NAME` installs for one (repeat it for several), `--all` covers all of
+them whether or not they are there yet, and `--force` replaces a skill that has
+been edited — an edited one is reported and left alone otherwise.
+
+For anything else — an agent that keeps skills elsewhere, or a skill you want
+in version control — `--dir` chooses the directory and `--print` writes the
+skill to stdout:
+
+```sh
+banana skill install --agent claude --agent cursor
+banana skill install --dir ~/.config/agent/skills
+banana skill install --print > .agent/skills/banana/SKILL.md
+```
+
+`CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `XDG_CONFIG_HOME` are honoured, so an
+agent whose home has moved still gets its skill in the right place.
+
+The source of truth is `skills/banana/SKILL.md` in this repo; the binary embeds
+it at build time, so the installed skill always matches the CLI that installed
+it.
 
 ## What we collect
 

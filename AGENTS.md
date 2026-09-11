@@ -183,6 +183,34 @@ blue), plus `heading()`, `note()` and `section()`. Errors throw `CliFailure` wit
 Interactive TTYs get a searchable browser for list presentations; non-TTY falls
 back to plain cards. Keep both paths working.
 
+## The agent skill
+
+`skills/banana/SKILL.md` is the skill `banana skill install` writes into an
+agent's skills directory. `src/skill.ts` imports it with `with { type: "text" }`,
+so the markdown is embedded at build time and a standalone binary installs the
+skill it was built from — there is no second copy to keep in sync, but
+`package.json` `files` has to keep listing `skills` or the npm package installs
+a skill it cannot read.
+
+It documents the CLI's surface as agents meet it: the `banana me --json` auth
+check, naming instead of ids, `--json` over the tables, and the rules that bite
+(splits summing to the amount, a payment that cannot be deleted).
+
+**A command or flag change is not finished until the skill matches it.** Two
+tests in `tests/skill.test.ts` enforce that rather than trusting it: one runs
+every `banana …` line in the skill through the CLI and fails on exit 2, the
+other collects every `--flag` the skill names and fails if one is missing from
+the help pages. Both were checked by breaking the skill on purpose.
+
+`AGENTS` in `src/skill.ts` is the table of agents and their home directories:
+Claude Code, Codex, Cursor, Gemini CLI and opencode all read the same
+`<home>/skills/<name>/SKILL.md` layout, so adding one is a row, not a code
+path. With no flags the command installs for the agents whose home directory
+is actually on the machine — **detection is a directory stat, because
+`Bun.file().exists()` answers false for a directory**, which made a first
+version report every agent as missing. The unit tests stub that call, so they
+cannot catch it; check `banana skill install --list` against a real machine.
+
 ## Usage tracking
 
 There is **no client-side telemetry** and no analytics SDK. Usage is measured on
