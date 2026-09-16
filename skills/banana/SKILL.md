@@ -1,6 +1,6 @@
 ---
 name: banana
-description: Use the BananaSplit CLI (`banana`) to record and edit shared expenses, record payments, check balances, and browse groups, friends and activity. Applies when the user names BananaSplit or banana, or is working with a BananaSplit account.
+description: Use the BananaSplit CLI (`banana`) to set up the CLI, record and edit shared expenses, record payments, check balances, and browse groups, friends and activity. Applies when the user names BananaSplit or banana, or is working with a BananaSplit account.
 ---
 
 # BananaSplit from the command line
@@ -8,6 +8,39 @@ description: Use the BananaSplit CLI (`banana`) to record and edit shared expens
 `banana` wraps the BananaSplit HTTP API. Person, group and currency flags accept
 names or codes, and `--json` gives a curated shape to parse. Expense and payment
 detail commands still require their row ids.
+
+## Set up the CLI when needed
+
+Check whether `banana` is available with `banana --help`. If it is missing, install
+it using the command for the current platform. The standalone installers need no
+Bun or Node runtime.
+
+macOS or Linux:
+
+```sh
+curl -fsSL https://github.com/teotti/banana-cli/releases/latest/download/install.sh | sh
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://github.com/teotti/banana-cli/releases/latest/download/install.ps1 | iex
+```
+
+If Bun is already installed and a package install is preferred:
+
+```sh
+bun install -g @bananasplitapp/cli
+```
+
+Verify the installation with `banana --help`. If the shell cannot find the
+standalone binary yet, use its full path: `~/.local/bin/banana` on macOS/Linux,
+or `$env:LOCALAPPDATA\BananaSplit\bin\banana.exe` on Windows (unless
+`BANANA_INSTALL_DIR` was set). Follow the installer's PATH guidance for future
+shells. Do not reinstall repeatedly to fix PATH.
+
+The skill is already loaded; there is no need to install it again through the CLI.
+The installed CLI's help is authoritative if this skill describes a newer feature.
 
 ## Access
 
@@ -22,9 +55,6 @@ banana me --json
   run `banana login`. It uses browser device approval that the user completes;
   there is no token environment variable to set. For other `config` errors, read
   the message: an invalid URL or credential-store failure needs a different fix.
-- `command not found` → install per the repo README (`curl -fsSL
-  https://github.com/teotti/banana-cli/releases/latest/download/install.sh | sh`, or
-  `bun install -g @bananasplitapp/cli`).
 
 ## Four rules
 

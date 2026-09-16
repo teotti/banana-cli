@@ -2,7 +2,22 @@
 
 Standalone access to the BananaSplit API for people and shell-enabled agents.
 
-## Install
+## Use with your AI agent
+
+Install the skill with [Skills CLI](https://github.com/vercel-labs/skills)
+(requires Node.js/npm):
+
+```sh
+npx skills add teotti/banana-cli --skill banana --global
+```
+
+Choose your agent, start a new session, and ask: **“Use BananaSplit to check my
+balances.”** The skill guides your agent through installing the Banana CLI if
+needed and getting you signed in. You complete the browser login yourself.
+
+Already have Banana installed? Run `banana skill install` instead.
+
+## Install the CLI directly
 
 macOS and Linux (no Bun or Node required):
 
@@ -37,6 +52,43 @@ irm https://github.com/teotti/banana-cli/releases/latest/download/install.ps1 | 
 
 Release downloads are verified against the published SHA-256 checksums before
 an existing installation is replaced.
+
+## Install the bundled skill
+
+After installing the CLI, run:
+
+```sh
+banana skill install
+```
+
+This automatically installs the skill for Claude Code, Codex, Cursor, Gemini CLI
+and opencode when their directories are present. No login, directory selection
+or manual file copying is needed. Start a new agent session to use it.
+
+The skill teaches your agent to use names, parse JSON, split expenses and record
+payments. Sign in with `banana login` when you are ready to access your account.
+
+<details>
+<summary>Choose an agent or a custom directory</summary>
+
+```sh
+banana skill install --agent codex
+banana skill install --list
+banana skill install --dir ~/.config/agent/skills
+```
+
+`--agent` works even before an agent's directory exists. Repeat it to choose
+several agents, or use `--all` to install for every supported agent.
+`CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `XDG_CONFIG_HOME` are honoured.
+
+Running the command again leaves an identical skill alone. A differing copy is
+preserved; use `banana skill install --force` to replace it with the bundled
+version. `--print` writes the skill to stdout without installing it.
+
+The skill is embedded in the standalone binary and included in the npm package,
+so installing it needs no additional download.
+
+</details>
 
 ## Setup
 
@@ -215,53 +267,6 @@ the next cursor. In the browser they use the API's default page size and load
 more as you reach the end. Search filters all loaded expenses; press ↓ at the
 end (or when no items match) to load another page. If loading fails, press ↓
 to retry. Use `--limit N` to choose a page size.
-
-## For agents
-
-The CLI ships an agent skill: the auth check, the naming-instead-of-ids rule,
-the `--json` shapes, split and paging rules, exit codes, and recipes for the
-common asks. One command installs it for every agent you run:
-
-```sh
-banana skill install
-```
-
-Claude Code, Codex, Cursor, Gemini CLI and opencode all read the same
-`<skills>/banana/SKILL.md` layout, so the skill is one file and only the
-directory differs. With no flags, the command installs for each of those whose
-home directory exists on the machine, and leaves the rest alone:
-
-```console
-$ banana skill install
-Installed the banana skill.
-  Claude Code  installed
-               ~/.claude/skills/banana/SKILL.md
-  Cursor       installed
-               ~/.cursor/skills/banana/SKILL.md
-Agents pick it up on their next session.
-```
-
-`banana skill install --list` shows every agent and where its skill would go.
-`--agent NAME` installs for one (repeat it for several), `--all` covers all of
-them whether or not they are there yet, and `--force` replaces a skill that has
-been edited — an edited one is reported and left alone otherwise.
-
-For anything else — an agent that keeps skills elsewhere, or a skill you want
-in version control — `--dir` chooses the directory and `--print` writes the
-skill to stdout:
-
-```sh
-banana skill install --agent claude --agent cursor
-banana skill install --dir ~/.config/agent/skills
-banana skill install --print > .agent/skills/banana/SKILL.md
-```
-
-`CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `XDG_CONFIG_HOME` are honoured, so an
-agent whose home has moved still gets its skill in the right place.
-
-The source of truth is `skills/banana/SKILL.md` in this repo; the binary embeds
-it at build time, so the installed skill always matches the CLI that installed
-it.
 
 ## What we collect
 
