@@ -1,24 +1,27 @@
 ---
 name: banana
-description: Drive the BananaSplit CLI (`banana`) to split expenses, record payments, and read balances from the terminal. Use when someone wants to log a shared expense or a dinner they paid for, check what they owe or are owed, settle up with a person, list or search groups and friends, or read a group's activity — anything involving BananaSplit, Splitwise-style expense splitting, or the `banana` command.
+description: Use the BananaSplit CLI (`banana`) to record and edit shared expenses, record payments, check balances, and browse groups, friends and activity. Applies when the user names BananaSplit or banana, or is working with a BananaSplit account.
 ---
 
 # BananaSplit from the command line
 
-`banana` wraps the BananaSplit HTTP API. It is built for agents: every flag that
-could take an id takes a **name** instead, and `--json` gives a flat, stable shape
-to parse. You never need to look an id up first.
+`banana` wraps the BananaSplit HTTP API. Person, group and currency flags accept
+names or codes, and `--json` gives a curated shape to parse. Expense and payment
+detail commands still require their row ids.
 
-## Before anything else
+## Access
+
+Before reading or changing account data, check authentication:
 
 ```sh
 banana me --json
 ```
 
 - Succeeds → you are signed in; that output has the user's id and name.
-- Fails with `{"error":{"type":"config",...}}` → **ask the user to run `banana login`
-  themselves.** It is a browser device-approval flow: it prints a code, waits for a
-  human to confirm it, and there is no token env var to set. Don't try to automate it.
+- Reports missing or expired login, or missing API permissions → ask the user to
+  run `banana login`. It uses browser device approval that the user completes;
+  there is no token environment variable to set. For other `config` errors, read
+  the message: an invalid URL or credential-store failure needs a different fix.
 - `command not found` → install per the repo README (`curl -fsSL
   https://github.com/teotti/banana-cli/releases/latest/download/install.sh | sh`, or
   `bun install -g @bananasplitapp/cli`).
@@ -30,19 +33,21 @@ with colors and em-dashes for nulls. `--json` is the curated flat shape; `--raw`
 the untouched API response. Ask for `--json` on every command whose output you
 intend to read.
 
-**2. Name people, groups and currencies — don't resolve ids.** `--currency EUR`,
+**2. Pass names directly for people, groups and currencies.** `--currency EUR`,
 `--group "Lisbon trip"`, `--group Lisbon` (a prefix works), `--paid-by me`,
 `--split Ana=20`. Names match exact → prefix → substring, usernames and emails work
 too, and an ambiguous name is reported rather than guessed. Ids still work if you
-happen to have one. So: no `banana friends` sweep before adding an expense, and no
-`banana currencies` before naming a currency.
+happen to have one. Avoid lookup sweeps just to obtain ids. If a name is ambiguous,
+use the reported candidates to clarify it. Omitting `--paid-by` defaults to you.
 
-**3. Reads are free; writes hit a real, shared account.** There is no staging.
-An expense you create is visible to everyone in the group. `expenses edit` can undo
-an expense mistake, **but a payment cannot be deleted from the CLI** — confirm with
-the user before `payments add`.
+**3. Writes affect a real, shared account.** An expense is visible to the group.
+Act on the user's requested changes; ask only for missing or ambiguous details.
+A payment records money already paid; it does not transfer money. Payments cannot
+be deleted from the CLI, so establish the amount, currency, date, direction and
+group (if any) before recording one. A clear request with those details supplies
+authorization; a balance inquiry alone does not.
 
-**4. `--json` carries ids, the terminal carries names.** Cleaned shapes have both
+**4. Report names and currency codes to the user.** Cleaned shapes have both
 (`paidById` + `paidBy`, `groupId` + `group`, `userId` + `user`), and the id keys are
 exactly the fields the write endpoints take. When you show results to the user,
 show the names.
@@ -62,7 +67,7 @@ show the names.
 | `banana groups [list]` | `--search TEXT --limit --cursor --archived --sort balance\|lastActivity` |
 | `banana groups create` | `--name --currency` required; `--description --type --member` |
 | `banana groups get\|members\|activities <group>` | activities takes `--search --type all\|expenses\|payments\|recurring_expenses --sort --direction` |
-| `banana friends [list]` | `--search TEXT --sort balance\|lastActivity --filter all\|guests` |
+| `banana friends [list]` | `--search TEXT --limit --cursor --sort balance\|lastActivity --filter all\|guests` |
 | `banana currencies [list]` | `--code EUR --search krona` — browsing only, writes take the code directly |
 | `banana me` / `login` / `logout` / `update` | |
 
@@ -70,14 +75,22 @@ show the names.
 
 ## Writing an expense correctly
 
-- **Dates** are `YYYY-MM-DD` or `DD-MM-YYYY`. Required on every write.
+- **Dates** are `YYYY-MM-DD` or `DD-MM-YYYY`, required when adding expenses or
+  payments. An edit preserves the existing date unless supplied. Resolve relative
+  dates from the user's context; the dates below are examples.
 - **Splits must add up to `--amount`.** Repeat the flag: `--split me=10 --split Ana=10`.
 - **Without `--group`, at least one `--split` is required.** With a group, omitting
-  splits splits it across the group.
-- **Changing an amount means re-sending splits** that sum to the new total.
+  splits lets the API split it across the group. When adding an expense, an explicit
+  `--split-type` requires splits.
+- **Changing an amount:** an existing equal split is recomputed across its current
+  participants if no splits are supplied. For other split types, supply matching
+  `--split` values that sum to the new total.
 - Only the fields you pass to `edit` change; everything else keeps its value.
-- Amounts come back as 18-decimal strings (`"8.100000000000000000"`) — compare them
-  numerically, never by string equality.
+- `--json` amounts are numbers (or null when unavailable). `--raw` may contain
+  18-decimal strings such as `"8.100000000000000000"`; compare those numerically.
+- Prefer flags to positional JSON bodies: names are resolved through flags, while
+  JSON bodies use API fields and ids. A cleaned expense has `splits`, but it is
+  not a write payload to send back wholesale.
 
 ```sh
 # paid for dinner for the trip group
@@ -93,28 +106,38 @@ banana payments add --amount 20 --currency EUR \
   --from me --to Ana --date 2026-09-09 --json
 ```
 
-A write prints the **whole created row** — currency codes, names, shares — because
-the CLI re-reads it for you. Don't follow a create with a `get`.
+Successful expense, single-payment and group creates, and expense edits, normally
+read their detail back for `--json`. No extra `get` is needed. `--raw` skips that
+read; a payment response containing multiple rows retains a thin array shape.
 
 ## Paging
 
-List commands default to 5 rows. `--json` returns `{items, hasMore, nextCursor}`;
-pass `nextCursor` back as `--cursor` **with the same other flags** to continue. Raise
-`--limit` rather than walking pages when you just need more.
+Expenses, groups and friends listings default to 5 rows. For a paged `--json`
+response `{items, hasMore, nextCursor}`, pass a non-null `nextCursor` back as
+`--cursor` with the same filters and sorting. Raise `--limit` when useful, but
+check `hasMore` before treating a page as complete. Per-person balances, group
+members and currencies return arrays instead. Do not assume every collection supports cursors.
+
+Group and friend `--search` filtering depends on the API version deployed. Check
+returned names before concluding a match; older production versions can ignore
+the search parameter. If needed, fetch and filter pages locally.
 
 ## Failures
 
-Human mode prints a one-line reason plus that command's help. `--json` prints
-`{"error":{"type","status?","message","body?"}}` where type is
-`usage` | `config` | `network` | `api`.
+Usage errors in human mode include the command's help. In `--json`, failures
+return an `error` object with `type` and `message`, plus optional `status` and
+`body`. The type is `usage` | `config` | `network` | `api`.
 
 | exit | meaning |
 |---|---|
-| 2 | usage error — you got a flag wrong; read the help it printed |
+| 2 | usage error — inspect the message and request the command's help |
 | 1 | config, network or API error |
 | 130 | cancelled |
 
-`config` almost always means the login expired: ask the user to run `banana login`.
+A failed write may already have succeeded: the mutation can complete before a
+network failure or a failed detail read. Do not blindly repeat it. Inspect the
+relevant expense list or group activity, or use a known row id, to establish what
+was saved. If the outcome remains unclear, report the uncertainty before retrying.
 
 ## Recipes
 
@@ -122,7 +145,9 @@ Human mode prints a one-line reason plus that command's help. `--json` prints
 - **"How much does Ana owe me?"** → `banana friends --search ana --json`.
 - **"What's been spent on the trip?"** → `banana groups activities "Lisbon trip"
   --type expenses --sort amount --direction desc --json`.
-- **"Log the dinner I paid for"** → confirm amount, currency, date and who's in it,
+- **"Log the dinner I paid for"** → establish amount, currency, date and participants,
   then one `expenses add`. If they named no group and no one else, ask who to split with.
-- **"Settle up with Bruno"** → read `banana balances --json` for the exact figure,
-  confirm the number and direction with the user, then one `payments add`.
+- **"Settle up with Bruno"** → read `banana balances --json`, then establish the
+  amount, currency, direction, date and group scope, and whether money was paid.
+  Balance output has no currency field; inspect the matching friend's `currency`
+  or clarify it with the user before recording a payment. Record one payment once the details are authorized.
