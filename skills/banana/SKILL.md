@@ -95,8 +95,8 @@ show the names.
 | `banana payments add` | `--amount --currency --from --to --date` required; `--group --description` |
 | `banana payments get <payment-id>` | |
 | `banana groups [list]` | `--search TEXT --limit --cursor --archived --sort balance\|lastActivity` |
-| `banana groups create` | `--name --currency` required; `--description --type --member` |
-| `banana groups get\|members\|activities <group>` | activities takes `--search --type all\|expenses\|payments\|recurring_expenses --sort --direction` |
+| `banana groups create` | `--name --currency` required; `--description --member --type vacation\|roommates\|couple\|travel\|party\|other` |
+| `banana groups get\|members\|activities <group>` | activities takes `--search --limit --cursor --type all\|expenses\|payments\|recurring_expenses --sort date\|amount --direction asc\|desc` |
 | `banana friends [list]` | `--search TEXT --limit --cursor --sort balance\|lastActivity --filter all\|guests` |
 | `banana currencies [list]` | `--code EUR --search krona` — browsing only, writes take the code directly |
 | `banana me` / `login` / `logout` / `update` | |
@@ -109,6 +109,9 @@ show the names.
   payments. An edit preserves the existing date unless supplied. Resolve relative
   dates from the user's context; the dates below are examples.
 - **Splits must add up to `--amount`.** Repeat the flag: `--split me=10 --split Ana=10`.
+- **`--split-type` is `equal`, `custom`, `percentage` or `shares`.** It labels
+  how the split was arrived at; `--split` values are amounts in every case, and
+  still have to sum to `--amount`.
 - **Without `--group`, at least one `--split` is required.** With a group, omitting
   splits lets the API split it across the group. When adding an expense, an explicit
   `--split-type` requires splits.
@@ -156,7 +159,7 @@ the search parameter. If needed, fetch and filter pages locally.
 
 Usage errors in human mode include the command's help. In `--json`, failures
 return an `error` object with `type` and `message`, plus optional `status` and
-`body`. The type is `usage` | `config` | `network` | `api`.
+`body`. The type is `usage` | `config` | `network` | `api` | `cancelled`.
 
 | exit | meaning |
 |---|---|
@@ -172,7 +175,9 @@ was saved. If the outcome remains unclear, report the uncertainty before retryin
 ## Recipes
 
 - **"What do I owe?"** → `banana balances --json`, then report per person by name.
-- **"How much does Ana owe me?"** → `banana friends --search ana --json`.
+- **"How much does Ana owe me?"** → `banana balances --json` and read her row;
+  `banana friends --search ana --json` also carries her `currency`, but confirm
+  the returned name, since the search may be ignored (see Paging).
 - **"What's been spent on the trip?"** → `banana groups activities "Lisbon trip"
   --type expenses --sort amount --direction desc --json`.
 - **"Log the dinner I paid for"** → establish amount, currency, date and participants,
