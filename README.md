@@ -2,7 +2,22 @@
 
 Standalone access to the BananaSplit API for people and shell-enabled agents.
 
-## Install
+## Use with your AI agent
+
+Install the skill with [Skills CLI](https://github.com/vercel-labs/skills)
+(requires Node.js/npm):
+
+```sh
+npx skills add teotti/banana-cli --skill banana --global
+```
+
+Choose your agent, start a new session, and ask: **“Use BananaSplit to check my
+balances.”** The skill guides your agent through installing the Banana CLI if
+needed and getting you signed in. You complete the browser login yourself.
+
+Already have Banana installed? Run `banana skill install` instead.
+
+## Install the CLI directly
 
 macOS and Linux (no Bun or Node required):
 
@@ -37,6 +52,43 @@ irm https://github.com/teotti/banana-cli/releases/latest/download/install.ps1 | 
 
 Release downloads are verified against the published SHA-256 checksums before
 an existing installation is replaced.
+
+## Install the bundled skill
+
+After installing the CLI, run:
+
+```sh
+banana skill install
+```
+
+This automatically installs the skill for Claude Code, Codex, Cursor, Gemini CLI
+and opencode when their directories are present. No login, directory selection
+or manual file copying is needed. Start a new agent session to use it.
+
+The skill teaches your agent to use names, parse JSON, split expenses and record
+payments. Sign in with `banana login` when you are ready to access your account.
+
+<details>
+<summary>Choose an agent or a custom directory</summary>
+
+```sh
+banana skill install --agent codex
+banana skill install --list
+banana skill install --dir ~/.config/agent/skills
+```
+
+`--agent` works even before an agent's directory exists. Repeat it to choose
+several agents, or use `--all` to install for every supported agent.
+`CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `XDG_CONFIG_HOME` are honoured.
+
+Running the command again leaves an identical skill alone. A differing copy is
+preserved; use `banana skill install --force` to replace it with the bundled
+version. `--print` writes the skill to stdout without installing it.
+
+The skill is embedded in the standalone binary and included in the npm package,
+so installing it needs no additional download.
+
+</details>
 
 ## Setup
 
@@ -98,13 +150,19 @@ banana balances
 banana currencies
 banana friends
 banana groups
-banana groups members GROUP_ID
-banana groups activities GROUP_ID --search dinner
+banana groups members "Lisbon trip"
+banana groups activities Lisbon --search dinner
 banana expenses list
 banana expenses get EXPENSE_ID
 banana payments get PAYMENT_ID
+banana skill install
 banana logout
 ```
+
+Currencies, groups and people are named wherever a command takes one — by
+code, by name, or by a prefix of either. `banana groups get Lisbon` finds the
+Lisbon trip, `--paid-by me` is you, and an id still works if you have one.
+Ambiguous names are reported rather than guessed.
 
 Run `banana update` to install the latest stable release, which reports the
 version it installed — `v0.2.4 → v0.2.5` — or tells you the version you were
@@ -126,18 +184,18 @@ same options to retrieve the next page. JSON output includes `items`, `hasMore`,
 `nextCursor`. Each item includes `share`, the current user's share amount,
 and `isRecurring`. Full splits are available through expense details.
 
-Create groups, expenses, and payments with explicit API IDs:
+Create groups, expenses, and payments without looking an id up first:
 
 ```sh
-banana groups create --name "Lisbon trip" --currency-id CURRENCY_ID \
-  --type travel --member USER_ID
+banana groups create --name "Lisbon trip" --currency EUR \
+  --type travel --member Ana
 
-banana expenses add --title Dinner --amount 42 --currency-id CURRENCY_ID \
-  --paid-by-id USER_ID --date 2026-09-01 --group-id GROUP_ID \
-  --split-type custom --split USER_ID=22 --split FRIEND_ID=20
+banana expenses add --title Dinner --amount 42 --currency EUR \
+  --paid-by me --date 2026-09-01 --group "Lisbon trip" \
+  --split-type custom --split me=22 --split Ana=20
 
-banana payments add --amount 20 --currency-id CURRENCY_ID \
-  --from-user-id USER_ID --to-user-id FRIEND_ID --date 2026-09-01 \
+banana payments add --amount 20 --currency EUR \
+  --from me --to Ana --date 2026-09-01 \
   --description "Settle up"
 ```
 
@@ -146,17 +204,18 @@ keeps its current value:
 
 ```sh
 banana expenses edit EXPENSE_ID --title "Chinese dinner"
-banana expenses edit EXPENSE_ID --group-id GROUP_ID
-banana expenses edit EXPENSE_ID --amount 60 --split USER_ID=30 --split FRIEND_ID=30
+banana expenses edit EXPENSE_ID --group "Lisbon trip"
+banana expenses edit EXPENSE_ID --amount 60 --split me=30 --split Ana=30
 banana expenses edit EXPENSE_ID '{"description":null}'
 ```
 
-Moving an expense into a group with `--group-id` clears its direct friendship
+Moving an expense into a group with `--group` clears its direct friendship
 link; `--no-group` does the reverse. Changing `--amount` on an equal split
 redistributes the splits automatically; any other split type needs matching
 `--split` values.
 
-Each create command also accepts its API body as one quoted JSON object:
+Each create command also accepts its API body as one quoted JSON object. This
+form is the raw API shape, so it takes ids, not names:
 
 ```sh
 banana groups create '{"name":"Lisbon trip","currencyId":"CURRENCY_ID"}'
@@ -164,7 +223,7 @@ banana expenses add '{"title":"Dinner","amount":"42","currencyId":"CURRENCY_ID",
 banana payments add '{"amount":"20","currencyId":"CURRENCY_ID","fromUserId":"USER_ID","toUserId":"FRIEND_ID","date":"2026-09-01"}'
 ```
 
-Direct expenses require at least one `--split USER_ID=AMOUNT`. Group expenses
+Direct expenses require at least one `--split WHO=AMOUNT`. Group expenses
 may omit `--split` to use the group's configured default split.
 
 Commands print a clean, human-readable summary by default. Use `--json` for
@@ -174,7 +233,7 @@ response:
 ```sh
 banana me
 banana --json groups list --limit 10
-banana groups get GROUP_ID --raw
+banana groups get Lisbon --raw
 ```
 
 The output flag may appear before or after the command. `--json` and `--raw`

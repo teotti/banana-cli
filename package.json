@@ -9,7 +9,8 @@
     "url": "git+https://github.com/teotti/banana-cli.git"
   },
   "files": [
-    "src"
+    "src",
+    "skills"
   ],
   "bin": {
     "banana": "./src/index.ts"

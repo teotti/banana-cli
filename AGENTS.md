@@ -96,9 +96,15 @@ edit endpoint" conclusion.
   `{items, hasMore, nextCursor}`.
 - **Searching is a separate route, not a parameter** (in production; staging
   also takes `q` on the listings). `/groups/search`, `/friends/search` and
-  `/groups/:id/activities/search` take `q`. The search routes page with `p`,
-  take no `cursor` or `sort`, and return a bare array — `asListPage` in `src/shared.ts` wraps that
-  back into the `{items, hasMore, nextCursor}` the presenters read.
+  `/groups/:id/activities/search` take `q`, and they do not behave alike.
+  `/groups/search` and `/friends/search` page with `p`, take no `cursor` or
+  `sort`, and return a bare array; `/groups/:id/activities/search` is a normal
+  page, taking `cursor`, `sort`, `direction` and `type` and returning
+  `{items, hasMore, nextCursor}`.
+  Only the activities one is wired up: `groups activities --search` switches to
+  it (`src/commands/groups.ts`), which is why that search works against
+  production. `groups --search` and `friends --search` instead send `q` to the
+  plain listing, so they stay staging-only until the API ships it.
 - **`/currencies` takes no query params at all**, so `banana currencies
   --code`/`--search` fetches the one list and narrows it in the CLI.
 
@@ -127,14 +133,17 @@ A parser stays pure: it emits `references`, each naming the body field to fill
 (a dotted path like `splits.0.userId`, or `path` for the `:ref` placeholder in
 the request path), the flag it came from, and what kind of row to look in.
 `runCli` resolves them before the request. A value that is already a UUID costs
-no lookup at all. Otherwise one name of a kind is asked for by name (on the
-search route), while several of a kind — `--split Ana=20 --split Bruno=10` — fetch one wide
-page instead of one request each; either way the rows are matched
+no lookup at all. Otherwise one name of a kind is asked for by name (`q` on the
+plain listing, `l=25` — not the `/search` route, which nothing calls), while
+several of a kind — `--split Ana=20 --split Bruno=10` — fetch one wide
+page (`l=100`) instead of one request each; either way the rows are matched
 exact → prefix → substring, and an ambiguous name is reported rather than
 guessed. Because `q` searches names and the CLI also answers to usernames and
 emails, a `q` search that finds nothing falls back to one wide sweep before
-failing. A `--paid-by` with no value at all resolves to the signed-in user,
-which is why adding an expense needs no `banana me` first.
+failing — which is also what carries name resolution on production, where `q`
+on the listings is still ignored. A `--paid-by` with no value at all resolves
+to the signed-in user, which is why adding an expense needs no `banana me`
+first.
 
 Two conventions keep the output cheap to read:
 
@@ -182,6 +191,34 @@ blue), plus `heading()`, `note()` and `section()`. Errors throw `CliFailure` wit
 
 Interactive TTYs get a searchable browser for list presentations; non-TTY falls
 back to plain cards. Keep both paths working.
+
+## The agent skill
+
+`skills/banana/SKILL.md` is the skill `banana skill install` writes into an
+agent's skills directory. `src/skill.ts` imports it with `with { type: "text" }`,
+so the markdown is embedded at build time and a standalone binary installs the
+skill it was built from — there is no second copy to keep in sync, but
+`package.json` `files` has to keep listing `skills` or the npm package installs
+a skill it cannot read.
+
+It documents the CLI's surface as agents meet it: the `banana me --json` auth
+check, naming instead of ids, `--json` over the tables, and the rules that bite
+(splits summing to the amount, a payment that cannot be deleted).
+
+**A command or flag change is not finished until the skill matches it.** Two
+tests in `tests/skill.test.ts` enforce that rather than trusting it: one runs
+every `banana …` line in the skill through the CLI and fails on exit 2, the
+other collects every `--flag` the skill names and fails if one is missing from
+the help pages. Both were checked by breaking the skill on purpose.
+
+`AGENTS` in `src/skill.ts` is the table of agents and their home directories:
+Claude Code, Codex, Cursor, Gemini CLI and opencode all read the same
+`<home>/skills/<name>/SKILL.md` layout, so adding one is a row, not a code
+path. With no flags the command installs for the agents whose home directory
+is actually on the machine — **detection is a directory stat, because
+`Bun.file().exists()` answers false for a directory**, which made a first
+version report every agent as missing. The unit tests stub that call, so they
+cannot catch it; check `banana skill install --list` against a real machine.
 
 ## Usage tracking
 

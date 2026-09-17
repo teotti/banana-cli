@@ -84,6 +84,16 @@ export interface CliRuntime {
   stdout?: OutputWriter;
   timeoutMs?: number;
   update?: () => Promise<string>;
+  installSkill?: (
+    command: {
+      agents?: string[];
+      all: boolean;
+      dir?: string;
+      force: boolean;
+      list: boolean;
+    },
+    overrides: { env: Environment },
+  ) => Promise<string>;
 }
 
 /** What a human identifier on a flag names: a currency, a group or a person. */
