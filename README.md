@@ -1,5 +1,7 @@
 # BananaSplit CLI
 
+[![npm version](https://img.shields.io/npm/v/%40bananasplitapp%2Fcli)](https://www.npmjs.com/package/@bananasplitapp/cli)
+
 Standalone access to the BananaSplit API for people and shell-enabled agents.
 
 ## Use with your AI agent
