@@ -122,6 +122,11 @@ show the names.
 - **Without `--group`, at least one `--split` is required.** With a group, omitting
   splits lets the API split it across the group. When adding an expense, an explicit
   `--split-type` requires splits.
+- **A group states its own default split.** `banana groups get` has
+  `defaultSplitType` (`equal` or `percentage`) and `banana groups members` each
+  member's `defaultSplitPercentage`. Read those before reconstructing a split
+  from past expenses, and label a split that came from the group's percentages
+  `percentage`, not `custom`.
 - **Changing an amount:** an existing equal split is recomputed across its current
   participants if no splits are supplied. For other split types, supply matching
   `--split` values that sum to the new total.
