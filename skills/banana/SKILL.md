@@ -12,8 +12,8 @@ detail commands still require their row ids.
 ## Set up the CLI when needed
 
 Check whether `banana` is available with `banana --help`. If it is missing, install
-it using the command for the current platform. The standalone installers need no
-Bun or Node runtime.
+it with the standalone installer for the current platform. It needs no Bun or
+Node runtime, and is the install to use unless the user asks for another.
 
 macOS or Linux:
 
@@ -27,7 +27,7 @@ Windows PowerShell:
 irm https://github.com/teotti/banana-cli/releases/latest/download/install.ps1 | iex
 ```
 
-If Bun is already installed and a package install is preferred:
+Only if the user asks for a package install, and Bun is already there:
 
 ```sh
 bun install -g @bananasplitapp/cli
