@@ -18,6 +18,7 @@ import { friendPresenters, parseFriends } from "./commands/friends";
 import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
+import { version as CLI_VERSION } from "../package.json";
 import { colorizeHelp, errorText, helpHeader, helpText } from "./help";
 import { request } from "./request";
 import { resolveReferences } from "./resolve";
@@ -77,6 +78,7 @@ const ROOT_HELP = helpText({
         ["me", "Show the authenticated user"],
         ["login", "Sign in with a browser and store credentials securely"],
         ["logout", "Revoke and delete stored credentials"],
+        ["version", "Print the installed version"],
         ["upgrade", "Upgrade the CLI to the latest stable release"],
         ["update", "Alias for `upgrade`"],
         ["skill install", "Install the agent skill for driving this CLI"],
@@ -121,6 +123,12 @@ const AUTH_HELP: Record<"login" | "logout", string> = {
     examples: ["banana logout"],
   }),
 };
+
+const VERSION_HELP = helpText({
+  summary: "Print the installed version.",
+  usage: ["banana version"],
+  examples: ["banana version"],
+});
 
 const UPGRADE_HELP = helpText({
   summary: "Upgrade the CLI to the latest stable release.",
@@ -191,6 +199,13 @@ ${ROOT_HELP}` };
     }
     throw usageFailure(`Unexpected argument: ${rest[0]}`, UPGRADE_HELP);
   }
+  if (name === "version") {
+    if (rest.length === 0) return { kind: "version" as const };
+    if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
+      return { kind: "help" as const, text: VERSION_HELP };
+    }
+    throw usageFailure(`Unexpected argument: ${rest[0]}`, VERSION_HELP);
+  }
   if (name === "skill") return parseSkill(rest);
   if (name === "login" || name === "logout") {
     if (rest.length === 0) return { action: name, kind: "auth" as const };
@@ -257,6 +272,7 @@ export async function runCli(
     if (
       (command.kind === "auth" ||
         command.kind === "update" ||
+        command.kind === "version" ||
         command.kind === "skill") &&
       output.mode !== "human"
     ) {
@@ -267,7 +283,9 @@ export async function runCli(
             ? command.action
             : command.kind === "skill"
               ? "skill"
-              : "upgrade"
+              : command.kind === "version"
+                ? "version"
+                : "upgrade"
         }`,
       );
     }
@@ -279,6 +297,10 @@ export async function runCli(
           ? SKILL_TEXT
           : await (runtime.installSkill ?? installSkill)(command, { env }),
       );
+      return 0;
+    }
+    if (command.kind === "version") {
+      stdout(`banana version ${CLI_VERSION}`);
       return 0;
     }
     if (command.kind === "update") {

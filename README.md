@@ -143,6 +143,7 @@ Run `banana` from any directory:
 
 ```sh
 banana login
+banana version
 banana upgrade
 banana me
 banana balance

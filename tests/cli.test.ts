@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { version as CLI_VERSION } from "../package.json";
 import { runCli } from "../src/index";
 import { GROUP, harness, TOKEN } from "./helpers";
 
@@ -45,6 +46,24 @@ describe("BananaSplit CLI", () => {
     ]);
     expect(updates).toBe(0);
     expect(calls).toEqual([]);
+  });
+
+  it("prints the installed version, and nothing else", async () => {
+    const { calls, runtime, stdout } = harness();
+
+    expect(await runCli(["version"], runtime)).toBe(0);
+    expect(stdout).toEqual([`banana version ${CLI_VERSION}`]);
+    expect(calls).toEqual([]);
+  });
+
+  it("rejects arguments and output flags on version", async () => {
+    const { runtime, stderr } = harness();
+
+    expect(await runCli(["version", "later"], runtime)).toBe(2);
+    expect(await runCli(["version", "--json"], runtime)).toBe(2);
+    expect(stderr[1]).toBe(
+      '{"error":{"type":"usage","message":"--json is not supported for banana version"}}',
+    );
   });
 
   it("still answers to `update`, the name it shipped as", async () => {

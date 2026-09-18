@@ -99,7 +99,7 @@ show the names.
 | `banana groups get\|members\|activities <group>` | activities takes `--search --limit --cursor --type all\|expenses\|payments\|recurring_expenses --sort date\|amount --direction asc\|desc` |
 | `banana friends [list]` | `--search TEXT --limit --cursor --sort balance\|lastActivity --filter all\|guests` |
 | `banana currencies [list]` | `--code EUR --search krona` — browsing only, writes take the code directly |
-| `banana me` / `login` / `logout` / `upgrade` | `update` is an alias for `upgrade` |
+| `banana me` / `login` / `logout` / `version` / `upgrade` | `update` is an alias for `upgrade` |
 
 `banana <command> --help` is authoritative and cheap. Read it before guessing a flag.
 
