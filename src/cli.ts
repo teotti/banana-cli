@@ -19,8 +19,9 @@ import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
 import { version as CLI_VERSION } from "../package.json";
+import { formatChecks, overall, runDoctor } from "./doctor";
 import { uninstallCli } from "./uninstall";
-import { colorizeHelp, errorText, helpHeader, helpText } from "./help";
+import { colorizeHelp, errorText, helpHeader, helpText, supportsColor } from "./help";
 import { request } from "./request";
 import { resolveReferences } from "./resolve";
 import { asArray, asRecord, usageFailure } from "./shared";
@@ -79,6 +80,7 @@ const ROOT_HELP = helpText({
         ["me", "Show the authenticated user"],
         ["login", "Sign in with a browser and store credentials securely"],
         ["logout", "Revoke and delete stored credentials"],
+        ["doctor", "Check the CLI, your login and the agent skill"],
         ["version", "Print the installed version"],
         ["upgrade", "Upgrade the CLI to the latest stable release"],
         ["update", "Alias for `upgrade`"],
@@ -126,6 +128,16 @@ const AUTH_HELP: Record<"login" | "logout", string> = {
     examples: ["banana logout"],
   }),
 };
+
+const DOCTOR_HELP = helpText({
+  summary: "Check that the CLI, your login and the agent skill are in order.",
+  usage: ["banana doctor [--json]"],
+  notes: [
+    "It checks the version, which `banana` your shell runs, the API it talks\nto, whether you are signed in, and whether an installed skill still\nmatches this version of the CLI.",
+    "Each check is ok, warn or fail, and anything that can be fixed by running\nsomething says what. Exit 1 if a check failed.",
+  ],
+  examples: ["banana doctor", "banana doctor --json"],
+});
 
 const UNINSTALL_HELP = helpText({
   summary: "Remove the CLI and the login it stored.",
@@ -214,6 +226,15 @@ ${ROOT_HELP}` };
     }
     throw usageFailure(`Unexpected argument: ${rest[0]}`, UPGRADE_HELP);
   }
+  if (name === "doctor") {
+    if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
+      return { kind: "help" as const, text: DOCTOR_HELP };
+    }
+    if (rest.length > 0) {
+      throw usageFailure(`Unexpected argument: ${rest[0]}`, DOCTOR_HELP);
+    }
+    return { kind: "doctor" as const };
+  }
   if (name === "uninstall") {
     if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
       return { kind: "help" as const, text: UNINSTALL_HELP };
@@ -294,6 +315,12 @@ export async function runCli(
       stdout(colorizeHelp(command.text));
       return 0;
     }
+    if (command.kind === "doctor" && output.mode === "raw") {
+      throw new CliFailure(
+        "usage",
+        "--raw is not supported for banana doctor",
+      );
+    }
     if (
       (command.kind === "auth" ||
         command.kind === "update" ||
@@ -336,6 +363,28 @@ export async function runCli(
       return 0;
     }
     const requestRuntime = createAuthRuntime(runtime);
+    if (command.kind === "doctor") {
+      const { checks, failed } = await (runtime.doctor ??
+        (() =>
+          runDoctor({
+            env,
+            whoami: async () => {
+              const body = await request(
+                { kind: "request", path: "/current-user", presentation: "user" },
+                requestRuntime,
+                env,
+              );
+              const name = asRecord(body).name;
+              return typeof name === "string" ? name : "you";
+            },
+          })))();
+      stdout(
+        output.mode === "json"
+          ? JSON.stringify({ checks, status: overall(checks), ok: !failed })
+          : formatChecks(checks, runtime.stdout === undefined && supportsColor()),
+      );
+      return failed ? 1 : 0;
+    }
     if (command.kind === "uninstall") {
       stdout(
         await (runtime.uninstall ??

@@ -85,6 +85,15 @@ export interface CliRuntime {
   timeoutMs?: number;
   update?: () => Promise<string>;
   uninstall?: (command: { yes: boolean }) => Promise<string>;
+  doctor?: () => Promise<{
+    checks: Array<{
+      name: string;
+      status: "ok" | "warn" | "fail";
+      detail: string;
+      fix?: string;
+    }>;
+    failed: boolean;
+  }>;
   installSkill?: (
     command: {
       agents?: string[];

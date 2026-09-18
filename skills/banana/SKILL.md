@@ -100,6 +100,7 @@ show the names.
 | `banana friends [list]` | `--search TEXT --limit --cursor --sort balance\|lastActivity --filter all\|guests` |
 | `banana currencies [list]` | `--code EUR --search krona` — browsing only, writes take the code directly |
 | `banana me` / `login` / `logout` / `version` / `upgrade` | `update` is an alias for `upgrade` |
+| `banana doctor` | `--json` — version, PATH, API, login and skill freshness |
 | `banana uninstall` | removes the CLI itself — ask the user first, and never run it unprompted |
 
 `banana <command> --help` is authoritative and cheap. Read it before guessing a flag.

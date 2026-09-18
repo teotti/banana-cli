@@ -224,6 +224,22 @@ is actually on the machine — **detection is a directory stat, because
 version report every agent as missing. The unit tests stub that call, so they
 cannot catch it; check `banana skill install --list` against a real machine.
 
+## The doctor
+
+`banana doctor` (`src/doctor.ts`) is the one non-request command with a `--json`
+shape, because it has data of its own rather than an API response to reshape.
+Each check returns `ok`, `warn` or `fail`, and `overall()` reduces them: exit 1
+only on a `fail`, so a missing login — a warning — does not fail a CI job that
+only wanted to know the CLI works.
+
+The distinction worth keeping is who can act. Not being signed in is a `warn`
+with `banana login` attached; an unreachable API is a `fail` with no fix,
+because it is not the user's to fix.
+
+The skill check exists because the skill is embedded per binary: an upgrade
+leaves every installed copy behind, and a stale skill still loads and still
+describes the CLI you no longer have. Nothing else would tell you.
+
 ## Uninstalling
 
 `banana uninstall` (`src/uninstall.ts`) removes the CLI and the login it

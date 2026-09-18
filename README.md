@@ -89,6 +89,14 @@ version. `--print` writes the skill to stdout without installing it.
 takes the same `--agent`, `--all` and `--dir` flags. A skill you have edited is
 left alone unless you pass `--force`.
 
+## Checking the install
+
+`banana doctor` reports the version, which `banana` your shell actually runs,
+the API it talks to, whether you are signed in, and whether an installed agent
+skill still matches this version of the CLI. Each check is `ok`, `warn` or
+`fail`, anything fixable names the command that fixes it, and `--json` gives the
+same report as data. It exits 1 only when a check failed.
+
 ## Uninstalling
 
 `banana uninstall` removes the CLI and the login it stored — the binary if you
@@ -155,6 +163,7 @@ Run `banana` from any directory:
 
 ```sh
 banana login
+banana doctor
 banana version
 banana upgrade
 banana me
