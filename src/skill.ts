@@ -1,4 +1,4 @@
-import { stat } from "node:fs/promises";
+import { rm, rmdir, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import SKILL from "../skills/banana/SKILL.md" with { type: "text" };
@@ -35,10 +35,35 @@ const AGENT_NAMES = AGENTS.map((agent) => agent.name).join(", ");
 
 const ROOT_HELP = helpText({
   summary: "Install the banana agent skill, so an agent can drive this CLI.",
-  usage: ["banana skill install [flags]"],
-  commands: [["install", "Write the skill into an agent's skills directory"]],
-  examples: ["banana skill install", "banana skill install --agent cursor"],
-  learnMore: ["banana skill install --help"],
+  usage: ["banana skill install [flags]", "banana skill uninstall [flags]"],
+  commands: [
+    ["install", "Write the skill into an agent's skills directory"],
+    ["uninstall", "Remove the skill from an agent's skills directory"],
+  ],
+  examples: ["banana skill install", "banana skill uninstall --agent cursor"],
+  learnMore: ["banana skill install --help", "banana skill uninstall --help"],
+});
+
+const UNINSTALL_HELP = helpText({
+  summary: "Remove the banana skill from the agents that have it.",
+  usage: ["banana skill uninstall [flags]"],
+  options: [
+    ["--agent NAME", `Uninstall for one agent; repeat for several (${AGENT_NAMES})`],
+    ["--all", "Uninstall for every agent above, found or not"],
+    ["--dir PATH", "Uninstall from a skills directory of your own"],
+    ["--force", "Remove a skill that has been edited since it was installed"],
+    ["--list", "Show the agents and where each one's skill goes"],
+  ],
+  notes: [
+    "With no flags it removes the skill from every agent that has one, so one\ncommand undoes one `banana skill install`.",
+    "A skill edited since it was installed is left alone unless --force, since\nthose edits exist nowhere else.",
+    "An agent drops it on its next session, not the running one.",
+  ],
+  examples: [
+    "banana skill uninstall",
+    "banana skill uninstall --agent cursor",
+    "banana skill uninstall --force",
+  ],
 });
 
 const INSTALL_HELP = helpText({
@@ -52,13 +77,12 @@ const INSTALL_HELP = helpText({
     ["--list", "Show the agents and where each one's skill goes"],
     ["--print", "Write the skill to stdout instead of installing it"],
   ],
+  // One note is one paragraph; a sentence that wraps carries its own newline,
+  // or the layout puts a blank line through the middle of it.
   notes: [
-    "With no flags it installs for every agent whose home directory exists,",
-    "so one command covers the agents you actually run.",
-    "The skill lands at <skills>/banana/SKILL.md, and an agent picks it up on",
-    "its next session, not the running one.",
-    "`--print` is for anything else: an agent that keeps skills elsewhere, or",
-    "in version control.",
+    "With no flags it installs for every agent whose home directory exists,\nso one command covers the agents you actually run.",
+    "The skill lands at <skills>/banana/SKILL.md, and an agent picks it up on\nits next session, not the running one.",
+    "`--print` is for anything else: an agent that keeps skills elsewhere, or\nin version control.",
   ],
   examples: [
     "banana skill install",
@@ -70,6 +94,7 @@ const INSTALL_HELP = helpText({
 
 export type SkillCommand = {
   kind: "skill";
+  action: "install" | "uninstall";
   agents?: string[];
   all: boolean;
   dir?: string;
@@ -82,13 +107,16 @@ export function parseSkill(
   args: string[],
 ): SkillCommand | { kind: "help"; text: string } {
   const [name, ...rest] = args;
-  if (name === undefined || (wantsHelp(args) && name !== "install")) {
+  const isCommand = name === "install" || name === "uninstall";
+  if (name === undefined || (wantsHelp(args) && !isCommand)) {
     return { kind: "help", text: ROOT_HELP };
   }
-  if (name !== "install") {
+  if (!isCommand) {
     throw usageFailure(`Unknown command: skill ${name}`, ROOT_HELP);
   }
-  if (wantsHelp(rest)) return { kind: "help", text: INSTALL_HELP };
+  const action = name;
+  const HELP = action === "install" ? INSTALL_HELP : UNINSTALL_HELP;
+  if (wantsHelp(rest)) return { kind: "help", text: HELP };
   const { values, positionals } = parseOptions(
     rest,
     {
@@ -99,36 +127,41 @@ export function parseSkill(
       list: { type: "boolean" },
       print: { type: "boolean" },
     },
-    INSTALL_HELP,
+    HELP,
   );
-  requirePositionals(positionals, 0, INSTALL_HELP);
+  requirePositionals(positionals, 0, HELP);
   const dir = values.dir as string | undefined;
   const agents = values.agent as string[] | undefined;
   const all = values.all === true;
 
   if (dir !== undefined && dir.length === 0) {
-    throw usageFailure("--dir needs a path", INSTALL_HELP);
+    throw usageFailure("--dir needs a path", HELP);
   }
   if (dir !== undefined && (agents !== undefined || all)) {
     throw usageFailure(
       "--dir names a directory itself, so it cannot be combined with --agent or --all",
-      INSTALL_HELP,
+      HELP,
     );
   }
   if (agents !== undefined && all) {
-    throw usageFailure("Choose only one of --agent or --all", INSTALL_HELP);
+    throw usageFailure("Choose only one of --agent or --all", HELP);
   }
   for (const agent of agents ?? []) {
     if (!AGENTS.some((known) => known.name === agent)) {
       throw usageFailure(
         `Unknown agent: ${agent}. Known agents are ${AGENT_NAMES}; --dir installs anywhere else.`,
-        INSTALL_HELP,
+        HELP,
       );
     }
   }
 
+  if (action === "uninstall" && values.print === true) {
+    throw usageFailure("--print writes the skill; it does not remove one", HELP);
+  }
+
   return {
     kind: "skill",
+    action,
     agents,
     all,
     dir,
@@ -144,6 +177,7 @@ export type SkillRuntime = {
   exists: (path: string) => Promise<boolean>;
   home: string;
   read: (path: string) => Promise<string | undefined>;
+  remove: (path: string) => Promise<void>;
   write: (path: string, contents: string) => Promise<void>;
 };
 
@@ -163,6 +197,12 @@ function defaultRuntime(): SkillRuntime {
     read: async (path) => {
       const file = Bun.file(path);
       return (await file.exists()) ? file.text() : undefined;
+    },
+    remove: async (path) => {
+      await rm(path);
+      // `install` created the `banana/` directory, so take it back when it is
+      // empty. A directory the user put something else in stays.
+      await rmdir(dirname(path)).catch(() => {});
     },
     write: async (path, contents) => {
       await Bun.write(path, contents, { createPath: true });
@@ -221,7 +261,13 @@ export async function agentTargets(runtime: SkillRuntime): Promise<AgentTarget[]
   );
 }
 
-type Outcome = "installed" | "replaced" | "current" | "skipped";
+type Outcome =
+  | "installed"
+  | "replaced"
+  | "current"
+  | "skipped"
+  | "removed"
+  | "absent";
 
 async function installOne(
   path: string,
@@ -249,30 +295,81 @@ const OUTCOMES: Record<Outcome, string> = {
   replaced: "replaced",
   current: "up to date",
   skipped: "edited — --force replaces it",
+  removed: "removed",
+  absent: "not installed",
 };
+
+/**
+ * An edited skill is the one copy of those edits, so `uninstall` leaves it
+ * where `install` would: untouched, and named, until --force says otherwise.
+ */
+async function uninstallOne(
+  path: string,
+  force: boolean,
+  runtime: SkillRuntime,
+): Promise<Outcome> {
+  const existing = await runtime.read(path);
+  if (existing === undefined) return "absent";
+  if (existing !== SKILL_TEXT && !force) return "skipped";
+  try {
+    await runtime.remove(path);
+  } catch (error) {
+    throw new CliFailure(
+      "config",
+      `Could not remove the skill at ${path}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+  return "removed";
+}
 
 function report(
   rows: Array<{ label: string; outcome: Outcome; path: string }>,
   runtime: SkillRuntime,
+  action: "install" | "uninstall" = "install",
 ) {
+  const removing = action === "uninstall";
   const width = Math.max(...rows.map((row) => row.label.length));
+  const label = (outcome: Outcome) =>
+    outcome === "skipped" && removing
+      ? "edited — --force removes it"
+      : OUTCOMES[outcome];
   const lines = rows.map(
     (row) =>
-      `${INDENT}${row.label.padEnd(width)}  ${OUTCOMES[row.outcome]}\n` +
+      `${INDENT}${row.label.padEnd(width)}  ${label(row.outcome)}\n` +
       `${INDENT}${" ".repeat(width)}  ${note(short(row.path, runtime.home), runtime.color)}`,
   );
-  const wrote = rows.some(
-    (row) => row.outcome === "installed" || row.outcome === "replaced",
+  const changed = rows.some((row) =>
+    removing
+      ? row.outcome === "removed"
+      : row.outcome === "installed" || row.outcome === "replaced",
   );
   const skipped = rows.some((row) => row.outcome === "skipped");
-  return [
-    wrote
+  const headline = removing
+    ? changed
+      ? "Removed the banana skill."
+      : skipped
+        ? "The banana skill was left alone, having been edited."
+        : "The banana skill is not installed."
+    : changed
       ? "Installed the banana skill."
       : skipped
         ? "The banana skill is already installed, and an edited copy was left alone."
-        : "The banana skill is already installed.",
+        : "The banana skill is already installed.";
+  return [
+    headline,
     ...lines,
-    ...(wrote ? [note("Agents pick it up on their next session.", runtime.color)] : []),
+    ...(changed
+      ? [
+          note(
+            removing
+              ? "Agents drop it on their next session."
+              : "Agents pick it up on their next session.",
+            runtime.color,
+          ),
+        ]
+      : []),
   ].join("\n");
 }
 
@@ -293,11 +390,15 @@ export async function listAgents(runtime: SkillRuntime) {
 }
 
 export async function installSkill(
-  command: Pick<SkillCommand, "agents" | "all" | "dir" | "force" | "list">,
+  command: Pick<
+    SkillCommand,
+    "agents" | "all" | "dir" | "force" | "list"
+  > & { action?: SkillCommand["action"] },
   overrides: Partial<SkillRuntime> = {},
 ): Promise<string> {
   const runtime = { ...defaultRuntime(), ...overrides };
   if (command.list) return listAgents(runtime);
+  if (command.action === "uninstall") return uninstallSkill(command, runtime);
 
   if (command.dir !== undefined) {
     const path = skillPath(expand(command.dir, runtime.home));
@@ -345,4 +446,61 @@ export async function installSkill(
     );
   }
   return report(rows, runtime);
+}
+
+/**
+ * The mirror of `installSkill`. With no flags it works from where a skill
+ * actually is rather than which agents are installed: the point is to undo an
+ * install, including for an agent since removed from the machine.
+ */
+async function uninstallSkill(
+  command: Pick<SkillCommand, "agents" | "all" | "dir" | "force">,
+  runtime: SkillRuntime,
+): Promise<string> {
+  if (command.dir !== undefined) {
+    const path = skillPath(expand(command.dir, runtime.home));
+    const outcome = await uninstallOne(path, command.force, runtime);
+    if (outcome === "skipped") {
+      throw new CliFailure(
+        "config",
+        `The banana skill at ${path} has been edited. Re-run with --force to remove it.`,
+      );
+    }
+    return report([{ label: "Skill", outcome, path }], runtime, "uninstall");
+  }
+
+  const targets = await agentTargets(runtime);
+  const present = await Promise.all(
+    targets.map(async (target) => (await runtime.read(target.path)) !== undefined),
+  );
+  const chosen = command.agents
+    ? targets.filter((target) => command.agents?.includes(target.name))
+    : command.all
+      ? targets
+      : targets.filter((_, index) => present[index]);
+
+  if (chosen.length === 0) {
+    throw new CliFailure(
+      "config",
+      `No banana skill found for ${AGENT_NAMES}. Use --agent to name one anyway, or --dir for a skills directory of your own.`,
+    );
+  }
+
+  const rows = [];
+  for (const target of chosen) {
+    rows.push({
+      label: target.label,
+      outcome: await uninstallOne(target.path, command.force, runtime),
+      path: target.path,
+    });
+  }
+  if (rows.every((row) => row.outcome === "skipped")) {
+    throw new CliFailure(
+      "config",
+      `The banana skill at ${rows
+        .map((row) => row.path)
+        .join(", ")} has been edited. Re-run with --force to remove it.`,
+    );
+  }
+  return report(rows, runtime, "uninstall");
 }

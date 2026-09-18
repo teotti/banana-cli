@@ -195,7 +195,7 @@ back to plain cards. Keep both paths working.
 ## The agent skill
 
 `skills/banana/SKILL.md` is the skill `banana skill install` writes into an
-agent's skills directory. `src/skill.ts` imports it with `with { type: "text" }`,
+agent's skills directory, and `banana skill uninstall` takes back out. `src/skill.ts` imports it with `with { type: "text" }`,
 so the markdown is embedded at build time and a standalone binary installs the
 skill it was built from — there is no second copy to keep in sync, but
 `package.json` `files` has to keep listing `skills` or the npm package installs

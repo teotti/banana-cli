@@ -14,7 +14,8 @@ import { harness, lookup } from "./helpers";
 const CLAUDE = "/home/user/.claude/skills/banana/SKILL.md";
 const CURSOR = "/home/user/.cursor/skills/banana/SKILL.md";
 
-const COMMAND = { all: false, force: false, list: false };
+const COMMAND = { action: "install" as const, all: false, force: false, list: false };
+const REMOVE = { ...COMMAND, action: "uninstall" as const };
 
 /**
  * An in-memory machine: `homes` are the agent directories that exist on it,
@@ -35,6 +36,9 @@ function machine(
     exists: async (path) => homes.has(path),
     home: "/home/user",
     read: async (path) => written[path],
+    remove: async (path) => {
+      delete written[path];
+    },
     write: async (path, contents) => {
       written[path] = contents;
     },
@@ -205,6 +209,112 @@ describe("banana skill install", () => {
     expect(SKILL_TEXT.startsWith("---\nname: banana\n")).toBe(true);
   });
 
+  describe("uninstall", () => {
+    it("removes the skill wherever it actually is", async () => {
+      const test = machine({
+        files: { [CLAUDE]: SKILL_TEXT, [CURSOR]: SKILL_TEXT },
+        homes: ["/home/user/.claude"],
+      });
+
+      const message = await installSkill(REMOVE, test.runtime);
+
+      expect(message).toBe(
+        [
+          "Removed the banana skill.",
+          "  Claude Code  removed",
+          "               ~/.claude/skills/banana/SKILL.md",
+          "  Cursor       removed",
+          "               ~/.cursor/skills/banana/SKILL.md",
+          "Agents drop it on their next session.",
+        ].join("\n"),
+      );
+      expect(test.written).toEqual({});
+    });
+
+    it("keeps an edited skill, which exists nowhere else", async () => {
+      const test = machine({
+        files: { [CLAUDE]: "hand-edited", [CURSOR]: SKILL_TEXT },
+      });
+
+      const message = await installSkill(REMOVE, test.runtime);
+
+      expect(message).toContain("Claude Code  edited — --force removes it");
+      expect(test.written[CLAUDE]).toBe("hand-edited");
+      expect(test.written[CURSOR]).toBeUndefined();
+    });
+
+    it("--force removes an edited skill", async () => {
+      const test = machine({ files: { [CLAUDE]: "hand-edited" } });
+
+      await installSkill({ ...REMOVE, force: true }, test.runtime);
+
+      expect(test.written).toEqual({});
+    });
+
+    it("fails when every skill it found was edited", async () => {
+      const test = machine({ files: { [CLAUDE]: "hand-edited" } });
+
+      expect(installSkill(REMOVE, test.runtime)).rejects.toThrow(
+        `The banana skill at ${CLAUDE} has been edited. Re-run with --force to remove it.`,
+      );
+    });
+
+    it("says so rather than reporting a removal it did not make", async () => {
+      const test = machine({ homes: ["/home/user/.claude"] });
+
+      expect(installSkill(REMOVE, test.runtime)).rejects.toThrow(
+        /No banana skill found for claude, codex, cursor, gemini, opencode/,
+      );
+    });
+
+    it("reports a named agent that has nothing installed", async () => {
+      const test = machine({ files: { [CURSOR]: SKILL_TEXT } });
+
+      const message = await installSkill(
+        { ...REMOVE, agents: ["claude"] },
+        test.runtime,
+      );
+
+      expect(message).toBe(
+        [
+          "The banana skill is not installed.",
+          "  Claude Code  not installed",
+          "               ~/.claude/skills/banana/SKILL.md",
+        ].join("\n"),
+      );
+      expect(test.written[CURSOR]).toBe(SKILL_TEXT);
+    });
+
+    it("removes from a directory of your own", async () => {
+      const test = machine({
+        files: { "/home/user/elsewhere/banana/SKILL.md": SKILL_TEXT },
+      });
+
+      const message = await installSkill(
+        { ...REMOVE, dir: "~/elsewhere" },
+        test.runtime,
+      );
+
+      expect(message).toContain("Skill  removed");
+      expect(test.written).toEqual({});
+    });
+
+    it("reports a directory it cannot remove from as a config failure", async () => {
+      const test = machine({
+        files: { "/home/user/elsewhere/banana/SKILL.md": SKILL_TEXT },
+        overrides: {
+          remove: async () => {
+            throw new Error("EACCES: permission denied");
+          },
+        },
+      });
+
+      expect(
+        installSkill({ ...REMOVE, dir: "~/elsewhere" }, test.runtime),
+      ).rejects.toThrow(/Could not remove the skill at .*: EACCES/);
+    });
+  });
+
   describe("--dir", () => {
     it("installs into a directory of your own", async () => {
       const test = machine();
@@ -308,6 +418,7 @@ describe("banana skill install", () => {
     it("defaults every flag off", () => {
       expect(parseSkill(["install"])).toEqual({
         kind: "skill",
+        action: "install",
         agents: undefined,
         all: false,
         dir: undefined,
@@ -340,8 +451,21 @@ describe("banana skill install", () => {
     });
 
     it("rejects an unknown subcommand with its help", () => {
-      expect(() => parseSkill(["uninstall"])).toThrow(
-        "Unknown command: skill uninstall",
+      expect(() => parseSkill(["reinstall"])).toThrow(
+        "Unknown command: skill reinstall",
+      );
+    });
+
+    it("takes uninstall as a command of its own", () => {
+      expect(parseSkill(["uninstall"])).toMatchObject({
+        kind: "skill",
+        action: "uninstall",
+      });
+    });
+
+    it("refuses --print on uninstall, which removes rather than writes", () => {
+      expect(() => parseSkill(["uninstall", "--print"])).toThrow(
+        "--print writes the skill; it does not remove one",
       );
     });
 
@@ -375,6 +499,7 @@ describe("banana skill install", () => {
       expect(calls).toEqual([
         {
           kind: "skill",
+          action: "install",
           agents: ["cursor"],
           all: false,
           dir: undefined,

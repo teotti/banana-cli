@@ -82,6 +82,7 @@ const ROOT_HELP = helpText({
         ["upgrade", "Upgrade the CLI to the latest stable release"],
         ["update", "Alias for `upgrade`"],
         ["skill install", "Install the agent skill for driving this CLI"],
+        ["skill uninstall", "Remove the agent skill again"],
       ],
     },
     {

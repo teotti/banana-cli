@@ -85,6 +85,10 @@ Running the command again leaves an identical skill alone. A differing copy is
 preserved; use `banana skill install --force` to replace it with the bundled
 version. `--print` writes the skill to stdout without installing it.
 
+`banana skill uninstall` removes it again, from every agent that has one, and
+takes the same `--agent`, `--all` and `--dir` flags. A skill you have edited is
+left alone unless you pass `--force`.
+
 The skill is embedded in the standalone binary and included in the npm package,
 so installing it needs no additional download.
 
