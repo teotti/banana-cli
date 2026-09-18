@@ -49,9 +49,13 @@ async function security(args: string[], stdin?: string) {
 }
 
 function keychainFailure(action: string, stderr: string): never {
+  // The fallback is the only way out of a locked or unreadable keychain, and
+  // nothing else names it: it is read silently in `defaultSecureStorage`, and
+  // a user who hits this has no reason to guess it exists.
   throw new CliFailure(
     "config",
-    `Could not ${action} credentials in the macOS keychain: ${stderr.trim()}`,
+    `Could not ${action} credentials in the macOS keychain: ${stderr.trim()}\n` +
+      "Set BANANASPLIT_NO_KEYCHAIN=1 to store them in a file instead.",
   );
 }
 
