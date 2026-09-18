@@ -18,8 +18,11 @@ import { friendPresenters, parseFriends } from "./commands/friends";
 import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
-import { colorizeHelp, errorText, helpHeader, helpText } from "./help";
-import { DEFAULT_API_URL, request } from "./request";
+import { version as CLI_VERSION } from "../package.json";
+import { formatChecks, overall, runDoctor } from "./doctor";
+import { uninstallCli } from "./uninstall";
+import { colorizeHelp, errorText, helpHeader, helpText, supportsColor } from "./help";
+import { request } from "./request";
 import { resolveReferences } from "./resolve";
 import { asArray, asRecord, usageFailure } from "./shared";
 import {
@@ -77,8 +80,13 @@ const ROOT_HELP = helpText({
         ["me", "Show the authenticated user"],
         ["login", "Sign in with a browser and store credentials securely"],
         ["logout", "Revoke and delete stored credentials"],
-        ["update", "Update the CLI to the latest stable release"],
+        ["doctor", "Check the CLI, your login and the agent skill"],
+        ["version", "Print the installed version"],
+        ["upgrade", "Upgrade the CLI to the latest stable release"],
+        ["update", "Alias for `upgrade`"],
         ["skill install", "Install the agent skill for driving this CLI"],
+        ["skill uninstall", "Remove the agent skill again"],
+        ["uninstall", "Remove the CLI and the login it stored"],
       ],
     },
     {
@@ -86,13 +94,6 @@ const ROOT_HELP = helpText({
       rows: [
         ["--json", "Print curated operational JSON"],
         ["--raw", "Print the complete API response as JSON"],
-      ],
-    },
-    {
-      title: "ENVIRONMENT",
-      rows: [
-        ["BANANASPLIT_API_URL", `API base URL (default: ${DEFAULT_API_URL})`],
-        ["BANANASPLIT_AUTH_URL", "Auth base URL (default: API origin + /api)"],
       ],
     },
   ],
@@ -122,10 +123,39 @@ const AUTH_HELP: Record<"login" | "logout", string> = {
   }),
 };
 
-const UPDATE_HELP = helpText({
-  summary: "Update the CLI to the latest stable release.",
-  usage: ["banana update"],
-  examples: ["banana update"],
+const DOCTOR_HELP = helpText({
+  summary: "Check that the CLI, your login and the agent skill are in order.",
+  usage: ["banana doctor [--json]"],
+  notes: [
+    "It checks the version, which `banana` your shell runs, the API it talks\nto, whether you are signed in, and whether an installed skill still\nmatches this version of the CLI.",
+    "Each check is ok, warn or fail, and anything that can be fixed by running\nsomething says what. Exit 1 if a check failed.",
+  ],
+  examples: ["banana doctor", "banana doctor --json"],
+});
+
+const UNINSTALL_HELP = helpText({
+  summary: "Remove the CLI and the login it stored.",
+  usage: ["banana uninstall [--yes]"],
+  options: [["--yes", "Do not ask before removing anything"]],
+  notes: [
+    "It removes the binary (or the npm package, however you installed it) and\nrevokes your login before deleting it.",
+    "The agent skill and, on Windows, the Path entry are named but left alone;\n`banana skill uninstall` removes the skill.",
+    "Without a terminal to ask in, it prints what it would remove and stops\nunless --yes is given.",
+  ],
+  examples: ["banana uninstall", "banana uninstall --yes"],
+});
+
+const VERSION_HELP = helpText({
+  summary: "Print the installed version.",
+  usage: ["banana version"],
+  examples: ["banana version"],
+});
+
+const UPGRADE_HELP = helpText({
+  summary: "Upgrade the CLI to the latest stable release.",
+  usage: ["banana upgrade"],
+  notes: ["`banana update` is the older name for this command, and still works."],
+  examples: ["banana upgrade"],
 });
 
 /** Where a write's created row is read back from, to present it in full. */
@@ -181,12 +211,40 @@ ${ROOT_HELP}` };
   }
   if (args[0] === "balances") args = ["balance", "users", ...args.slice(1)];
   const [name, ...rest] = args;
-  if (name === "update") {
+  // `update` is what this command shipped as; `upgrade` is what people reach
+  // for. Both run it, and the help page names the canonical one.
+  if (name === "upgrade" || name === "update") {
     if (rest.length === 0) return { kind: "update" as const };
     if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
-      return { kind: "help" as const, text: UPDATE_HELP };
+      return { kind: "help" as const, text: UPGRADE_HELP };
     }
-    throw usageFailure(`Unexpected argument: ${rest[0]}`, UPDATE_HELP);
+    throw usageFailure(`Unexpected argument: ${rest[0]}`, UPGRADE_HELP);
+  }
+  if (name === "doctor") {
+    if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
+      return { kind: "help" as const, text: DOCTOR_HELP };
+    }
+    if (rest.length > 0) {
+      throw usageFailure(`Unexpected argument: ${rest[0]}`, DOCTOR_HELP);
+    }
+    return { kind: "doctor" as const };
+  }
+  if (name === "uninstall") {
+    if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
+      return { kind: "help" as const, text: UNINSTALL_HELP };
+    }
+    const yes = rest.length === 1 && (rest[0] === "--yes" || rest[0] === "-y");
+    if (rest.length === 0 || yes) {
+      return { kind: "uninstall" as const, yes };
+    }
+    throw usageFailure(`Unexpected argument: ${rest[0]}`, UNINSTALL_HELP);
+  }
+  if (name === "version") {
+    if (rest.length === 0) return { kind: "version" as const };
+    if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
+      return { kind: "help" as const, text: VERSION_HELP };
+    }
+    throw usageFailure(`Unexpected argument: ${rest[0]}`, VERSION_HELP);
   }
   if (name === "skill") return parseSkill(rest);
   if (name === "login" || name === "logout") {
@@ -251,9 +309,17 @@ export async function runCli(
       stdout(colorizeHelp(command.text));
       return 0;
     }
+    if (command.kind === "doctor" && output.mode === "raw") {
+      throw new CliFailure(
+        "usage",
+        "--raw is not supported for banana doctor",
+      );
+    }
     if (
       (command.kind === "auth" ||
         command.kind === "update" ||
+        command.kind === "version" ||
+        command.kind === "uninstall" ||
         command.kind === "skill") &&
       output.mode !== "human"
     ) {
@@ -264,7 +330,11 @@ export async function runCli(
             ? command.action
             : command.kind === "skill"
               ? "skill"
-              : "update"
+              : command.kind === "version"
+                ? "version"
+                : command.kind === "uninstall"
+                  ? "uninstall"
+                  : "upgrade"
         }`,
       );
     }
@@ -278,11 +348,55 @@ export async function runCli(
       );
       return 0;
     }
+    if (command.kind === "version") {
+      stdout(`banana version ${CLI_VERSION}`);
+      return 0;
+    }
     if (command.kind === "update") {
       stdout(await (runtime.update ?? updateCli)());
       return 0;
     }
     const requestRuntime = createAuthRuntime(runtime);
+    if (command.kind === "doctor") {
+      const { checks, failed } = await (runtime.doctor ??
+        (() =>
+          runDoctor({
+            env,
+            whoami: async () => {
+              const body = await request(
+                { kind: "request", path: "/current-user", presentation: "user" },
+                requestRuntime,
+                env,
+              );
+              const name = asRecord(body).name;
+              return typeof name === "string" ? name : "you";
+            },
+          })))();
+      stdout(
+        output.mode === "json"
+          ? JSON.stringify({ checks, status: overall(checks), ok: !failed })
+          : formatChecks(checks, runtime.stdout === undefined && supportsColor()),
+      );
+      return failed ? 1 : 0;
+    }
+    if (command.kind === "uninstall") {
+      stdout(
+        await (runtime.uninstall ??
+          ((only: { yes: boolean }) =>
+            uninstallCli(only, {
+              // `logout` reports to the terminal; here its sentence belongs in
+              // the uninstall summary instead.
+              logout: async () => {
+                let said: string | undefined;
+                await logout(requestRuntime, env, (line) => {
+                  said = line;
+                });
+                return said;
+              },
+            })))(command),
+      );
+      return 0;
+    }
     if (command.kind === "auth") {
       if (command.action === "login") {
         await login(requestRuntime, env, stdout, stderr);

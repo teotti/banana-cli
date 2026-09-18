@@ -87,6 +87,26 @@ Running the command again leaves an identical skill alone. A differing copy is
 preserved; use `banana skill install --force` to replace it with the bundled
 version. `--print` writes the skill to stdout without installing it.
 
+`banana skill uninstall` removes it again, from every agent that has one, and
+takes the same `--agent`, `--all` and `--dir` flags. A skill you have edited is
+left alone unless you pass `--force`.
+
+## Checking the install
+
+`banana doctor` reports the version, which `banana` your shell actually runs,
+the API it talks to, whether you are signed in, and whether an installed agent
+skill still matches this version of the CLI. Each check is `ok`, `warn` or
+`fail`, anything fixable names the command that fixes it, and `--json` gives the
+same report as data. It exits 1 only when a check failed.
+
+## Uninstalling
+
+`banana uninstall` removes the CLI and the login it stored — the binary if you
+installed one, or the npm package if you used Bun, revoking your login before
+deleting it. It lists what will go and asks first; `--yes` answers in advance,
+and without a terminal to ask in it prints the list and stops. The agent skill
+and, on Windows, the Path entry are named but left alone.
+
 The skill is embedded in the standalone binary and included in the npm package,
 so installing it needs no additional download.
 
@@ -109,7 +129,7 @@ Credentials are stored per API origin:
 
 - **macOS** — the login keychain, reached by running `/usr/bin/security`. Going
   through Apple's own binary keeps the keychain item usable after `banana
-  update` replaces the CLI binary; calling the keychain from the CLI itself
+  upgrade` replaces the CLI binary; calling the keychain from the CLI itself
   ties the item to that build and makes the next command block on a GUI
   prompt. Set `BANANASPLIT_NO_KEYCHAIN=1` to use the file store instead.
 - **Everywhere else** — a `0600` JSON file at
@@ -145,7 +165,9 @@ Run `banana` from any directory:
 
 ```sh
 banana login
-banana update
+banana doctor
+banana version
+banana upgrade
 banana me
 banana balance
 banana balances
@@ -159,6 +181,7 @@ banana expenses get EXPENSE_ID
 banana payments get PAYMENT_ID
 banana skill install
 banana logout
+banana uninstall
 ```
 
 Currencies, groups and people are named wherever a command takes one — by
@@ -166,10 +189,11 @@ code, by name, or by a prefix of either. `banana groups get Lisbon` finds the
 Lisbon trip, `--paid-by me` is you, and an id still works if you have one.
 Ambiguous names are reported rather than guessed.
 
-Run `banana update` to install the latest stable release, which reports the
+Run `banana upgrade` to install the latest stable release, which reports the
 version it installed — `v0.2.4 → v0.2.5` — or tells you the version you were
-already on. Standalone installs update in place; Bun package installs update
-through Bun's global package manager.
+already on. Standalone installs upgrade in place; Bun package installs go
+through Bun's global package manager. `banana update` is the older name and
+still works.
 
 List expenses across the authenticated account, sorted by date or amount:
 

@@ -99,7 +99,9 @@ show the names.
 | `banana groups get\|members\|activities <group>` | activities takes `--search --limit --cursor --type all\|expenses\|payments\|recurring_expenses --sort date\|amount --direction asc\|desc` |
 | `banana friends [list]` | `--search TEXT --limit --cursor --sort balance\|lastActivity --filter all\|guests` |
 | `banana currencies [list]` | `--code EUR --search krona` — browsing only, writes take the code directly |
-| `banana me` / `login` / `logout` / `update` | |
+| `banana me` / `login` / `logout` / `version` / `upgrade` | `update` is an alias for `upgrade` |
+| `banana doctor` | `--json` — version, PATH, API, login and skill freshness |
+| `banana uninstall` | removes the CLI itself — ask the user first, and never run it unprompted |
 
 `banana <command> --help` is authoritative and cheap. Read it before guessing a flag.
 
@@ -151,9 +153,9 @@ response `{items, hasMore, nextCursor}`, pass a non-null `nextCursor` back as
 check `hasMore` before treating a page as complete. Per-person balances, group
 members and currencies return arrays instead. Do not assume every collection supports cursors.
 
-Group and friend `--search` filtering depends on the API version deployed. Check
-returned names before concluding a match; older production versions can ignore
-the search parameter. If needed, fetch and filter pages locally.
+`--search` on groups and friends filters on the server. It matches names, while
+the CLI also answers to usernames and emails, so a search that finds nothing is
+worth retrying as a plain listing before concluding the person is not there.
 
 ## Failures
 
@@ -175,9 +177,9 @@ was saved. If the outcome remains unclear, report the uncertainty before retryin
 ## Recipes
 
 - **"What do I owe?"** → `banana balances --json`, then report per person by name.
-- **"How much does Ana owe me?"** → `banana balances --json` and read her row;
-  `banana friends --search ana --json` also carries her `currency`, but confirm
-  the returned name, since the search may be ignored (see Paging).
+- **"How much does Ana owe me?"** → `banana friends --search ana --json`, which
+  carries her balance and its `currency`. `banana balances --json` has the same
+  balance without a currency field.
 - **"What's been spent on the trip?"** → `banana groups activities "Lisbon trip"
   --type expenses --sort amount --direction desc --json`.
 - **"Log the dinner I paid for"** → establish amount, currency, date and participants,

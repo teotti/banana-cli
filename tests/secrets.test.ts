@@ -177,4 +177,12 @@ describe("macOS keychain storage", () => {
       "keychain is locked",
     );
   });
+
+  it("points a locked keychain at the file store, the only way out", async () => {
+    const { run } = runner({ code: 1, stderr: "keychain is locked" });
+
+    expect(keychainStorage(run).get(KEY)).rejects.toThrow(
+      "Set BANANASPLIT_NO_KEYCHAIN=1",
+    );
+  });
 });

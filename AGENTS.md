@@ -24,7 +24,7 @@ and that is load-bearing.** macOS grants keychain access per code signature and
 records the caller in the item's ACL. `Bun.secrets` makes the CLI itself the
 caller, so its signature lands in the ACL — and since `bun build --compile`
 ad-hoc signs with the generic identifier `a.out`, the ACL falls back to the
-binary's cdhash. Every `banana update` replaces the binary, changing that hash,
+binary's cdhash. Every `banana upgrade` replaces the binary, changing that hash,
 so the next authenticated command blocked on a GUI keychain prompt that no
 agent or CI job can answer. `/usr/bin/security` is Apple-signed and never
 changes, so the ACL stays valid across updates.
@@ -63,9 +63,13 @@ bun run contract:download   # curl -fsS -o server.d.ts <staging>/public/server.d
 **Staging runs ahead of production, and the CLI talks to production.** A route
 that is in the snapshot is not necessarily one a released binary can call. An
 unknown query parameter is ignored rather than rejected, so calling ahead of
-production does not fail — it silently returns unfiltered rows. `--search`
-sends `q` to `/groups` and `/friends`, which is staging-only until the API
-ships it; do not release this CLI before then.
+production does not fail — it silently returns unfiltered rows, which is the
+failure to watch for: a filter that is not there yet looks like a filter that
+matched everything.
+
+`--search` sends `q` to `/groups` and `/friends`, which was staging-only for a
+while. Production honours it as of 2026-09-18, so that gate is lifted and the
+flag filters for real.
 
 The snapshot cannot tell you what production has shipped. Before a release,
 check anything new against production directly — run the command against a
@@ -140,10 +144,10 @@ page (`l=100`) instead of one request each; either way the rows are matched
 exact → prefix → substring, and an ambiguous name is reported rather than
 guessed. Because `q` searches names and the CLI also answers to usernames and
 emails, a `q` search that finds nothing falls back to one wide sweep before
-failing — which is also what carries name resolution on production, where `q`
-on the listings is still ignored. A `--paid-by` with no value at all resolves
-to the signed-in user, which is why adding an expense needs no `banana me`
-first.
+failing. That sweep carried name resolution on its own while production still
+ignored `q`, and is now what catches a username or an email. A `--paid-by` with
+no value at all resolves to the signed-in user, which is why adding an expense
+needs no `banana me` first.
 
 Two conventions keep the output cheap to read:
 
@@ -195,7 +199,7 @@ back to plain cards. Keep both paths working.
 ## The agent skill
 
 `skills/banana/SKILL.md` is the skill `banana skill install` writes into an
-agent's skills directory. `src/skill.ts` imports it with `with { type: "text" }`,
+agent's skills directory, and `banana skill uninstall` takes back out. `src/skill.ts` imports it with `with { type: "text" }`,
 so the markdown is embedded at build time and a standalone binary installs the
 skill it was built from — there is no second copy to keep in sync, but
 `package.json` `files` has to keep listing `skills` or the npm package installs
@@ -219,6 +223,40 @@ is actually on the machine — **detection is a directory stat, because
 `Bun.file().exists()` answers false for a directory**, which made a first
 version report every agent as missing. The unit tests stub that call, so they
 cannot catch it; check `banana skill install --list` against a real machine.
+
+## The doctor
+
+`banana doctor` (`src/doctor.ts`) is the one non-request command with a `--json`
+shape, because it has data of its own rather than an API response to reshape.
+Each check returns `ok`, `warn` or `fail`, and `overall()` reduces them: exit 1
+only on a `fail`, so a missing login — a warning — does not fail a CI job that
+only wanted to know the CLI works.
+
+The distinction worth keeping is who can act. Not being signed in is a `warn`
+with `banana login` attached; an unreachable API is a `fail` with no fix,
+because it is not the user's to fix.
+
+The skill check exists because the skill is embedded per binary: an upgrade
+leaves every installed copy behind, and a stale skill still loads and still
+describes the CLI you no longer have. Nothing else would tell you.
+
+## Uninstalling
+
+`banana uninstall` (`src/uninstall.ts`) removes the CLI and the login it
+stored. Two things it deliberately does not do: edit a shell profile, and
+remove the agent skill. The POSIX installer never writes to a profile — it
+only prints PATH advice — so there is nothing there to undo; Windows does set
+the user Path, and that entry is named rather than removed. The skill belongs
+to other tools' directories, so `banana skill uninstall` owns it.
+
+Order matters: revoking the login needs the network, so it happens *before*
+the binary goes. A failed revoke aborts with the CLI still installed, rather
+than stranding a live credential with no command left to revoke it.
+
+A running binary deleting itself is fine on POSIX and impossible on Windows,
+which defers to a detached `Wait-Process` — the same shape `upgrade` uses. A
+package install is removed by its package manager, never by deleting
+`execPath`, which there is Bun itself.
 
 ## Usage tracking
 
