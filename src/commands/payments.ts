@@ -31,12 +31,13 @@ const ADD_HELP = helpText({
     ["--currency CODE", "Currency of the amount (required)"],
     ["--from WHO", "Who paid (required)"],
     ["--to WHO", "Who was paid (required)"],
-    ["--date DATE", "YYYY-MM-DD or DD-MM-YYYY (required)"],
+    ["--date DATE", "When it happened, with an optional time (required)"],
     ["--group NAME", "Settle inside a group"],
     ["--description TEXT", "Longer note"],
   ],
   notes: [
     "--currency, --group, --from and --to take a code, a name or a prefix\nof one, as well as an id. `--from me` is you.",
+    "--date takes YYYY-MM-DD or DD-MM-YYYY, and accepts a time after a T\n(2026-09-16T21:20:00). Without one the payment lands at midnight UTC;\nwithout an offset the time is read as UTC.",
     "Both sides are named on purpose: a payment cannot be deleted from the\nCLI, so the direction is never guessed.",
   ],
   examples: [

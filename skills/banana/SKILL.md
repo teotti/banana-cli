@@ -110,6 +110,11 @@ show the names.
 - **Dates** are `YYYY-MM-DD` or `DD-MM-YYYY`, required when adding expenses or
   payments. An edit preserves the existing date unless supplied. Resolve relative
   dates from the user's context; the dates below are examples.
+- **A time goes on `--date` after a `T`**: `--date 2026-09-16T21:20:00`, with
+  optional seconds, milliseconds and an offset (`Z` or `+02:00`). With no time
+  the row lands at midnight UTC, and with no offset the time is read as UTC.
+  Pass one whenever the user gave a time — several expenses on one day
+  otherwise all read as midnight.
 - **Splits must add up to `--amount`.** Repeat the flag: `--split me=10 --split Ana=10`.
 - **`--split-type` is `equal`, `custom`, `percentage` or `shares`.** It labels
   how the split was arrived at; `--split` values are amounts in every case, and
