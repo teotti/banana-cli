@@ -23,7 +23,7 @@ describe("BananaSplit CLI", () => {
     expect(stderr).toEqual([]);
   });
 
-  it("prints update help and rejects update arguments and output flags", async () => {
+  it("prints upgrade help and rejects upgrade arguments and output flags", async () => {
     const { calls, runtime, stderr, stdout } = harness();
     let updates = 0;
     runtime.update = async () => {
@@ -31,20 +31,32 @@ describe("BananaSplit CLI", () => {
       return "updated";
     };
 
-    expect(await runCli(["update", "--help"], runtime)).toBe(0);
+    expect(await runCli(["upgrade", "--help"], runtime)).toBe(0);
     expect(stdout[0]).toBe(
-      "Update the CLI to the latest stable release.\n\nUSAGE\n  banana update\n\nEXAMPLES\n  banana update",
+      "Upgrade the CLI to the latest stable release.\n\nUSAGE\n  banana upgrade\n\n`banana update` is the older name for this command, and still works.\n\nEXAMPLES\n  banana upgrade",
     );
-    expect(await runCli(["update", "later"], runtime)).toBe(2);
-    expect(await runCli(["update", "--json"], runtime)).toBe(2);
-    expect(await runCli(["--raw", "update"], runtime)).toBe(2);
+    expect(await runCli(["upgrade", "later"], runtime)).toBe(2);
+    expect(await runCli(["upgrade", "--json"], runtime)).toBe(2);
+    expect(await runCli(["--raw", "upgrade"], runtime)).toBe(2);
     expect(stderr).toEqual([
-      "Error: Unexpected argument: later\n\nUpdate the CLI to the latest stable release.\n\nUSAGE\n  banana update\n\nEXAMPLES\n  banana update",
-      "{\"error\":{\"type\":\"usage\",\"message\":\"--json is not supported for banana update\"}}",
-      "{\"error\":{\"type\":\"usage\",\"message\":\"--raw is not supported for banana update\"}}",
+      "Error: Unexpected argument: later\n\nUpgrade the CLI to the latest stable release.\n\nUSAGE\n  banana upgrade\n\n`banana update` is the older name for this command, and still works.\n\nEXAMPLES\n  banana upgrade",
+      "{\"error\":{\"type\":\"usage\",\"message\":\"--json is not supported for banana upgrade\"}}",
+      "{\"error\":{\"type\":\"usage\",\"message\":\"--raw is not supported for banana upgrade\"}}",
     ]);
     expect(updates).toBe(0);
     expect(calls).toEqual([]);
+  });
+
+  it("still answers to `update`, the name it shipped as", async () => {
+    const { runtime, stdout } = harness();
+    runtime.update = async () => "Banana is up to date.";
+
+    expect(await runCli(["update"], runtime)).toBe(0);
+    expect(stdout).toEqual(["Banana is up to date."]);
+
+    const second = harness();
+    expect(await runCli(["update", "--help"], second.runtime)).toBe(0);
+    expect(second.stdout[0]).toBe("Upgrade the CLI to the latest stable release.\n\nUSAGE\n  banana upgrade\n\n`banana update` is the older name for this command, and still works.\n\nEXAMPLES\n  banana upgrade");
   });
 
   it("reports updater launch failures", async () => {

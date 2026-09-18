@@ -77,7 +77,8 @@ const ROOT_HELP = helpText({
         ["me", "Show the authenticated user"],
         ["login", "Sign in with a browser and store credentials securely"],
         ["logout", "Revoke and delete stored credentials"],
-        ["update", "Update the CLI to the latest stable release"],
+        ["upgrade", "Upgrade the CLI to the latest stable release"],
+        ["update", "Alias for `upgrade`"],
         ["skill install", "Install the agent skill for driving this CLI"],
       ],
     },
@@ -121,10 +122,11 @@ const AUTH_HELP: Record<"login" | "logout", string> = {
   }),
 };
 
-const UPDATE_HELP = helpText({
-  summary: "Update the CLI to the latest stable release.",
-  usage: ["banana update"],
-  examples: ["banana update"],
+const UPGRADE_HELP = helpText({
+  summary: "Upgrade the CLI to the latest stable release.",
+  usage: ["banana upgrade"],
+  notes: ["`banana update` is the older name for this command, and still works."],
+  examples: ["banana upgrade"],
 });
 
 /** Where a write's created row is read back from, to present it in full. */
@@ -180,12 +182,14 @@ ${ROOT_HELP}` };
   }
   if (args[0] === "balances") args = ["balance", "users", ...args.slice(1)];
   const [name, ...rest] = args;
-  if (name === "update") {
+  // `update` is what this command shipped as; `upgrade` is what people reach
+  // for. Both run it, and the help page names the canonical one.
+  if (name === "upgrade" || name === "update") {
     if (rest.length === 0) return { kind: "update" as const };
     if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
-      return { kind: "help" as const, text: UPDATE_HELP };
+      return { kind: "help" as const, text: UPGRADE_HELP };
     }
-    throw usageFailure(`Unexpected argument: ${rest[0]}`, UPDATE_HELP);
+    throw usageFailure(`Unexpected argument: ${rest[0]}`, UPGRADE_HELP);
   }
   if (name === "skill") return parseSkill(rest);
   if (name === "login" || name === "logout") {
@@ -263,7 +267,7 @@ export async function runCli(
             ? command.action
             : command.kind === "skill"
               ? "skill"
-              : "update"
+              : "upgrade"
         }`,
       );
     }

@@ -24,7 +24,7 @@ and that is load-bearing.** macOS grants keychain access per code signature and
 records the caller in the item's ACL. `Bun.secrets` makes the CLI itself the
 caller, so its signature lands in the ACL — and since `bun build --compile`
 ad-hoc signs with the generic identifier `a.out`, the ACL falls back to the
-binary's cdhash. Every `banana update` replaces the binary, changing that hash,
+binary's cdhash. Every `banana upgrade` replaces the binary, changing that hash,
 so the next authenticated command blocked on a GUI keychain prompt that no
 agent or CI job can answer. `/usr/bin/security` is Apple-signed and never
 changes, so the ACL stays valid across updates.

@@ -143,7 +143,7 @@ Run `banana` from any directory:
 
 ```sh
 banana login
-banana update
+banana upgrade
 banana me
 banana balance
 banana balances
@@ -164,10 +164,11 @@ code, by name, or by a prefix of either. `banana groups get Lisbon` finds the
 Lisbon trip, `--paid-by me` is you, and an id still works if you have one.
 Ambiguous names are reported rather than guessed.
 
-Run `banana update` to install the latest stable release, which reports the
+Run `banana upgrade` to install the latest stable release, which reports the
 version it installed — `v0.2.4 → v0.2.5` — or tells you the version you were
-already on. Standalone installs update in place; Bun package installs update
-through Bun's global package manager.
+already on. Standalone installs upgrade in place; Bun package installs go
+through Bun's global package manager. `banana update` is the older name and
+still works.
 
 List expenses across the authenticated account, sorted by date or amount:
 

@@ -454,7 +454,7 @@ describe("the skill stays in step with the CLI", () => {
   }
 
   /** Interactive or self-replacing commands, which carry no flags worth checking. */
-  const NOT_RUN = new Set(["login", "logout", "update"]);
+  const NOT_RUN = new Set(["login", "logout", "upgrade", "update"]);
 
   /** Splits a command line, keeping quoted names such as "Lisbon trip" whole. */
   function argv(line: string) {
