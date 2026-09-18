@@ -63,9 +63,13 @@ bun run contract:download   # curl -fsS -o server.d.ts <staging>/public/server.d
 **Staging runs ahead of production, and the CLI talks to production.** A route
 that is in the snapshot is not necessarily one a released binary can call. An
 unknown query parameter is ignored rather than rejected, so calling ahead of
-production does not fail — it silently returns unfiltered rows. `--search`
-sends `q` to `/groups` and `/friends`, which is staging-only until the API
-ships it; do not release this CLI before then.
+production does not fail — it silently returns unfiltered rows, which is the
+failure to watch for: a filter that is not there yet looks like a filter that
+matched everything.
+
+`--search` sends `q` to `/groups` and `/friends`, which was staging-only for a
+while. Production honours it as of 2026-09-18, so that gate is lifted and the
+flag filters for real.
 
 The snapshot cannot tell you what production has shipped. Before a release,
 check anything new against production directly — run the command against a
@@ -140,10 +144,10 @@ page (`l=100`) instead of one request each; either way the rows are matched
 exact → prefix → substring, and an ambiguous name is reported rather than
 guessed. Because `q` searches names and the CLI also answers to usernames and
 emails, a `q` search that finds nothing falls back to one wide sweep before
-failing — which is also what carries name resolution on production, where `q`
-on the listings is still ignored. A `--paid-by` with no value at all resolves
-to the signed-in user, which is why adding an expense needs no `banana me`
-first.
+failing. That sweep carried name resolution on its own while production still
+ignored `q`, and is now what catches a username or an email. A `--paid-by` with
+no value at all resolves to the signed-in user, which is why adding an expense
+needs no `banana me` first.
 
 Two conventions keep the output cheap to read:
 
