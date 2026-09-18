@@ -93,25 +93,52 @@ export function requiredString(value: unknown, name: string, usage: string) {
   return value;
 }
 
+const DATE_FORMATS =
+  "--date must use YYYY-MM-DD or DD-MM-YYYY, optionally with a time (2026-09-16T21:20:00)";
+
 export function isoDate(value: unknown, usage: string) {
   const input = requiredString(value, "--date", usage);
-  const ymd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
-  const dmy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(input);
-  const normalized = ymd
-    ? input
-    : dmy
-      ? `${dmy[3]}-${dmy[2]}-${dmy[1]}`
-      : "";
-  const date = new Date(`${normalized}T00:00:00.000Z`);
+  const parts = /^(\S+?)(?:[T ](\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?)(Z|[+-]\d{2}:?\d{2})?)?$/.exec(
+    input,
+  );
+  const ymd = parts && /^(\d{4})-(\d{2})-(\d{2})$/.exec(parts[1]!);
+  const dmy = parts && /^(\d{2})-(\d{2})-(\d{4})$/.exec(parts[1]!);
+  const day = ymd ? parts![1]! : dmy ? `${dmy[3]}-${dmy[2]}-${dmy[1]}` : "";
+  // No offset means UTC, so a bare date still lands on midnight UTC as before.
+  const time = parts?.[2] ? padSeconds(parts[2]) : "00:00:00";
+  const zone = parts?.[3] ? normalizeZone(parts[3]) : "Z";
+  const date = new Date(`${day}T${time}${zone}`);
 
-  if (
-    !normalized ||
-    Number.isNaN(date.getTime()) ||
-    date.toISOString().slice(0, 10) !== normalized
-  ) {
-    throw usageFailure("--date must use YYYY-MM-DD or DD-MM-YYYY", usage);
+  if (!day || Number.isNaN(date.getTime()) || !landsOnDay(day, zone)) {
+    throw usageFailure(DATE_FORMATS, usage);
   }
   return date.toISOString();
+}
+
+function padSeconds(time: string) {
+  return time.length === 5 ? `${time}:00` : time;
+}
+
+function normalizeZone(zone: string) {
+  return zone === "Z" || zone.includes(":")
+    ? zone
+    : `${zone.slice(0, 3)}:${zone.slice(3)}`;
+}
+
+// Date rolls 31-02 over into March rather than rejecting it, so compare the
+// wall-clock day back against what was asked for.
+function landsOnDay(day: string, zone: string) {
+  const midnight = new Date(`${day}T00:00:00${zone}`);
+  if (Number.isNaN(midnight.getTime())) return false;
+  const wall = new Date(midnight.getTime() + offsetMs(zone));
+  return wall.toISOString().slice(0, 10) === day;
+}
+
+function offsetMs(zone: string) {
+  if (zone === "Z") return 0;
+  const [hours, minutes] = zone.slice(1).split(":");
+  const sign = zone.startsWith("-") ? -1 : 1;
+  return sign * (Number(hours) * 60 + Number(minutes)) * 60_000;
 }
 
 export function repeatedStrings(value: unknown) {

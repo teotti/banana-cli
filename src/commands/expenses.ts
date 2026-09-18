@@ -32,6 +32,8 @@ import {
 const SPLIT_TYPES = "equal|custom|percentage|shares";
 const NAMES_NOTE =
   "--currency, --group, --paid-by and --split take a code, a name or a\nprefix of one, as well as an id. `--paid-by me` is you.";
+const DATE_NOTE =
+  "--date takes YYYY-MM-DD or DD-MM-YYYY, and accepts a time after a T\n(2026-09-16T21:20:00). Without one the expense lands at midnight UTC;\nwithout an offset the time is read as UTC.";
 const ADD_HELP = helpText({
   summary: "Add an expense and split it between people.",
   usage: [
@@ -43,7 +45,7 @@ const ADD_HELP = helpText({
     ["--title TEXT", "What the expense was for (required)"],
     ["--amount AMOUNT", "Total amount (required)"],
     ["--currency CODE", "Currency of the amount (required)"],
-    ["--date DATE", "YYYY-MM-DD or DD-MM-YYYY (required)"],
+    ["--date DATE", "When it happened, with an optional time (required)"],
     ["--paid-by WHO", "Who paid (default: you)"],
     ["--group NAME", "Charge the expense to a group"],
     ["--description TEXT", "Longer note"],
@@ -53,6 +55,7 @@ const ADD_HELP = helpText({
   notes: [
     "The splits must add up to --amount. Without --group at least one\n--split is required.",
     NAMES_NOTE,
+    DATE_NOTE,
   ],
   examples: [
     'banana expenses add --title Dinner --amount 42 --currency EUR \\',
@@ -116,7 +119,7 @@ const EDIT_HELP = helpText({
     ["--amount AMOUNT", "Total amount"],
     ["--currency CODE", "Currency of the amount"],
     ["--paid-by WHO", "Who paid"],
-    ["--date DATE", "YYYY-MM-DD or DD-MM-YYYY"],
+    ["--date DATE", "When it happened, with an optional time"],
     ["--description TEXT", "Longer note"],
     ["--group NAME", "Move the expense to a group"],
     ["--no-group", "Detach the expense from its group"],
@@ -126,6 +129,7 @@ const EDIT_HELP = helpText({
   notes: [
     "Only the fields you pass change; everything else keeps its current value.\nChanging --amount means passing splits that add up to the new total.",
     NAMES_NOTE,
+    DATE_NOTE,
   ],
   examples: [
     "banana expenses edit <expense-id> --title Groceries",

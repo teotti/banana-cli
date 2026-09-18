@@ -413,6 +413,14 @@ describe("BananaSplit CLI", () => {
         "--date",
         "31-02-2026",
       ],
+      [
+        "payments", "add", "--amount", "10", "--currency", "EUR",
+        "--from", "me", "--to", "Ana", "--date", "2026-09-16T25:00",
+      ],
+      [
+        "payments", "add", "--amount", "10", "--currency", "EUR",
+        "--from", "me", "--to", "Ana", "--date", "2026-09-16T21:20:00CET",
+      ],
     ];
 
     for (const args of cases) {
@@ -420,7 +428,7 @@ describe("BananaSplit CLI", () => {
       expect(await runCli(["--json", ...args], runtime)).toBe(2);
       expect(calls).toHaveLength(0);
       expect(JSON.parse(stderr[0]).error.message).toBe(
-        "--date must use YYYY-MM-DD or DD-MM-YYYY",
+        "--date must use YYYY-MM-DD or DD-MM-YYYY, optionally with a time (2026-09-16T21:20:00)",
       );
     }
   });

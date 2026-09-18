@@ -127,6 +127,40 @@ describe("BananaSplit CLI", () => {
     expect(calls).toHaveLength(0);
   });
 
+  it("carries a time on --date through to the request", async () => {
+    const cases: [string, string][] = [
+      ["2026-09-16", "2026-09-16T00:00:00.000Z"],
+      ["16-09-2026", "2026-09-16T00:00:00.000Z"],
+      ["2026-09-16T21:20", "2026-09-16T21:20:00.000Z"],
+      ["2026-09-16T21:20:30", "2026-09-16T21:20:30.000Z"],
+      ["2026-09-16T21:20:30.500", "2026-09-16T21:20:30.500Z"],
+      ["2026-09-16T21:20:00Z", "2026-09-16T21:20:00.000Z"],
+      ["2026-09-16T21:20:00+02:00", "2026-09-16T19:20:00.000Z"],
+      ["16-09-2026T21:20:00-03:00", "2026-09-17T00:20:00.000Z"],
+    ];
+
+    for (const [input, expected] of cases) {
+      const { calls, runtime } = harness((url, init) => {
+        const answer = lookup(url, init);
+        return answer ?? Response.json({ id: "expense-1" });
+      });
+
+      expect(
+        await runCli(
+          [
+            "--json", "expenses", "add", "--title", "Dinner",
+            "--amount", "10", "--currency", "EUR", "--paid-by", "me",
+            "--date", input, "--group", "Lisbon",
+          ],
+          runtime,
+        ),
+      ).toBe(0);
+
+      const post = calls.find(({ init }) => init?.method === "POST")!;
+      expect(JSON.parse(String(post.init?.body)).date).toBe(expected);
+    }
+  });
+
   it("adds an expense, naming the currency, group and people", async () => {
     const created = {
       id: "expense-1",
