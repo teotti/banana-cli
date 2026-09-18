@@ -19,7 +19,7 @@ import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
 import { colorizeHelp, errorText, helpHeader, helpText } from "./help";
-import { DEFAULT_API_URL, request } from "./request";
+import { request } from "./request";
 import { resolveReferences } from "./resolve";
 import { asArray, asRecord, usageFailure } from "./shared";
 import {
@@ -91,8 +91,7 @@ const ROOT_HELP = helpText({
     {
       title: "ENVIRONMENT",
       rows: [
-        ["BANANASPLIT_API_URL", `API base URL (default: ${DEFAULT_API_URL})`],
-        ["BANANASPLIT_AUTH_URL", "Auth base URL (default: API origin + /api)"],
+        ["BANANASPLIT_NO_KEYCHAIN", "Store credentials in a file, not the macOS keychain"],
       ],
     },
   ],
