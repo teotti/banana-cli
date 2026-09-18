@@ -84,6 +84,7 @@ export interface CliRuntime {
   stdout?: OutputWriter;
   timeoutMs?: number;
   update?: () => Promise<string>;
+  uninstall?: (command: { yes: boolean }) => Promise<string>;
   installSkill?: (
     command: {
       agents?: string[];

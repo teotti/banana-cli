@@ -19,6 +19,7 @@ import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
 import { version as CLI_VERSION } from "../package.json";
+import { uninstallCli } from "./uninstall";
 import { colorizeHelp, errorText, helpHeader, helpText } from "./help";
 import { request } from "./request";
 import { resolveReferences } from "./resolve";
@@ -83,6 +84,7 @@ const ROOT_HELP = helpText({
         ["update", "Alias for `upgrade`"],
         ["skill install", "Install the agent skill for driving this CLI"],
         ["skill uninstall", "Remove the agent skill again"],
+        ["uninstall", "Remove the CLI and the login it stored"],
       ],
     },
     {
@@ -124,6 +126,18 @@ const AUTH_HELP: Record<"login" | "logout", string> = {
     examples: ["banana logout"],
   }),
 };
+
+const UNINSTALL_HELP = helpText({
+  summary: "Remove the CLI and the login it stored.",
+  usage: ["banana uninstall [--yes]"],
+  options: [["--yes", "Do not ask before removing anything"]],
+  notes: [
+    "It removes the binary (or the npm package, however you installed it) and\nrevokes your login before deleting it.",
+    "The agent skill and, on Windows, the Path entry are named but left alone;\n`banana skill uninstall` removes the skill.",
+    "Without a terminal to ask in, it prints what it would remove and stops\nunless --yes is given.",
+  ],
+  examples: ["banana uninstall", "banana uninstall --yes"],
+});
 
 const VERSION_HELP = helpText({
   summary: "Print the installed version.",
@@ -200,6 +214,16 @@ ${ROOT_HELP}` };
     }
     throw usageFailure(`Unexpected argument: ${rest[0]}`, UPGRADE_HELP);
   }
+  if (name === "uninstall") {
+    if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
+      return { kind: "help" as const, text: UNINSTALL_HELP };
+    }
+    const yes = rest.length === 1 && (rest[0] === "--yes" || rest[0] === "-y");
+    if (rest.length === 0 || yes) {
+      return { kind: "uninstall" as const, yes };
+    }
+    throw usageFailure(`Unexpected argument: ${rest[0]}`, UNINSTALL_HELP);
+  }
   if (name === "version") {
     if (rest.length === 0) return { kind: "version" as const };
     if (rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h")) {
@@ -274,6 +298,7 @@ export async function runCli(
       (command.kind === "auth" ||
         command.kind === "update" ||
         command.kind === "version" ||
+        command.kind === "uninstall" ||
         command.kind === "skill") &&
       output.mode !== "human"
     ) {
@@ -286,7 +311,9 @@ export async function runCli(
               ? "skill"
               : command.kind === "version"
                 ? "version"
-                : "upgrade"
+                : command.kind === "uninstall"
+                  ? "uninstall"
+                  : "upgrade"
         }`,
       );
     }
@@ -309,6 +336,24 @@ export async function runCli(
       return 0;
     }
     const requestRuntime = createAuthRuntime(runtime);
+    if (command.kind === "uninstall") {
+      stdout(
+        await (runtime.uninstall ??
+          ((only: { yes: boolean }) =>
+            uninstallCli(only, {
+              // `logout` reports to the terminal; here its sentence belongs in
+              // the uninstall summary instead.
+              logout: async () => {
+                let said: string | undefined;
+                await logout(requestRuntime, env, (line) => {
+                  said = line;
+                });
+                return said;
+              },
+            })))(command),
+      );
+      return 0;
+    }
     if (command.kind === "auth") {
       if (command.action === "login") {
         await login(requestRuntime, env, stdout, stderr);

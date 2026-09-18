@@ -220,6 +220,24 @@ is actually on the machine — **detection is a directory stat, because
 version report every agent as missing. The unit tests stub that call, so they
 cannot catch it; check `banana skill install --list` against a real machine.
 
+## Uninstalling
+
+`banana uninstall` (`src/uninstall.ts`) removes the CLI and the login it
+stored. Two things it deliberately does not do: edit a shell profile, and
+remove the agent skill. The POSIX installer never writes to a profile — it
+only prints PATH advice — so there is nothing there to undo; Windows does set
+the user Path, and that entry is named rather than removed. The skill belongs
+to other tools' directories, so `banana skill uninstall` owns it.
+
+Order matters: revoking the login needs the network, so it happens *before*
+the binary goes. A failed revoke aborts with the CLI still installed, rather
+than stranding a live credential with no command left to revoke it.
+
+A running binary deleting itself is fine on POSIX and impossible on Windows,
+which defers to a detached `Wait-Process` — the same shape `upgrade` uses. A
+package install is removed by its package manager, never by deleting
+`execPath`, which there is Bun itself.
+
 ## Usage tracking
 
 There is **no client-side telemetry** and no analytics SDK. Usage is measured on

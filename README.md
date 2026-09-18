@@ -89,6 +89,14 @@ version. `--print` writes the skill to stdout without installing it.
 takes the same `--agent`, `--all` and `--dir` flags. A skill you have edited is
 left alone unless you pass `--force`.
 
+## Uninstalling
+
+`banana uninstall` removes the CLI and the login it stored — the binary if you
+installed one, or the npm package if you used Bun, revoking your login before
+deleting it. It lists what will go and asks first; `--yes` answers in advance,
+and without a terminal to ask in it prints the list and stops. The agent skill
+and, on Windows, the Path entry are named but left alone.
+
 The skill is embedded in the standalone binary and included in the npm package,
 so installing it needs no additional download.
 
@@ -162,6 +170,7 @@ banana expenses get EXPENSE_ID
 banana payments get PAYMENT_ID
 banana skill install
 banana logout
+banana uninstall
 ```
 
 Currencies, groups and people are named wherever a command takes one — by
