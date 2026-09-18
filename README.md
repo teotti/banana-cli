@@ -261,7 +261,9 @@ banana payments add '{"amount":"20","currencyId":"CURRENCY_ID","fromUserId":"USE
 ```
 
 Direct expenses require at least one `--split WHO=AMOUNT`. Group expenses
-may omit `--split` to use the group's configured default split.
+may omit `--split` to use the group's configured default split. `banana groups
+get` reports that default, and `banana groups members` each member's share of
+it.
 
 Commands print a clean, human-readable summary by default. Use `--json` for
 the same operational fields as compact JSON, or `--raw` for the complete API
