@@ -225,6 +225,17 @@ banana payments add --amount 20 --currency EUR \
   --description "Settle up"
 ```
 
+`--date` takes `YYYY-MM-DD` or `DD-MM-YYYY`, and accepts a time after a `T`
+with optional seconds, milliseconds and an offset. Without a time the row
+lands at midnight UTC; without an offset the time is read as UTC:
+
+```sh
+banana expenses add --title Coffee --amount 4 --currency EUR \
+  --date 2026-09-16T21:20:00 --split me=4
+
+banana expenses edit EXPENSE_ID --date 2026-09-16T21:20:00+02:00
+```
+
 Edit an expense in place. Only the fields you pass change; everything else
 keeps its current value:
 
