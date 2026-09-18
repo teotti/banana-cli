@@ -96,12 +96,6 @@ const ROOT_HELP = helpText({
         ["--raw", "Print the complete API response as JSON"],
       ],
     },
-    {
-      title: "ENVIRONMENT",
-      rows: [
-        ["BANANASPLIT_NO_KEYCHAIN", "Store credentials in a file, not the macOS keychain"],
-      ],
-    },
   ],
   notes: [
     "Currencies, groups and people are named by code, name or prefix\nwherever a command takes one — ids work too, and `me` is you.",

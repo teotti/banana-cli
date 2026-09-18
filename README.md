@@ -127,7 +127,7 @@ Credentials are stored per API origin:
 
 - **macOS** — the login keychain, reached by running `/usr/bin/security`. Going
   through Apple's own binary keeps the keychain item usable after `banana
-  update` replaces the CLI binary; calling the keychain from the CLI itself
+  upgrade` replaces the CLI binary; calling the keychain from the CLI itself
   ties the item to that build and makes the next command block on a GUI
   prompt. Set `BANANASPLIT_NO_KEYCHAIN=1` to use the file store instead.
 - **Everywhere else** — a `0600` JSON file at
