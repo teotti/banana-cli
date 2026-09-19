@@ -16,6 +16,11 @@ export type Presentation =
   | "activities"
   | "expense-list"
   | "expense"
+  | "recurring-list"
+  | "recurring"
+  | "recurring-created"
+  | "recurring-updated"
+  | "recurring-deleted"
   | "payment"
   | "expense-updated"
   | "expense-created"
@@ -126,9 +131,10 @@ export type RequestCommand = {
   path: string;
   presentation: Presentation;
   query?: URLSearchParams;
-  method?: "POST" | "PUT";
+  method?: "DELETE" | "POST" | "PUT";
   body?: unknown;
-  mergeExpense?: string;
+  /** A `PUT` replaces the whole row, so read `path` first and merge over it. */
+  merge?: { path: string; kind: "expense" | "recurring" };
   references?: Reference[];
   /** Narrows a listing the API cannot filter itself, before it is presented. */
   postFilter?: (body: unknown) => unknown;

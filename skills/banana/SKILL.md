@@ -99,6 +99,11 @@ show the names.
 | `banana expenses add` | `--title --amount --currency --date` required; `--paid-by --group --description --split-type --split` |
 | `banana expenses get <expense-id>` | one expense with payer and splits |
 | `banana expenses edit <expense-id>` | any subset of the add flags, plus `--no-group` |
+| `banana recurring list` (or `banana expenses recurring list`) | `--status all\|active\|inactive` — the rules, not the expenses they make |
+| `banana recurring add` | `--title --amount --currency --frequency --start --split` required; `--interval --end --paid-by --group --description --split-type` |
+| `banana recurring get <rule-id>` | one rule, its splits, and the expenses it created |
+| `banana recurring edit <rule-id>` | any subset of the add flags, plus `--no-group --no-end --active --inactive` |
+| `banana recurring delete <rule-id>` | removes the rule itself |
 | `banana payments add` | `--amount --currency --from --to --date` required; `--group --description` |
 | `banana payments get <payment-id>` | |
 | `banana groups [list]` | `--search TEXT --limit --cursor --archived --sort balance\|lastActivity` |
@@ -161,6 +166,40 @@ banana payments add --amount 20 --currency EUR \
 Successful expense, single-payment and group creates, and expense edits, normally
 read their detail back for `--json`. No extra `get` is needed. `--raw` skips that
 read; a payment response containing multiple rows retains a thin array shape.
+
+## Recurring expenses
+
+A recurring expense is two things: a **rule** that says what to create and how
+often, and the **expenses** it has created so far. `banana expenses add` writes
+a one-off expense and can never make it recurring; the rule is its own row under
+`banana recurring`, which `banana expenses recurring` also reaches.
+
+- **`--frequency` is `daily`, `weekly`, `monthly` or `yearly`**, and `--interval N`
+  makes it every N of those (`--frequency weekly --interval 2` is fortnightly).
+- **`--start` and `--end` take the same dates `--date` does**, `YYYY-MM-DD` or
+  `DD-MM-YYYY` with an optional time. `--start` is required; without `--end` the
+  rule runs indefinitely.
+- **`--split` is required, even with `--group`.** The splits are the template
+  every occurrence is created from, and they must add up to `--amount`.
+- **Pausing is not deleting.** `--inactive` stops a rule creating expenses and
+  leaves the ones it already created; `banana recurring delete` removes the rule.
+- A cleaned rule carries `nextOccurrence`, `lastGenerated` and `active`.
+  `banana expenses list --recurring --json` lists the expenses a rule created;
+  each one has `isRecurring`.
+
+```sh
+# rent, split with a flatmate, every month from October
+banana recurring add --title Rent --amount 900 --currency EUR \
+  --frequency monthly --start 2026-10-01 \
+  --split me=450 --split Ana=450 --json
+
+# stop it without losing the history
+banana recurring edit <rule-id> --inactive --json
+```
+
+The create endpoint answers with no row, so the CLI finds the rule it just wrote
+in the listing and reads it back. That is the one write whose `--json` shape can
+be wrong if two rules with the same title and amount are created at once.
 
 ## Paging
 

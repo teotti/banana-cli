@@ -84,6 +84,7 @@ export function isListPresentation(presentation: Presentation) {
     presentation === "balance-users" ||
     presentation === "currency-list" ||
     presentation === "expense-list" ||
+    presentation === "recurring-list" ||
     presentation === "friend-list" ||
     presentation === "group-list" ||
     presentation === "friend-groups" ||
