@@ -83,8 +83,9 @@ edit endpoint" conclusion.
 ## API conventions worth knowing
 
 - **No `PATCH` anywhere.** Edits are `PUT`, and `PUT` is a *full replace* — send
-  every field or they get cleared. The CLI's `expenses edit` handles this by
-  `GET`ting the row and merging the flags over it before the `PUT`.
+  every field or they get cleared. The CLI's `expenses edit` and `recurring
+  edit` handle this by `GET`ting the row and merging the flags over it before
+  the `PUT` (`merge` on a `RequestCommand` names the path and which merger).
 - **Write responses are thin.** `POST` and `PUT` return the flat DB row: no
   `shares`, no `paidByUser` / `group` / `currency` expansions. `GET` again if
   you need those for display — the CLI does this for you, see below.
@@ -109,6 +110,30 @@ edit endpoint" conclusion.
   it (`src/commands/groups.ts`), which is why that search works against
   production. `groups --search` and `friends --search` instead send `q` to the
   plain listing, so they stay staging-only until the API ships it.
+- **A recurring rule is its own row, not a flag on an expense.** The rules live
+  under `/expenses/recurring` (`GET` with `status=all|active|inactive`, `POST`,
+  and `GET`/`PUT`/`DELETE` on `/:id`); the expenses a rule generates are normal
+  `/expenses` rows carrying `recurringExpenseRuleId`, which is what
+  `expenses list --recurring` filters on. Two things about that endpoint set it
+  apart from every other write in this repo:
+  - **`POST /expenses/recurring` answers `201 Created` with no row and no id.**
+    Everything the CLI does after a write — read the row back, print names —
+    needs an id, so `findCreatedRecurring` takes the newest rule in the listing
+    that matches what was sent. It is the one write whose read-back can pick the
+    wrong row, and only if two matching rules are created at the same moment.
+  - **Rule rows carry ids where every other row carries expansions**: a
+    `currencyId` with no `currency`, a `paidById` with no `paidByUser`, a
+    `groupId` with no `group`. `nameRecurring` fills those in — first from the
+    occurrences on the detail route (`related`, which is the expenses the rule
+    created, each fully expanded), then from one wide page per kind
+    (`/currencies`, `/groups`, `/current-user` + `/friends`), fetched only when
+    a rule still needs it. A lookup that fails costs the name, not the command,
+    so the ids still print.
+  - `splits` is **required** on the create, unlike a plain expense, which a
+    group can split on the API's side. `recurring add` insists on `--split`
+    rather than guessing what an occurrence would be split into.
+- **`DELETE` exists here and nowhere else the CLI calls.** `recurring delete` is
+  the only command that sends one; a payment still cannot be deleted.
 - **`/currencies` takes no query params at all**, so `banana currencies
   --code`/`--search` fetches the one list and narrows it in the CLI.
 
@@ -167,7 +192,8 @@ Two conventions keep the output cheap to read:
 To add a command: update help and the relevant parser/presenter in
 `src/commands/`, and extend `Presentation` in `src/types.ts`. Register new
 command modules in `src/cli.ts`. Multi-step commands are wired in `runCli` —
-see `mergeExpenseBody` in `src/commands/expenses.ts` and the group members merge.
+see `mergeExpenseBody` in `src/commands/expenses.ts`, the group members merge,
+and the create-lookup and name-filling that `recurring` needs.
 Reuse helpers from `src/shared.ts`; interactive browsing lives in `src/browser.ts`.
 The browser keeps a stack of collections: a presenter's `browser.links` names the
 collections an item's detail view can drill into (a group offers members,

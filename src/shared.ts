@@ -93,11 +93,12 @@ export function requiredString(value: unknown, name: string, usage: string) {
   return value;
 }
 
-const DATE_FORMATS =
-  "--date must use YYYY-MM-DD or DD-MM-YYYY, optionally with a time (2026-09-16T21:20:00)";
+const dateFormats = (flag: string) =>
+  `${flag} must use YYYY-MM-DD or DD-MM-YYYY, optionally with a time (2026-09-16T21:20:00)`;
 
-export function isoDate(value: unknown, usage: string) {
-  const input = requiredString(value, "--date", usage);
+/** `--date` on an expense, `--start` and `--end` on a recurring rule. */
+export function isoDate(value: unknown, usage: string, flag = "--date") {
+  const input = requiredString(value, flag, usage);
   const parts = /^(\S+?)(?:[T ](\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?)(Z|[+-]\d{2}:?\d{2})?)?$/.exec(
     input,
   );
@@ -110,7 +111,7 @@ export function isoDate(value: unknown, usage: string) {
   const date = new Date(`${day}T${time}${zone}`);
 
   if (!day || Number.isNaN(date.getTime()) || !landsOnDay(day, zone)) {
-    throw usageFailure(DATE_FORMATS, usage);
+    throw usageFailure(dateFormats(flag), usage);
   }
   return date.toISOString();
 }

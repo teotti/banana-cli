@@ -72,6 +72,10 @@ const HELP = helpText({
     ["add", "Add an expense"],
     ["get <expense-id>", "Show one expense and its splits"],
     ["edit <expense-id>", "Change fields of an expense"],
+    ["recurring", "Rules that create an expense on a schedule"],
+  ],
+  notes: [
+    "An expense that repeats is a rule of its own: `banana recurring`, which\n`banana expenses recurring` also reaches. `banana expenses list --recurring`\nlists the expenses those rules created.",
   ],
   examples: [
     "banana expenses list --limit 10",
@@ -351,7 +355,7 @@ function parseExpensesEdit(args: string[]): ParsedCommand {
       method: "PUT",
       path,
       presentation: "expense-updated",
-      mergeExpense: path,
+      merge: { path, kind: "expense" },
       body: jsonBody,
     };
   }
@@ -407,13 +411,14 @@ function parseExpensesEdit(args: string[]): ParsedCommand {
     method: "PUT",
     path,
     presentation: "expense-updated",
-    mergeExpense: path,
+    merge: { path, kind: "expense" },
     body: patch,
     references,
   };
 }
 
-function splitEvenly(total: string, userIds: string[]) {
+/** Also what a recurring rule falls back to when its amount changes. */
+export function splitEvenly(total: string, userIds: string[]) {
   const cents = Math.round(Number(total) * 100);
   if (!Number.isFinite(cents) || userIds.length === 0) return undefined;
   const base = Math.floor(cents / userIds.length);

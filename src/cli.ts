@@ -18,6 +18,14 @@ import { friendPresenters, parseFriends } from "./commands/friends";
 import { groupPresenters, parseGroups } from "./commands/groups";
 import { mePresenters, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
+import {
+  findCreatedRecurring,
+  mergeRecurringBody,
+  nameRecurring,
+  parseRecurring,
+  RECURRING_PATH,
+  recurringPresenters,
+} from "./commands/recurring";
 import { version as CLI_VERSION } from "../package.json";
 import { formatChecks, overall, runDoctor } from "./doctor";
 import { uninstallCli } from "./uninstall";
@@ -58,6 +66,11 @@ const ROOT_HELP = helpText({
         ["expenses add", "Add an expense"],
         ["expenses get <expense-id>", "Show an expense"],
         ["expenses edit <expense-id>", "Edit an expense"],
+        ["recurring list", "List recurring expense rules"],
+        ["recurring add", "Add a recurring expense rule"],
+        ["recurring get <rule-id>", "Show a recurring rule"],
+        ["recurring edit <rule-id>", "Edit or pause a recurring rule"],
+        ["recurring delete <rule-id>", "Delete a recurring rule"],
         ["payments add", "Add a payment"],
         ["payments get <payment-id>", "Show a payment"],
       ],
@@ -161,9 +174,19 @@ const UPGRADE_HELP = helpText({
 /** Where a write's created row is read back from, to present it in full. */
 const CREATED_COLLECTIONS: Partial<Record<Presentation, string>> = {
   "expense-created": "/expenses",
+  "recurring-created": RECURRING_PATH,
   "group-created": "/groups",
   "payment-created": "/payments",
 };
+
+/** Presentations whose rows carry ids where every other row carries names. */
+const NAMED_RECURRING = new Set<Presentation>([
+  "recurring-list",
+  "recurring",
+  "recurring-created",
+  "recurring-updated",
+  "recurring-deleted",
+]);
 
 const COMMANDS: Record<string, CommandParser> = {
   balance: parseBalance,
@@ -173,6 +196,7 @@ const COMMANDS: Record<string, CommandParser> = {
   groups: parseGroups,
   me: parseMe,
   payments: parsePayments,
+  recurring: parseRecurring,
 };
 
 const PRESENTERS: Record<Presentation, Presenter> = {
@@ -182,6 +206,7 @@ const PRESENTERS: Record<Presentation, Presenter> = {
   ...friendPresenters,
   ...groupPresenters,
   ...expensePresenters,
+  ...recurringPresenters,
   ...paymentPresenters,
 };
 
@@ -210,6 +235,9 @@ function parseCommand(args: string[]) {
 ${ROOT_HELP}` };
   }
   if (args[0] === "balances") args = ["balance", "users", ...args.slice(1)];
+  // A rule is its own row, not an expense, so `recurring` is a command of its
+  // own — but it is under `expenses` that people look for it.
+  if (args[0] === "expenses" && args[1] === "recurring") args = args.slice(1);
   const [name, ...rest] = args;
   // `update` is what this command shipped as; `upgrade` is what people reach
   // for. Both run it, and the help page names the canonical one.
@@ -450,17 +478,19 @@ export async function runCli(
       );
     }
 
-    if (command.mergeExpense !== undefined) {
+    if (command.merge !== undefined) {
       const current = await request(
         {
           kind: "request",
-          path: command.mergeExpense,
-          presentation: "expense",
+          path: command.merge.path,
+          presentation: command.merge.kind === "recurring" ? "recurring" : "expense",
         },
         requestRuntime,
         env,
       );
-      command.body = mergeExpenseBody(
+      const mergeBody =
+        command.merge.kind === "recurring" ? mergeRecurringBody : mergeExpenseBody;
+      command.body = mergeBody(
         current,
         asRecord(command.body) as Record<string, unknown>,
       );
@@ -481,11 +511,33 @@ export async function runCli(
       // An optimal settlement answers with several rows and no single id.
       command.presentation = "payments-created";
     }
+    // `POST /expenses/recurring` answers `201 Created` with no row at all, so
+    // the id every read-back needs is found in the listing instead.
+    if (
+      output.mode !== "raw" &&
+      command.presentation === "recurring-created" &&
+      typeof asRecord(body).id !== "string"
+    ) {
+      body = findCreatedRecurring(
+        command.body,
+        await request(
+          {
+            kind: "request",
+            path: RECURRING_PATH,
+            presentation: "recurring-list",
+            query: new URLSearchParams({ status: "all" }),
+          },
+          requestRuntime,
+          env,
+        ),
+      );
+    }
     const createdId = created ? asRecord(body).id : undefined;
     const detailPath =
       output.mode === "raw"
         ? undefined
-        : command.presentation === "expense-updated"
+        : command.presentation === "expense-updated" ||
+            command.presentation === "recurring-updated"
           ? command.path
           : typeof createdId === "string"
             ? `${created}/${encodeURIComponent(createdId)}`
@@ -518,6 +570,18 @@ export async function runCli(
         env,
       );
       body = { ...asRecord(body), memberCount: asArray(members).length };
+    }
+
+    // A rule points at its currency, payer and group by id and nothing else,
+    // so the names the terminal prints are looked up here.
+    if (output.mode !== "raw" && NAMED_RECURRING.has(command.presentation)) {
+      body = await nameRecurring(body, (path, query) =>
+        request(
+          { kind: "request", path, presentation: "user", query },
+          requestRuntime,
+          env,
+        ),
+      );
     }
 
     if (command.postFilter) body = command.postFilter(body);
