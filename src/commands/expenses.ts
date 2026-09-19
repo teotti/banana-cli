@@ -72,6 +72,7 @@ const HELP = helpText({
     ["add", "Add an expense"],
     ["get <expense-id>", "Show one expense and its splits"],
     ["edit <expense-id>", "Change fields of an expense"],
+    ["delete <expense-id>", "Delete an expense"],
     ["recurring", "Rules that create an expense on a schedule"],
   ],
   notes: [
@@ -91,6 +92,15 @@ const GET_HELP = helpText({
     "banana expenses get <expense-id>",
     "banana expenses get <expense-id> --json",
   ],
+});
+const DELETE_HELP = helpText({
+  summary: "Delete an expense.",
+  usage: ["banana expenses delete <expense-id>"],
+  notes: [
+    "Deleting is permanent, and the expense leaves the balances of everyone it\nwas split with. There is no undo, so be sure of the id first —\n`banana expenses get <expense-id>` shows what it is.",
+    "The expense is read before it goes, so what is printed is the row that was\ndeleted rather than the ids the API answers a delete with.",
+  ],
+  examples: ["banana expenses delete <expense-id>"],
 });
 const LIST_HELP = helpText({
   summary: "List the expenses you are part of, newest first.",
@@ -169,6 +179,17 @@ export function parseExpenses(args: string[]): ParsedCommand {
       kind: "request",
       path: `/expenses/${encodeURIComponent(positionals[0])}`,
       presentation: "expense",
+    };
+  }
+  if (command === "delete") {
+    if (wantsHelp(rest)) return { kind: "help", text: DELETE_HELP };
+    const { positionals } = parseOptions(rest, {}, DELETE_HELP);
+    requirePositionals(positionals, 1, DELETE_HELP);
+    return {
+      kind: "request",
+      method: "DELETE",
+      path: `/expenses/${encodeURIComponent(positionals[0])}`,
+      presentation: "expense-deleted",
     };
   }
   if (command === "edit") return parseExpensesEdit(rest);
@@ -623,7 +644,17 @@ export const expensePresenters = {
     clean: cleanExpense,
     format: (body) => formatExpense(body, "Expense created"),
   },
+  // Read before it was deleted, so this is the row in full rather than the
+  // flat one the delete itself answers with.
+  "expense-deleted": {
+    clean: cleanExpense,
+    format: (body) => formatExpense(body, "Expense deleted"),
+  },
 } satisfies Record<
-  "expense-list" | "expense" | "expense-updated" | "expense-created",
+  | "expense-list"
+  | "expense"
+  | "expense-updated"
+  | "expense-created"
+  | "expense-deleted",
   Presenter
 >;

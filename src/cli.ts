@@ -66,6 +66,7 @@ const ROOT_HELP = helpText({
         ["expenses add", "Add an expense"],
         ["expenses get <expense-id>", "Show an expense"],
         ["expenses edit <expense-id>", "Edit an expense"],
+        ["expenses delete <expense-id>", "Delete an expense"],
         ["recurring list", "List recurring expense rules"],
         ["recurring add", "Add a recurring expense rule"],
         ["recurring get <rule-id>", "Show a recurring rule"],
@@ -495,7 +496,18 @@ export async function runCli(
         asRecord(command.body) as Record<string, unknown>,
       );
     }
+    // A deleted row cannot be read back, so the receipt is read before the
+    // delete rather than after it — what goes is named, not just an id.
+    const receipt =
+      output.mode !== "raw" && command.presentation === "expense-deleted"
+        ? await request(
+            { kind: "request", path: command.path, presentation: "expense" },
+            requestRuntime,
+            env,
+          )
+        : undefined;
     let body = await request(command, requestRuntime, env);
+    if (receipt !== undefined) body = receipt;
 
     // A write answers with the flat DB row: currency ids instead of codes, no
     // names, no shares. Reading the row back here is what lets one command
