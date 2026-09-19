@@ -13,7 +13,7 @@ detail commands still require their row ids.
 
 Check whether `banana` is available with `banana --help`. If it is missing, install
 it with the standalone installer for the current platform. It needs no Bun or
-Node runtime, and is the install to use unless the user asks for another.
+Node runtime, and is always the first thing to try.
 
 macOS or Linux:
 
@@ -27,11 +27,18 @@ Windows PowerShell:
 irm https://github.com/teotti/banana-cli/releases/latest/download/install.ps1 | iex
 ```
 
-Only if the user asks for a package install, and Bun is already there:
+Use the package install only as a fallback, when the installer above fails
+(no `curl`, no release for the platform, a blocked download) and Bun is already
+there:
 
 ```sh
 bun install -g @bananasplitapp/cli
 ```
+
+It installs the CLI as a TypeScript entry point that Bun runs, so Bun reads the
+current directory's `tsconfig.json` on every command and may print warnings
+about it around Banana's output. The standalone binary carries its own compiled
+code and stays quiet.
 
 Verify the installation with `banana --help`. If the shell cannot find the
 standalone binary yet, use its full path: `~/.local/bin/banana` on macOS/Linux,
