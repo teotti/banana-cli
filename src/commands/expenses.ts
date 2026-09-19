@@ -72,6 +72,7 @@ const HELP = helpText({
     ["add", "Add an expense"],
     ["get <expense-id>", "Show one expense and its splits"],
     ["edit <expense-id>", "Change fields of an expense"],
+    ["delete <expense-id>", "Delete an expense"],
     ["restore <expense-id>", "Bring a deleted expense back"],
     ["recurring", "Rules that create an expense on a schedule"],
   ],
@@ -92,6 +93,15 @@ const GET_HELP = helpText({
     "banana expenses get <expense-id>",
     "banana expenses get <expense-id> --json",
   ],
+});
+const DELETE_HELP = helpText({
+  summary: "Delete an expense.",
+  usage: ["banana expenses delete <expense-id>"],
+  notes: [
+    "The expense leaves the balances of everyone it was split with. It is not\ngone for good — `banana expenses restore <expense-id>` brings it back — but\nnothing lists deleted expenses, so note the id before you delete.",
+    "The expense is read before it goes, so what is printed is the row that was\ndeleted rather than the ids the API answers a delete with.",
+  ],
+  examples: ["banana expenses delete <expense-id>"],
 });
 const RESTORE_HELP = helpText({
   summary: "Bring a deleted expense back, with the shares it had.",
@@ -182,6 +192,17 @@ export function parseExpenses(args: string[]): ParsedCommand {
       kind: "request",
       path: `/expenses/${encodeURIComponent(positionals[0])}`,
       presentation: "expense",
+    };
+  }
+  if (command === "delete") {
+    if (wantsHelp(rest)) return { kind: "help", text: DELETE_HELP };
+    const { positionals } = parseOptions(rest, {}, DELETE_HELP);
+    requirePositionals(positionals, 1, DELETE_HELP);
+    return {
+      kind: "request",
+      method: "DELETE",
+      path: `/expenses/${encodeURIComponent(positionals[0])}`,
+      presentation: "expense-deleted",
     };
   }
   if (command === "restore") {
@@ -647,6 +668,12 @@ export const expensePresenters = {
     clean: cleanExpense,
     format: (body) => formatExpense(body, "Expense created"),
   },
+  // Read before it was deleted, so this is the row in full rather than the
+  // flat one the delete itself answers with.
+  "expense-deleted": {
+    clean: cleanExpense,
+    format: (body) => formatExpense(body, "Expense deleted"),
+  },
   // Unlike the other writes, a restore answers with the whole detail already,
   // shares and expansions included, so there is nothing to read back.
   "expense-restored": {
@@ -658,6 +685,7 @@ export const expensePresenters = {
   | "expense"
   | "expense-updated"
   | "expense-created"
+  | "expense-deleted"
   | "expense-restored",
   Presenter
 >;

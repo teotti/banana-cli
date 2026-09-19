@@ -582,4 +582,72 @@ describe("BananaSplit CLI", () => {
     expect(stderr[1]).toContain("--group and --no-group cannot be used together");
   });
 
+  it("reads an expense before deleting it, and reports the row that went", async () => {
+    const expense = {
+      id: "expense-1",
+      title: "Dinner",
+      amount: "42.000000000000000000",
+      currency: { code: "EUR" },
+      paidByUser: { id: "user-1", name: "Leonardo" },
+      group: { name: "Lisbon trip" },
+      date: "2026-09-01T00:00:00.000Z",
+      splitType: "equal",
+      shares: [{ userId: "user-1", amount: "42", user: { id: "user-1", name: "Leonardo" } }],
+    };
+    const { calls, runtime, stdout } = harness((_url, init) =>
+      Response.json(init?.method === "DELETE" ? { id: "expense-1" } : expense),
+    );
+
+    expect(await runCli(["expenses", "delete", "expense-1"], runtime)).toBe(0);
+
+    expect(calls.map(({ url, init }) => [url.pathname, init?.method ?? "GET"])).toEqual([
+      ["/base/expenses/expense-1", "GET"],
+      ["/base/expenses/expense-1", "DELETE"],
+    ]);
+    // The flat row a delete answers with has neither of these.
+    expect(stdout[0]).toContain("Expense deleted");
+    expect(stdout[0]).toContain("42.00 EUR");
+    expect(stdout[0]).toContain("Leonardo");
+    expect(stdout[0]).toContain("Lisbon trip");
+  });
+
+  it("--raw answers with the delete's own response and reads nothing first", async () => {
+    const { calls, runtime, stdout } = harness((_url, init) =>
+      Response.json(init?.method === "DELETE" ? { id: "expense-1" } : { title: "Dinner" }),
+    );
+
+    expect(await runCli(["expenses", "delete", "expense-1", "--raw"], runtime)).toBe(0);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].init?.method).toBe("DELETE");
+    expect(JSON.parse(stdout[0])).toEqual({ id: "expense-1" });
+  });
+
+  it("will not delete without an id, or with more than one", async () => {
+    const { calls, runtime, stderr } = harness();
+
+    expect(await runCli(["expenses", "delete"], runtime)).toBe(2);
+    expect(await runCli(["expenses", "delete", "one", "two"], runtime)).toBe(2);
+
+    expect(calls).toEqual([]);
+    expect(stderr[0]).toContain("Expected 1 argument, got 0");
+    expect(stderr[1]).toContain("Unexpected argument: two");
+  });
+
+  it("reports a delete the API refuses without claiming the row went", async () => {
+    const { runtime, stderr } = harness((_url, init) =>
+      init?.method === "DELETE"
+        ? Response.json({ message: "Only the creator can delete this expense" }, { status: 403 })
+        : Response.json({ id: "expense-1", title: "Dinner" }),
+    );
+
+    expect(await runCli(["expenses", "delete", "expense-1", "--json"], runtime)).toBe(1);
+
+    expect(JSON.parse(stderr[0]).error).toMatchObject({
+      type: "api",
+      status: 403,
+      message: "Only the creator can delete this expense",
+    });
+  });
+
 });
