@@ -84,6 +84,12 @@ be deleted from the CLI, so establish the amount, currency, date, direction and
 group (if any) before recording one. A clear request with those details supplies
 authorization; a balance inquiry alone does not.
 
+Deleting an expense is permanent and has no undo. It leaves the balances of
+everyone it was split with, and they see it go. Delete only what the user asked
+you to delete, by an id you confirmed with `banana expenses get` — never one
+inferred from a description alone. If the user named an expense rather than an
+id, show them the row you matched and let them confirm before deleting it.
+
 **4. Report names and currency codes to the user.** Cleaned shapes have both
 (`paidById` + `paidBy`, `groupId` + `group`, `userId` + `user`), and the id keys are
 exactly the fields the write endpoints take. When you show results to the user,
@@ -99,6 +105,7 @@ show the names.
 | `banana expenses add` | `--title --amount --currency --date` required; `--paid-by --group --description --split-type --split` |
 | `banana expenses get <expense-id>` | one expense with payer and splits |
 | `banana expenses edit <expense-id>` | any subset of the add flags, plus `--no-group` |
+| `banana expenses delete <expense-id>` | permanent, and changes everyone's balance — confirm with the user first |
 | `banana recurring list` (or `banana expenses recurring list`) | `--status all\|active\|inactive` — the rules, not the expenses they make |
 | `banana recurring add` | `--title --amount --currency --frequency --start --split` required; `--interval --end --paid-by --group --description --split-type` |
 | `banana recurring get <rule-id>` | one rule, its splits, and the expenses it created |

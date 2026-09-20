@@ -638,6 +638,7 @@ describe("the skill stays in step with the CLI", () => {
     ["expenses", "add"],
     ["expenses", "get"],
     ["expenses", "edit"],
+    ["expenses", "delete"],
     ["recurring", "list"],
     ["recurring", "add"],
     ["recurring", "get"],

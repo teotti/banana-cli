@@ -132,8 +132,14 @@ edit endpoint" conclusion.
   - `splits` is **required** on the create, unlike a plain expense, which a
     group can split on the API's side. `recurring add` insists on `--split`
     rather than guessing what an occurrence would be split into.
-- **`DELETE` exists here and nowhere else the CLI calls.** `recurring delete` is
-  the only command that sends one; a payment still cannot be deleted.
+- **Two commands send a `DELETE`**: `expenses delete` and `recurring delete`.
+  The API also has `DELETE`/`PUT` on `/payments/:id`, which the CLI does not
+  expose — a payment still cannot be deleted or edited from it.
+- **A delete answers with the flat row, and the row is gone.** There is nothing
+  to read back afterwards, so `expenses delete` reads the expense *before* the
+  delete and prints that: the receipt names the payer, the group and the
+  currency the flat row only has ids for. `--raw` skips the read and prints
+  what the delete itself answered.
 - **`/currencies` takes no query params at all**, so `banana currencies
   --code`/`--search` fetches the one list and narrows it in the CLI.
 
