@@ -65,7 +65,7 @@ const ADD_HELP = helpText({
   ],
 });
 const HELP = helpText({
-  summary: "List, add, inspect, edit and restore your expenses.",
+  summary: "List, add, inspect, edit, delete and restore your expenses.",
   usage: ["banana expenses <command> [flags]"],
   commands: [
     ["list", "List your expenses"],
