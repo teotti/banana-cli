@@ -122,7 +122,7 @@ describe("BananaSplit CLI", () => {
       expect(await runCli(args, runtime)).toBe(0);
     }
     expect(stdout.every((text) => text.includes("expenses list"))).toBe(true);
-    expect(stdout[1]).toContain("add                Add an expense");
+    expect(stdout[1]).toContain("add                   Add an expense");
     expect(stdout[2]).toContain("--no-recurring");
     expect(calls).toHaveLength(0);
   });
@@ -381,6 +381,51 @@ describe("BananaSplit CLI", () => {
     expect(stdout[0]).toContain("Leonardo  22.00 EUR");
     expect(stdout[0]).toContain("Ana       20.00 EUR");
     expect(stdout[0]).not.toContain("user-2");
+  });
+
+  it("restores a deleted expense with no body and no read-back", async () => {
+    const { calls, runtime, stdout } = harness(
+      Response.json({
+        id: "expense-1",
+        title: "Dinner",
+        amount: "42.000000000000000000",
+        currency: { code: "EUR" },
+        paidByUser: { id: "user-1", name: "Leonardo" },
+        date: "2026-09-01T00:00:00.000Z",
+        splitType: "custom",
+        shares: [
+          { userId: "user-1", amount: "22", user: { id: "user-1", name: "Leonardo" } },
+          { userId: "user-2", amount: "20", user: { id: "user-2", name: "Ana" } },
+        ],
+      }),
+    );
+
+    expect(await runCli(["expenses", "restore", "expense-1"], runtime)).toBe(0);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url.pathname).toBe("/base/expenses/expense-1/restore");
+    expect(calls[0].init?.method).toBe("POST");
+    expect(calls[0].init?.body).toBeUndefined();
+    expect(stdout[0]).toContain("Expense restored");
+    expect(stdout[0]).toContain("Paid by:     Leonardo");
+    expect(stdout[0]).toContain("Ana       20.00 EUR");
+  });
+
+  it("surfaces a refused restore without retrying it", async () => {
+    const { calls, runtime, stderr } = harness(
+      new Response("Cannot restore this expense safely", { status: 409 }),
+    );
+
+    expect(await runCli(["expenses", "restore", "expense-1"], runtime)).toBe(1);
+    expect(calls).toHaveLength(1);
+    expect(stderr[0]).toContain("Cannot restore this expense safely");
+  });
+
+  it("wants exactly one id to restore", async () => {
+    const { calls, runtime, stderr } = harness(Response.json({}));
+
+    expect(await runCli(["expenses", "restore"], runtime)).toBe(2);
+    expect(calls).toHaveLength(0);
+    expect(stderr[0]).toContain("banana expenses restore <expense-id>");
   });
 
   it("merges edited fields over the current expense before the PUT", async () => {

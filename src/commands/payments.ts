@@ -51,6 +51,7 @@ const HELP = helpText({
   commands: [
     ["add", "Record a payment"],
     ["get <payment-id>", "Show one payment"],
+    ["restore <payment-id>", "Bring a deleted payment back"],
   ],
   examples: [
     "banana payments get <payment-id>",
@@ -67,6 +68,18 @@ const GET_HELP = helpText({
     "banana payments get <payment-id> --json",
   ],
 });
+const RESTORE_HELP = helpText({
+  summary: "Bring a deleted payment back, with the ledger entries it had.",
+  usage: ["banana payments restore <payment-id>"],
+  notes: [
+    "Restoring a payment that is already active succeeds and changes nothing,\nso running it twice is safe.",
+    "There is no listing of deleted payments: take the id from an activity\nfeed or from a note of the payment you had.",
+  ],
+  examples: [
+    "banana payments restore <payment-id>",
+    "banana payments restore <payment-id> --json",
+  ],
+});
 
 export function parsePayments(args: string[]): ParsedCommand {
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
@@ -81,6 +94,17 @@ export function parsePayments(args: string[]): ParsedCommand {
       kind: "request",
       path: `/payments/${encodeURIComponent(positionals[0])}`,
       presentation: "payment",
+    };
+  }
+  if (command === "restore") {
+    if (wantsHelp(rest)) return { kind: "help", text: RESTORE_HELP };
+    const { positionals } = parseOptions(rest, {}, RESTORE_HELP);
+    requirePositionals(positionals, 1, RESTORE_HELP);
+    return {
+      kind: "request",
+      method: "POST",
+      path: `/payments/${encodeURIComponent(positionals[0])}/restore`,
+      presentation: "payment-restored",
     };
   }
   if (command !== "add") {
@@ -246,4 +270,13 @@ export const paymentPresenters = {
       );
     },
   },
-} satisfies Record<"payment" | "payment-created" | "payments-created", Presenter>;
+  // A restore answers with the whole detail, names and all, so unlike the
+  // other writes it needs no read-back.
+  "payment-restored": {
+    clean: cleanPayment,
+    format: (body) => formatPayment(body, "Payment restored"),
+  },
+} satisfies Record<
+  "payment" | "payment-created" | "payments-created" | "payment-restored",
+  Presenter
+>;

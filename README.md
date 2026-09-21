@@ -178,7 +178,9 @@ banana groups members "Lisbon trip"
 banana groups activities Lisbon --search dinner
 banana expenses list
 banana expenses get EXPENSE_ID
+banana expenses restore EXPENSE_ID
 banana payments get PAYMENT_ID
+banana payments restore PAYMENT_ID
 banana skill install
 banana logout
 banana uninstall
@@ -250,6 +252,19 @@ Moving an expense into a group with `--group` clears its direct friendship
 link; `--no-group` does the reverse. Changing `--amount` on an equal split
 redistributes the splits automatically; any other split type needs matching
 `--split` values.
+
+Bring back an expense or a payment that was deleted, with the shares or ledger
+entries it had:
+
+```sh
+banana expenses restore EXPENSE_ID
+banana payments restore PAYMENT_ID --json
+```
+
+Both take the id and no flags, and print the restored record in full. Restoring
+something that is already active succeeds and changes nothing, so running one
+twice is safe. There is no listing of deleted records, so the id has to come
+from an activity feed or from wherever you noted it down.
 
 Each create command also accepts its API body as one quoted JSON object. This
 form is the raw API shape, so it takes ids, not names:

@@ -65,13 +65,14 @@ const ADD_HELP = helpText({
   ],
 });
 const HELP = helpText({
-  summary: "List, add, inspect and edit your expenses.",
+  summary: "List, add, inspect, edit and restore your expenses.",
   usage: ["banana expenses <command> [flags]"],
   commands: [
     ["list", "List your expenses"],
     ["add", "Add an expense"],
     ["get <expense-id>", "Show one expense and its splits"],
     ["edit <expense-id>", "Change fields of an expense"],
+    ["restore <expense-id>", "Bring a deleted expense back"],
     ["recurring", "Rules that create an expense on a schedule"],
   ],
   notes: [
@@ -90,6 +91,18 @@ const GET_HELP = helpText({
   examples: [
     "banana expenses get <expense-id>",
     "banana expenses get <expense-id> --json",
+  ],
+});
+const RESTORE_HELP = helpText({
+  summary: "Bring a deleted expense back, with the shares it had.",
+  usage: ["banana expenses restore <expense-id>"],
+  notes: [
+    "Restoring an expense that is already active succeeds and changes nothing,\nso running it twice is safe.",
+    "There is no listing of deleted expenses: take the id from an activity\nfeed or from a note of the expense you had.",
+  ],
+  examples: [
+    "banana expenses restore <expense-id>",
+    "banana expenses restore <expense-id> --json",
   ],
 });
 const LIST_HELP = helpText({
@@ -169,6 +182,17 @@ export function parseExpenses(args: string[]): ParsedCommand {
       kind: "request",
       path: `/expenses/${encodeURIComponent(positionals[0])}`,
       presentation: "expense",
+    };
+  }
+  if (command === "restore") {
+    if (wantsHelp(rest)) return { kind: "help", text: RESTORE_HELP };
+    const { positionals } = parseOptions(rest, {}, RESTORE_HELP);
+    requirePositionals(positionals, 1, RESTORE_HELP);
+    return {
+      kind: "request",
+      method: "POST",
+      path: `/expenses/${encodeURIComponent(positionals[0])}/restore`,
+      presentation: "expense-restored",
     };
   }
   if (command === "edit") return parseExpensesEdit(rest);
@@ -623,7 +647,17 @@ export const expensePresenters = {
     clean: cleanExpense,
     format: (body) => formatExpense(body, "Expense created"),
   },
+  // Unlike the other writes, a restore answers with the whole detail already,
+  // shares and expansions included, so there is nothing to read back.
+  "expense-restored": {
+    clean: cleanExpense,
+    format: (body) => formatExpense(body, "Expense restored"),
+  },
 } satisfies Record<
-  "expense-list" | "expense" | "expense-updated" | "expense-created",
+  | "expense-list"
+  | "expense"
+  | "expense-updated"
+  | "expense-created"
+  | "expense-restored",
   Presenter
 >;
