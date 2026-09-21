@@ -29,6 +29,12 @@ import {
 
 /** Where every recurring rule lives; `/expenses` itself holds the occurrences. */
 export const RECURRING_PATH = "/expenses/recurring";
+/**
+ * The collection needs the trailing slash and the sub-routes must not have it.
+ * Without it the server matches `/expenses/:id` first and looks an expense up
+ * by the literal id "recurring", which answers 500 rather than 404.
+ */
+export const RECURRING_COLLECTION = `${RECURRING_PATH}/`;
 
 const FREQUENCIES = ["daily", "weekly", "monthly", "yearly"] as const;
 const SPLIT_TYPES = "equal|custom|percentage|shares";
@@ -243,7 +249,7 @@ function parseRecurringList(args: string[]): ParsedCommand {
   });
   return {
     kind: "request",
-    path: RECURRING_PATH,
+    path: RECURRING_COLLECTION,
     presentation: "recurring-list",
     query,
   };
@@ -257,7 +263,7 @@ function parseRecurringAdd(args: string[]): ParsedCommand {
     return {
       kind: "request",
       method: "POST",
-      path: RECURRING_PATH,
+      path: RECURRING_COLLECTION,
       presentation: "recurring-created",
       body: jsonBody,
     };
@@ -283,7 +289,7 @@ function parseRecurringAdd(args: string[]): ParsedCommand {
   return {
     kind: "request",
     method: "POST",
-    path: RECURRING_PATH,
+    path: RECURRING_COLLECTION,
     presentation: "recurring-created",
     body: {
       title: requiredString(values.title, "--title", ADD_HELP),

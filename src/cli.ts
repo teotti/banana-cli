@@ -23,6 +23,7 @@ import {
   mergeRecurringBody,
   nameRecurring,
   parseRecurring,
+  RECURRING_COLLECTION,
   RECURRING_PATH,
   recurringPresenters,
 } from "./commands/recurring";
@@ -525,7 +526,7 @@ export async function runCli(
         await request(
           {
             kind: "request",
-            path: RECURRING_PATH,
+            path: RECURRING_COLLECTION,
             presentation: "recurring-list",
             query: new URLSearchParams({ status: "all" }),
           },

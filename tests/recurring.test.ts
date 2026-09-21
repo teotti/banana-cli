@@ -49,10 +49,33 @@ function api(
 }
 
 describe("banana recurring", () => {
+  // The server matches `/expenses/:id` before the literal segment, so a
+  // collection request without the trailing slash is served as an expense
+  // lookup for the id "recurring" and answers 500.
+  it("sends the collection with a trailing slash and the sub-routes without one", async () => {
+    const { calls, runtime } = harness((url, init) =>
+      init?.method === "POST" || init?.method === "PUT"
+        ? Response.json({ id: "rule-1" })
+        : Response.json([]),
+    );
+
+    expect(await runCli(["recurring", "list"], runtime)).toBe(0);
+    expect(calls[0].url.pathname).toBe("/base/expenses/recurring/");
+
+    calls.length = 0;
+    expect(await runCli(["recurring", "get", "rule-1"], runtime)).toBe(0);
+    expect(calls[0].url.pathname).toBe("/base/expenses/recurring/rule-1");
+    expect(calls[0].url.pathname.endsWith("/")).toBe(false);
+
+    calls.length = 0;
+    expect(await runCli(["recurring", "delete", "rule-1"], runtime)).toBe(0);
+    expect(calls[0].url.pathname).toBe("/base/expenses/recurring/rule-1");
+  });
+
   it("lists rules with the names their ids stand for", async () => {
     const { calls, runtime, stdout } = harness(
       api((url) =>
-        url.pathname === "/base/expenses/recurring"
+        url.pathname === "/base/expenses/recurring/"
           ? Response.json([RULE])
           : undefined,
       ),
@@ -60,7 +83,7 @@ describe("banana recurring", () => {
 
     expect(await runCli(["recurring", "list"], runtime)).toBe(0);
 
-    expect(calls[0].url.pathname).toBe("/base/expenses/recurring");
+    expect(calls[0].url.pathname).toBe("/base/expenses/recurring/");
     expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
       status: "all",
     });
@@ -75,7 +98,7 @@ describe("banana recurring", () => {
   it("passes --status through and carries both ids and names in --json", async () => {
     const { calls, runtime, stdout } = harness(
       api((url) =>
-        url.pathname === "/base/expenses/recurring"
+        url.pathname === "/base/expenses/recurring/"
           ? Response.json([RULE])
           : undefined,
       ),
@@ -174,7 +197,7 @@ describe("banana recurring", () => {
   it("reads an interval back as the schedule it describes", async () => {
     const { runtime, stdout } = harness(
       api((url) =>
-        url.pathname === "/base/expenses/recurring"
+        url.pathname === "/base/expenses/recurring/"
           ? Response.json([{ ...RULE, frequency: "weekly", interval: 2 }])
           : undefined,
       ),
@@ -188,7 +211,7 @@ describe("banana recurring", () => {
   it("adds a rule by name and reads the row the create does not answer with", async () => {
     const { calls, runtime, stdout } = harness(
       api((url, init) => {
-        if (url.pathname === "/base/expenses/recurring") {
+        if (url.pathname === "/base/expenses/recurring/") {
           return init?.method === "POST"
             ? new Response("Created", { status: 201 })
             : Response.json([RULE]);
@@ -212,7 +235,7 @@ describe("banana recurring", () => {
     ).toBe(0);
 
     const post = calls.find(({ init }) => init?.method === "POST")!;
-    expect(post.url.pathname).toBe("/base/expenses/recurring");
+    expect(post.url.pathname).toBe("/base/expenses/recurring/");
     expect(JSON.parse(String(post.init?.body))).toEqual({
       title: "Rent",
       amount: "900",
@@ -238,9 +261,9 @@ describe("banana recurring", () => {
   it("takes an --interval and an --end date", async () => {
     const { calls, runtime } = harness(
       api((url, init) =>
-        url.pathname === "/base/expenses/recurring" && init?.method === "POST"
+        url.pathname === "/base/expenses/recurring/" && init?.method === "POST"
           ? new Response("Created", { status: 201 })
-          : url.pathname === "/base/expenses/recurring"
+          : url.pathname === "/base/expenses/recurring/"
             ? Response.json([])
             : undefined,
       ),
@@ -435,14 +458,14 @@ describe("banana recurring", () => {
     expect(stdout[0]).toContain("Recurring expense deleted");
     // Nothing is read back from a row that no longer exists.
     expect(
-      calls.some(({ url }) => url.pathname === "/base/expenses/recurring"),
+      calls.some(({ url }) => url.pathname === "/base/expenses/recurring/"),
     ).toBe(false);
   });
 
   it("--raw answers with the API's own response and looks up no names", async () => {
     const { calls, runtime, stdout } = harness(
       api((url) =>
-        url.pathname === "/base/expenses/recurring"
+        url.pathname === "/base/expenses/recurring/"
           ? Response.json([RULE])
           : undefined,
       ),
@@ -456,7 +479,7 @@ describe("banana recurring", () => {
 
   it("keeps the ids when a name lookup fails", async () => {
     const { runtime, stdout } = harness((url) =>
-      url.pathname === "/base/expenses/recurring"
+      url.pathname === "/base/expenses/recurring/"
         ? Response.json([RULE])
         : new Response("nope", { status: 500 }),
     );
@@ -476,7 +499,7 @@ describe("banana recurring", () => {
   it("answers to `expenses recurring` too, where people look for it", async () => {
     const { calls, runtime, stdout } = harness(
       api((url) =>
-        url.pathname === "/base/expenses/recurring"
+        url.pathname === "/base/expenses/recurring/"
           ? Response.json([RULE])
           : undefined,
       ),
@@ -484,7 +507,7 @@ describe("banana recurring", () => {
 
     expect(await runCli(["expenses", "recurring", "list", "--json"], runtime)).toBe(0);
 
-    expect(calls[0].url.pathname).toBe("/base/expenses/recurring");
+    expect(calls[0].url.pathname).toBe("/base/expenses/recurring/");
     expect(JSON.parse(stdout[0])[0]).toMatchObject({ id: "rule-1" });
 
     await runCli(["expenses", "recurring", "--help"], runtime);
