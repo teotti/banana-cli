@@ -24,7 +24,9 @@ export type Presentation =
   | "payment"
   | "expense-updated"
   | "expense-created"
+  | "expense-restored"
   | "payment-created"
+  | "payment-restored"
   | "payments-created"
   | "group-created";
 export type BrowserPresentation =

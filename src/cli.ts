@@ -66,6 +66,7 @@ const ROOT_HELP = helpText({
         ["expenses add", "Add an expense"],
         ["expenses get <expense-id>", "Show an expense"],
         ["expenses edit <expense-id>", "Edit an expense"],
+        ["expenses restore <expense-id>", "Restore a deleted expense"],
         ["recurring list", "List recurring expense rules"],
         ["recurring add", "Add a recurring expense rule"],
         ["recurring get <rule-id>", "Show a recurring rule"],
@@ -73,6 +74,7 @@ const ROOT_HELP = helpText({
         ["recurring delete <rule-id>", "Delete a recurring rule"],
         ["payments add", "Add a payment"],
         ["payments get <payment-id>", "Show a payment"],
+        ["payments restore <payment-id>", "Restore a deleted payment"],
       ],
     },
     {

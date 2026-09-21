@@ -9,11 +9,13 @@ export declare const appType: Elysia<"", {
     } & {
         expensesRepository: import("./lib/repositories").ExpensesRepository;
     } & {
-        recurringExpenseRulesRepository: import("./lib/repositories").RecurringExpenseRulesRepository;
+        recurringExpenseListService: import("./lib/services/recurring-expense-lists").RecurringExpenseListService;
     } & {
-        groupsRepository: import("./lib/repositories").GroupsRepository;
+        groupListService: import("./lib/services/group-lists").GroupListService;
     } & {
-        friendshipRepository: import("./lib/repositories").FriendshipsRepository;
+        groupPreferencesService: import("./lib/services/group-preferences").GroupPreferencesService;
+    } & {
+        friendListService: import("./lib/services/friend-lists").FriendListService;
     } & {
         currenciesRepository: import("./lib/repositories").CurrenciesRepository;
     } & {
@@ -91,7 +93,7 @@ export declare const appType: Elysia<"", {
     }>;
     macroFn: {
         readonly auth: {
-            readonly resolve: ({ request, status, store }: {
+            readonly resolve: ({ request, set, status, store }: {
                 body: unknown;
                 query: Record<string, string>;
                 params: {};
@@ -152,7 +154,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -280,7 +282,11 @@ export declare const appType: Elysia<"", {
             }) => Promise<import("elysia").ElysiaCustomStatusResponse<401, any, 401> | import("elysia").ElysiaCustomStatusResponse<403, {
                 code: string;
                 message: string;
-            }, 403> | {
+            }, 403> | import("elysia").ElysiaCustomStatusResponse<429, {
+                code: "RATE_LIMIT_EXCEEDED";
+                message: string;
+                retryAfterSeconds: number;
+            }, 429> | {
                 sessionUser: Omit<{
                     id: string;
                     name: string;
@@ -387,7 +393,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -543,7 +549,7 @@ export declare const appType: Elysia<"", {
                 route: string;
                 request: Request;
                 store: {};
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -684,7 +690,7 @@ export declare const appType: Elysia<"", {
     }>;
     macroFn: {
         readonly auth: {
-            readonly resolve: ({ request, status, store }: {
+            readonly resolve: ({ request, set, status, store }: {
                 body: unknown;
                 query: Record<string, string>;
                 params: {};
@@ -745,7 +751,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -873,7 +879,11 @@ export declare const appType: Elysia<"", {
             }) => Promise<import("elysia").ElysiaCustomStatusResponse<401, any, 401> | import("elysia").ElysiaCustomStatusResponse<403, {
                 code: string;
                 message: string;
-            }, 403> | {
+            }, 403> | import("elysia").ElysiaCustomStatusResponse<429, {
+                code: "RATE_LIMIT_EXCEEDED";
+                message: string;
+                retryAfterSeconds: number;
+            }, 429> | {
                 sessionUser: Omit<{
                     id: string;
                     name: string;
@@ -980,7 +990,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -1170,7 +1180,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -1312,7 +1322,7 @@ export declare const appType: Elysia<"", {
     }>;
     macroFn: {
         readonly auth: {
-            readonly resolve: ({ request, status, store }: {
+            readonly resolve: ({ request, set, status, store }: {
                 body: unknown;
                 query: Record<string, string>;
                 params: {};
@@ -1373,7 +1383,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -1501,7 +1511,11 @@ export declare const appType: Elysia<"", {
             }) => Promise<import("elysia").ElysiaCustomStatusResponse<401, any, 401> | import("elysia").ElysiaCustomStatusResponse<403, {
                 code: string;
                 message: string;
-            }, 403> | {
+            }, 403> | import("elysia").ElysiaCustomStatusResponse<429, {
+                code: "RATE_LIMIT_EXCEEDED";
+                message: string;
+                retryAfterSeconds: number;
+            }, 429> | {
                 sessionUser: Omit<{
                     id: string;
                     name: string;
@@ -1608,7 +1622,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -1798,7 +1812,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -1987,7 +2001,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -2129,7 +2143,7 @@ export declare const appType: Elysia<"", {
     }>;
     macroFn: {
         readonly auth: {
-            readonly resolve: ({ request, status, store }: {
+            readonly resolve: ({ request, set, status, store }: {
                 body: unknown;
                 query: Record<string, string>;
                 params: {};
@@ -2190,7 +2204,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -2318,7 +2332,11 @@ export declare const appType: Elysia<"", {
             }) => Promise<import("elysia").ElysiaCustomStatusResponse<401, any, 401> | import("elysia").ElysiaCustomStatusResponse<403, {
                 code: string;
                 message: string;
-            }, 403> | {
+            }, 403> | import("elysia").ElysiaCustomStatusResponse<429, {
+                code: "RATE_LIMIT_EXCEEDED";
+                message: string;
+                retryAfterSeconds: number;
+            }, 429> | {
                 sessionUser: Omit<{
                     id: string;
                     name: string;
@@ -2425,7 +2443,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -2615,7 +2633,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -2804,7 +2822,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -2945,7 +2963,7 @@ export declare const appType: Elysia<"", {
     }>;
     macroFn: {
         readonly auth: {
-            readonly resolve: ({ request, status, store }: {
+            readonly resolve: ({ request, set, status, store }: {
                 body: unknown;
                 query: Record<string, string>;
                 params: {};
@@ -3006,7 +3024,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -3134,7 +3152,11 @@ export declare const appType: Elysia<"", {
             }) => Promise<import("elysia").ElysiaCustomStatusResponse<401, any, 401> | import("elysia").ElysiaCustomStatusResponse<403, {
                 code: string;
                 message: string;
-            }, 403> | {
+            }, 403> | import("elysia").ElysiaCustomStatusResponse<429, {
+                code: "RATE_LIMIT_EXCEEDED";
+                message: string;
+                retryAfterSeconds: number;
+            }, 429> | {
                 sessionUser: Omit<{
                     id: string;
                     name: string;
@@ -3241,7 +3263,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -3431,7 +3453,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -3587,7 +3609,7 @@ export declare const appType: Elysia<"", {
     }>;
     macroFn: {
         readonly auth: {
-            readonly resolve: ({ request, status, store }: {
+            readonly resolve: ({ request, set, status, store }: {
                 body: unknown;
                 query: Record<string, string>;
                 params: {};
@@ -3648,7 +3670,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -3776,7 +3798,11 @@ export declare const appType: Elysia<"", {
             }) => Promise<import("elysia").ElysiaCustomStatusResponse<401, any, 401> | import("elysia").ElysiaCustomStatusResponse<403, {
                 code: string;
                 message: string;
-            }, 403> | {
+            }, 403> | import("elysia").ElysiaCustomStatusResponse<429, {
+                code: "RATE_LIMIT_EXCEEDED";
+                message: string;
+                retryAfterSeconds: number;
+            }, 429> | {
                 sessionUser: Omit<{
                     id: string;
                     name: string;
@@ -3883,7 +3909,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -4073,7 +4099,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -4305,7 +4331,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -4489,7 +4515,7 @@ export declare const appType: Elysia<"", {
     }>;
     macroFn: {
         readonly auth: {
-            readonly resolve: ({ request, status, store }: {
+            readonly resolve: ({ request, set, status, store }: {
                 body: unknown;
                 query: Record<string, string>;
                 params: {};
@@ -4550,7 +4576,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -4678,7 +4704,11 @@ export declare const appType: Elysia<"", {
             }) => Promise<import("elysia").ElysiaCustomStatusResponse<401, any, 401> | import("elysia").ElysiaCustomStatusResponse<403, {
                 code: string;
                 message: string;
-            }, 403> | {
+            }, 403> | import("elysia").ElysiaCustomStatusResponse<429, {
+                code: "RATE_LIMIT_EXCEEDED";
+                message: string;
+                retryAfterSeconds: number;
+            }, 429> | {
                 sessionUser: Omit<{
                     id: string;
                     name: string;
@@ -4785,7 +4815,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -4975,7 +5005,7 @@ export declare const appType: Elysia<"", {
                         userAgent?: string | null | undefined;
                     } | null;
                 };
-                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
+                status: <const Code extends number | keyof import("elysia").StatusMap, const T = Code extends 100 | 410 | 500 | 401 | 200 | 101 | 102 | 103 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 300 | 301 | 302 | 303 | 304 | 307 | 308 | 400 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 420 | 421 | 422 | 423 | 424 | 425 | 426 | 428 | 429 | 431 | 451 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511 ? {
                     readonly 100: "Continue";
                     readonly 101: "Switching Protocols";
                     readonly 102: "Processing";
@@ -5220,6 +5250,11 @@ export declare const appType: Elysia<"", {
                     code: string;
                     message: string;
                 };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
+                };
             };
         };
     };
@@ -5231,7 +5266,7 @@ export declare const appType: Elysia<"", {
             post: {
                 body: {
                     username?: string | undefined;
-                    locale?: "en-US" | "pt-PT" | undefined;
+                    locale?: "en-US" | "pt-PT" | "pt-BR" | "es" | undefined;
                     currencyId?: string | undefined;
                     name: string;
                     email: string;
@@ -5346,6 +5381,7 @@ export declare const appType: Elysia<"", {
                     response: {
                         200: {
                             limit: number;
+                            page: number;
                             items: ({
                                 createdAt: string;
                                 entityType: "user";
@@ -5452,7 +5488,6 @@ export declare const appType: Elysia<"", {
                                 };
                             })[];
                             metric: "latest";
-                            page: number;
                             totalItems: number;
                             totalPages: number;
                         };
@@ -5533,6 +5568,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     name: string;
                                     username: string | null;
@@ -5541,7 +5577,6 @@ export declare const appType: Elysia<"", {
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d";
                                 metric: "top-inviters";
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -5690,6 +5725,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     name: string;
                                     emailVerified: boolean;
@@ -5712,7 +5748,6 @@ export declare const appType: Elysia<"", {
                                     hasBio: boolean;
                                 }[];
                                 metric: "latest";
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -6175,6 +6210,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     date: string;
                                     amount: number;
@@ -6204,7 +6240,6 @@ export declare const appType: Elysia<"", {
                                     isRecurring: boolean;
                                 }[];
                                 metric: "latest";
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -6456,6 +6491,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     date: string;
                                     amount: number;
@@ -6482,7 +6518,6 @@ export declare const appType: Elysia<"", {
                                     } | null;
                                 }[];
                                 metric: "latest";
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -6619,10 +6654,10 @@ export declare const appType: Elysia<"", {
                             expenseCount: number;
                             paymentCount: number;
                             limit: number;
+                            page: number;
                             window: "all" | "24h" | "7d" | "30d" | "post-festival";
                             metric: string[];
                             groupCount: number;
-                            page: number;
                             totalPages: number;
                             joinedUserCount: number;
                             guestCreatedCount: number;
@@ -6668,6 +6703,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     name: string;
                                     emailVerified: boolean;
@@ -6691,7 +6727,6 @@ export declare const appType: Elysia<"", {
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
                                 metric: string[];
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -6726,6 +6761,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     name: string;
                                     createdAt: string;
@@ -6746,7 +6782,6 @@ export declare const appType: Elysia<"", {
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
                                 metric: string[];
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -6781,6 +6816,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     date: string;
                                     amount: number;
@@ -6811,7 +6847,6 @@ export declare const appType: Elysia<"", {
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
                                 metric: string[];
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -6846,6 +6881,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     date: string;
                                     amount: number;
@@ -6873,7 +6909,6 @@ export declare const appType: Elysia<"", {
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
                                 metric: string[];
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -6908,6 +6943,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     name: string;
                                     createdAt: string;
@@ -6920,7 +6956,6 @@ export declare const appType: Elysia<"", {
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
                                 metric: string[];
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -6955,6 +6990,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     name: string;
                                     emailVerified: boolean;
@@ -6978,7 +7014,6 @@ export declare const appType: Elysia<"", {
                                 }[];
                                 window: "all" | "24h" | "7d" | "30d" | "post-festival";
                                 metric: string[];
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -7047,6 +7082,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     name: string;
                                     createdAt: string;
@@ -7066,7 +7102,6 @@ export declare const appType: Elysia<"", {
                                     hasImage: boolean;
                                 }[];
                                 metric: "latest";
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -7636,6 +7671,7 @@ export declare const appType: Elysia<"", {
                         response: {
                             200: {
                                 limit: number;
+                                page: number;
                                 items: {
                                     name: string;
                                     emailVerified: boolean;
@@ -7658,7 +7694,6 @@ export declare const appType: Elysia<"", {
                                     hasBio: boolean;
                                 }[];
                                 metric: "latest";
-                                page: number;
                                 totalItems: number;
                                 totalPages: number;
                             };
@@ -7886,6 +7921,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -7913,6 +7953,11 @@ export declare const appType: Elysia<"", {
                     found?: unknown;
                     property?: string;
                     expected?: string;
+                };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
                 };
             };
         };
@@ -7942,6 +7987,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -7953,7 +8003,7 @@ export declare const appType: Elysia<"", {
                 body: {
                     name?: string | undefined;
                     bio?: string | undefined;
-                    locale?: "en-US" | "pt-PT" | undefined;
+                    locale?: "en-US" | "pt-PT" | "pt-BR" | "es" | undefined;
                     currencyId?: string | undefined;
                     inviteToken?: string | undefined;
                 };
@@ -7976,6 +8026,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -8006,6 +8061,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -8034,6 +8094,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -8065,6 +8130,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -8079,7 +8149,7 @@ export declare const appType: Elysia<"", {
                 body: {
                     email?: string | undefined;
                     image?: string | null | undefined;
-                    locale?: "en-US" | "pt-PT" | undefined;
+                    locale?: "en-US" | "pt-PT" | "pt-BR" | "es" | undefined;
                     name: string;
                 };
                 params: {};
@@ -8113,7 +8183,7 @@ export declare const appType: Elysia<"", {
                         username: string | null;
                         displayUsername: string | null;
                         bio: string | null;
-                        locale: "en-US" | "pt-PT";
+                        locale: "en-US" | "pt-PT" | "pt-BR" | "es";
                         isGuest: boolean;
                         managedBy: string | null;
                         currencyId: string | null;
@@ -8150,6 +8220,11 @@ export declare const appType: Elysia<"", {
                         mergedIntoUserId?: string | null | undefined;
                         code: "GUEST_NOT_FOUND" | "GUEST_NOT_MANAGED" | "USER_MERGED" | "GUEST_NAME_REQUIRED" | "GUEST_NAME_TOO_LONG" | "GUEST_EMAIL_INVALID" | "GUEST_EMAIL_TOO_LONG" | "GUEST_CURRENCY_INVALID" | "GUEST_UPDATE_EMPTY" | "GUEST_FUSION_NOT_FOUND" | "GUEST_FUSION_EXPIRED" | "GUEST_FUSION_REVOKED" | "GUEST_FUSION_ALREADY_COMPLETED" | "GUEST_FUSION_TARGET_CONFLICT" | "GUEST_FUSION_TARGET_INVALID" | "GUEST_FUSION_TOKEN_MALFORMED" | "GUEST_FUSION_LEGACY_UNSUPPORTED" | "GUEST_FUSION_SOURCE_ANOMALY" | "GUEST_FUSION_PROJECTION_CONFLICT" | "GUEST_FUSION_TRANSFER_CONFLICT" | "GUEST_SESSION_FORBIDDEN" | "EMAIL_ALREADY_EXISTS" | "GUEST_MANAGER_INVALID" | "GUEST_UPDATE_CONFLICT";
                         message: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -8197,6 +8272,11 @@ export declare const appType: Elysia<"", {
                                     code: "GUEST_NOT_FOUND" | "GUEST_NOT_MANAGED" | "USER_MERGED" | "GUEST_NAME_REQUIRED" | "GUEST_NAME_TOO_LONG" | "GUEST_EMAIL_INVALID" | "GUEST_EMAIL_TOO_LONG" | "GUEST_CURRENCY_INVALID" | "GUEST_UPDATE_EMPTY" | "GUEST_FUSION_NOT_FOUND" | "GUEST_FUSION_EXPIRED" | "GUEST_FUSION_REVOKED" | "GUEST_FUSION_ALREADY_COMPLETED" | "GUEST_FUSION_TARGET_CONFLICT" | "GUEST_FUSION_TARGET_INVALID" | "GUEST_FUSION_TOKEN_MALFORMED" | "GUEST_FUSION_LEGACY_UNSUPPORTED" | "GUEST_FUSION_SOURCE_ANOMALY" | "GUEST_FUSION_PROJECTION_CONFLICT" | "GUEST_FUSION_TRANSFER_CONFLICT" | "GUEST_SESSION_FORBIDDEN" | "EMAIL_ALREADY_EXISTS" | "GUEST_MANAGER_INVALID" | "GUEST_UPDATE_CONFLICT";
                                     message: string;
                                 };
+                                429: {
+                                    code: "RATE_LIMIT_EXCEEDED";
+                                    message: string;
+                                    retryAfterSeconds: number;
+                                };
                             };
                         };
                     };
@@ -8242,6 +8322,11 @@ export declare const appType: Elysia<"", {
                                     mergedIntoUserId?: string | null | undefined;
                                     code: "GUEST_NOT_FOUND" | "GUEST_NOT_MANAGED" | "USER_MERGED" | "GUEST_NAME_REQUIRED" | "GUEST_NAME_TOO_LONG" | "GUEST_EMAIL_INVALID" | "GUEST_EMAIL_TOO_LONG" | "GUEST_CURRENCY_INVALID" | "GUEST_UPDATE_EMPTY" | "GUEST_FUSION_NOT_FOUND" | "GUEST_FUSION_EXPIRED" | "GUEST_FUSION_REVOKED" | "GUEST_FUSION_ALREADY_COMPLETED" | "GUEST_FUSION_TARGET_CONFLICT" | "GUEST_FUSION_TARGET_INVALID" | "GUEST_FUSION_TOKEN_MALFORMED" | "GUEST_FUSION_LEGACY_UNSUPPORTED" | "GUEST_FUSION_SOURCE_ANOMALY" | "GUEST_FUSION_PROJECTION_CONFLICT" | "GUEST_FUSION_TRANSFER_CONFLICT" | "GUEST_SESSION_FORBIDDEN" | "EMAIL_ALREADY_EXISTS" | "GUEST_MANAGER_INVALID" | "GUEST_UPDATE_CONFLICT";
                                     message: string;
+                                };
+                                429: {
+                                    code: "RATE_LIMIT_EXCEEDED";
+                                    message: string;
+                                    retryAfterSeconds: number;
                                 };
                             };
                         };
@@ -8618,6 +8703,11 @@ export declare const appType: Elysia<"", {
                                 code: "GUEST_NOT_FOUND" | "GUEST_NOT_MANAGED" | "USER_MERGED" | "GUEST_NAME_REQUIRED" | "GUEST_NAME_TOO_LONG" | "GUEST_EMAIL_INVALID" | "GUEST_EMAIL_TOO_LONG" | "GUEST_CURRENCY_INVALID" | "GUEST_UPDATE_EMPTY" | "GUEST_FUSION_NOT_FOUND" | "GUEST_FUSION_EXPIRED" | "GUEST_FUSION_REVOKED" | "GUEST_FUSION_ALREADY_COMPLETED" | "GUEST_FUSION_TARGET_CONFLICT" | "GUEST_FUSION_TARGET_INVALID" | "GUEST_FUSION_TOKEN_MALFORMED" | "GUEST_FUSION_LEGACY_UNSUPPORTED" | "GUEST_FUSION_SOURCE_ANOMALY" | "GUEST_FUSION_PROJECTION_CONFLICT" | "GUEST_FUSION_TRANSFER_CONFLICT" | "GUEST_SESSION_FORBIDDEN" | "EMAIL_ALREADY_EXISTS" | "GUEST_MANAGER_INVALID" | "GUEST_UPDATE_CONFLICT";
                                 message: string;
                             };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
+                            };
                         };
                     };
                 };
@@ -8667,6 +8757,11 @@ export declare const appType: Elysia<"", {
                                 code: "GUEST_NOT_FOUND" | "GUEST_NOT_MANAGED" | "USER_MERGED" | "GUEST_NAME_REQUIRED" | "GUEST_NAME_TOO_LONG" | "GUEST_EMAIL_INVALID" | "GUEST_EMAIL_TOO_LONG" | "GUEST_CURRENCY_INVALID" | "GUEST_UPDATE_EMPTY" | "GUEST_FUSION_NOT_FOUND" | "GUEST_FUSION_EXPIRED" | "GUEST_FUSION_REVOKED" | "GUEST_FUSION_ALREADY_COMPLETED" | "GUEST_FUSION_TARGET_CONFLICT" | "GUEST_FUSION_TARGET_INVALID" | "GUEST_FUSION_TOKEN_MALFORMED" | "GUEST_FUSION_LEGACY_UNSUPPORTED" | "GUEST_FUSION_SOURCE_ANOMALY" | "GUEST_FUSION_PROJECTION_CONFLICT" | "GUEST_FUSION_TRANSFER_CONFLICT" | "GUEST_SESSION_FORBIDDEN" | "EMAIL_ALREADY_EXISTS" | "GUEST_MANAGER_INVALID" | "GUEST_UPDATE_CONFLICT";
                                 message: string;
                             };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
+                            };
                         };
                     };
                 };
@@ -8679,7 +8774,7 @@ export declare const appType: Elysia<"", {
                     body: {
                         name?: string | undefined;
                         image?: string | null | undefined;
-                        locale?: "en-US" | "pt-PT" | undefined;
+                        locale?: "en-US" | "pt-PT" | "pt-BR" | "es" | undefined;
                         currencyId?: string | undefined;
                     };
                     params: {
@@ -8715,7 +8810,7 @@ export declare const appType: Elysia<"", {
                             username: string | null;
                             displayUsername: string | null;
                             bio: string | null;
-                            locale: "en-US" | "pt-PT";
+                            locale: "en-US" | "pt-PT" | "pt-BR" | "es";
                             isGuest: boolean;
                             managedBy: string | null;
                             currencyId: string | null;
@@ -8752,6 +8847,11 @@ export declare const appType: Elysia<"", {
                             mergedIntoUserId?: string | null | undefined;
                             code: "GUEST_NOT_FOUND" | "GUEST_NOT_MANAGED" | "USER_MERGED" | "GUEST_NAME_REQUIRED" | "GUEST_NAME_TOO_LONG" | "GUEST_EMAIL_INVALID" | "GUEST_EMAIL_TOO_LONG" | "GUEST_CURRENCY_INVALID" | "GUEST_UPDATE_EMPTY" | "GUEST_FUSION_NOT_FOUND" | "GUEST_FUSION_EXPIRED" | "GUEST_FUSION_REVOKED" | "GUEST_FUSION_ALREADY_COMPLETED" | "GUEST_FUSION_TARGET_CONFLICT" | "GUEST_FUSION_TARGET_INVALID" | "GUEST_FUSION_TOKEN_MALFORMED" | "GUEST_FUSION_LEGACY_UNSUPPORTED" | "GUEST_FUSION_SOURCE_ANOMALY" | "GUEST_FUSION_PROJECTION_CONFLICT" | "GUEST_FUSION_TRANSFER_CONFLICT" | "GUEST_SESSION_FORBIDDEN" | "EMAIL_ALREADY_EXISTS" | "GUEST_MANAGER_INVALID" | "GUEST_UPDATE_CONFLICT";
                             message: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -8798,6 +8898,11 @@ export declare const appType: Elysia<"", {
                             code: "GUEST_NOT_FOUND" | "GUEST_NOT_MANAGED" | "USER_MERGED" | "GUEST_NAME_REQUIRED" | "GUEST_NAME_TOO_LONG" | "GUEST_EMAIL_INVALID" | "GUEST_EMAIL_TOO_LONG" | "GUEST_CURRENCY_INVALID" | "GUEST_UPDATE_EMPTY" | "GUEST_FUSION_NOT_FOUND" | "GUEST_FUSION_EXPIRED" | "GUEST_FUSION_REVOKED" | "GUEST_FUSION_ALREADY_COMPLETED" | "GUEST_FUSION_TARGET_CONFLICT" | "GUEST_FUSION_TARGET_INVALID" | "GUEST_FUSION_TOKEN_MALFORMED" | "GUEST_FUSION_LEGACY_UNSUPPORTED" | "GUEST_FUSION_SOURCE_ANOMALY" | "GUEST_FUSION_PROJECTION_CONFLICT" | "GUEST_FUSION_TRANSFER_CONFLICT" | "GUEST_SESSION_FORBIDDEN" | "EMAIL_ALREADY_EXISTS" | "GUEST_MANAGER_INVALID" | "GUEST_UPDATE_CONFLICT";
                             message: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -8822,6 +8927,11 @@ export declare const appType: Elysia<"", {
                 403: {
                     code: string;
                     message: string;
+                };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
                 };
             };
         };
@@ -8849,6 +8959,11 @@ export declare const appType: Elysia<"", {
                     403: {
                         code: string;
                         message: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -8901,6 +9016,11 @@ export declare const appType: Elysia<"", {
                     property?: string;
                     expected?: string;
                 };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
+                };
             };
         };
     };
@@ -8920,6 +9040,11 @@ export declare const appType: Elysia<"", {
                     403: {
                         code: string;
                         message: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -8990,6 +9115,11 @@ export declare const appType: Elysia<"", {
                                 found?: unknown;
                                 property?: string;
                                 expected?: string;
+                            };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
                             };
                         };
                     };
@@ -9278,6 +9408,11 @@ export declare const appType: Elysia<"", {
                     property?: string;
                     expected?: string;
                 };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
+                };
             };
         };
     };
@@ -9525,6 +9660,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -9580,6 +9720,10 @@ export declare const appType: Elysia<"", {
                     expected?: string;
                 };
                 429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
+                } | {
                     code: typeof import("./lib/billing").FEATURE_QUOTA_EXCEEDED;
                     featureKey: string;
                     plan: "free" | "gold";
@@ -9634,6 +9778,7 @@ export declare const appType: Elysia<"", {
                         400: string;
                         403: string;
                         404: string;
+                        409: string;
                         422: {
                             type: "validation";
                             on: string;
@@ -9642,6 +9787,182 @@ export declare const appType: Elysia<"", {
                             found?: unknown;
                             property?: string;
                             expected?: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+} & {
+    payments: {
+        ":id": {
+            restore: {
+                post: {
+                    body: {};
+                    params: {
+                        id: string;
+                    };
+                    query: {};
+                    headers: {};
+                    response: {
+                        401: "Unauthorized";
+                        200: {
+                            fromUser: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            toUser: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            currency: {
+                                id: string;
+                                name: string;
+                                code: string;
+                                symbol: string | null;
+                                exchangeRateToBase: string;
+                                updatedAt: Date;
+                                decimals: number;
+                                type: "fiat" | "crypto";
+                            };
+                            creator: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            group: {
+                                id: string;
+                                name: string;
+                                description: string | null;
+                                image: string | null;
+                                creatorId: string;
+                                currencyId: string;
+                                emoji: string | null;
+                                color: string | null;
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                                token: string | null;
+                                useOptimalSettlement: boolean;
+                                defaultSplitType: "equal" | "percentage";
+                                type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                            } | null;
+                            id: string;
+                            fromUserId: string;
+                            toUserId: string;
+                            amount: string;
+                            currencyId: string;
+                            exchangeRateToBase: string;
+                            exchangeRateSnapshotId: string | null;
+                            date: Date;
+                            timezone: string;
+                            description: string | null;
+                            createdAt: Date;
+                            updatedAt: Date;
+                            groupId: string | null;
+                            createdById: string;
+                            deletedAt: Date | null;
+                            isSettlement: boolean;
+                            usedOptimalSettlement: boolean;
+                            importId: string | null;
+                            importSourceRow: number | null;
+                        } & {
+                            fromUser: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            toUser: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            currency: {
+                                id: string;
+                                name: string;
+                                code: string;
+                                symbol: string | null;
+                                exchangeRateToBase: string;
+                                updatedAt: Date;
+                                decimals: number;
+                                type: "fiat" | "crypto";
+                            };
+                            creator: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            group: {
+                                id: string;
+                                name: string;
+                                description: string | null;
+                                image: string | null;
+                                creatorId: string;
+                                currencyId: string;
+                                emoji: string | null;
+                                color: string | null;
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                                token: string | null;
+                                useOptimalSettlement: boolean;
+                                defaultSplitType: "equal" | "percentage";
+                                type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                            } | null;
+                            id: string;
+                            fromUserId: string;
+                            toUserId: string;
+                            amount: string;
+                            currencyId: string;
+                            exchangeRateToBase: string;
+                            exchangeRateSnapshotId: string | null;
+                            date: Date;
+                            timezone: string;
+                            description: string | null;
+                            createdAt: Date;
+                            updatedAt: Date;
+                            groupId: string | null;
+                            createdById: string;
+                            deletedAt: Date | null;
+                            isSettlement: boolean;
+                            usedOptimalSettlement: boolean;
+                            importId: string | null;
+                            importSourceRow: number | null;
+                        };
+                        403: string | {
+                            code: string;
+                            message: string;
+                        };
+                        404: string;
+                        409: string;
+                        422: {
+                            type: "validation";
+                            on: string;
+                            summary?: string;
+                            message?: string;
+                            found?: unknown;
+                            property?: string;
+                            expected?: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -9727,11 +10048,12 @@ export declare const appType: Elysia<"", {
                         importId: string | null;
                         importSourceRow: number | null;
                     };
-                    403: "Forbidden" | {
+                    403: string | {
                         code: string;
                         message: string;
                     };
-                    404: "Payment not found";
+                    404: string;
+                    409: string;
                     422: {
                         type: "validation";
                         on: string;
@@ -9740,6 +10062,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -9805,11 +10132,12 @@ export declare const appType: Elysia<"", {
                         isSettlement: boolean;
                         usedOptimalSettlement: boolean;
                     };
-                    403: "Forbidden" | {
+                    403: string | {
                         code: string;
                         message: string;
                     };
-                    404: "Not Found";
+                    404: string;
+                    409: string;
                     422: {
                         type: "validation";
                         on: string;
@@ -9818,6 +10146,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -9885,10 +10218,12 @@ export declare const appType: Elysia<"", {
                     usedOptimalSettlement: boolean;
                 }[];
                 400: string;
-                403: "Currency not found" | {
+                403: string | {
                     code: string;
                     message: string;
-                } | "You are not a member of this group" | "Group not found" | "From user is not a member of this group" | "To user is not a member of this group" | "Group currency not found" | "Inactive payment participants must have a group balance" | "Inactive payment cannot exceed the current group balance" | "You can only create payments involving yourself" | "You are not friends with this user";
+                };
+                404: string;
+                409: string;
                 422: {
                     type: "validation";
                     on: string;
@@ -9897,6 +10232,11 @@ export declare const appType: Elysia<"", {
                     found?: unknown;
                     property?: string;
                     expected?: string;
+                };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
                 };
             };
         };
@@ -9961,10 +10301,12 @@ export declare const appType: Elysia<"", {
                             }[];
                         };
                         400: string;
-                        403: "Currency not found" | {
+                        403: string | {
                             code: string;
                             message: string;
-                        } | "You are not a member of this group" | "Group not found" | "From user is not a member of this group" | "To user is not a member of this group" | "Group currency not found" | "Inactive payment participants must have a group balance" | "Inactive payment cannot exceed the current group balance" | "You can only create payments involving yourself" | "You are not friends with this user";
+                        };
+                        404: string;
+                        409: string;
                         422: {
                             type: "validation";
                             on: string;
@@ -9973,6 +10315,11 @@ export declare const appType: Elysia<"", {
                             found?: unknown;
                             property?: string;
                             expected?: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -10014,6 +10361,11 @@ export declare const appType: Elysia<"", {
                     property?: string;
                     expected?: string;
                 };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
+                };
             };
         };
     };
@@ -10053,6 +10405,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -10210,7 +10567,11 @@ export declare const appType: Elysia<"", {
                     property?: string;
                     expected?: string;
                 };
-                429: string | object;
+                429: string | object | {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
+                };
             };
         };
     };
@@ -10304,7 +10665,11 @@ export declare const appType: Elysia<"", {
                     property?: string;
                     expected?: string;
                 };
-                429: string | object;
+                429: string | object | {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
+                };
             };
         };
     };
@@ -10358,7 +10723,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
-                    429: string | object;
+                    429: string | object | {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -10392,7 +10761,303 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
-                    429: string | object;
+                    429: string | object | {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
+                };
+            };
+        };
+    };
+} & {
+    expenses: {
+        ":id": {
+            restore: {
+                post: {
+                    body: {};
+                    params: {
+                        id: string;
+                    };
+                    query: {};
+                    headers: {};
+                    response: {
+                        401: "Unauthorized";
+                        200: {
+                            shares: {
+                                user: {
+                                    id: string;
+                                    name: string;
+                                    image: string | null;
+                                    username: string | null;
+                                } | null;
+                                id: string;
+                                expenseId: string;
+                                userId: string;
+                                amount: string;
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                            }[];
+                            location: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null;
+                            paidByUser: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            currency: {
+                                id: string;
+                                name: string;
+                                code: string;
+                                symbol: string | null;
+                                exchangeRateToBase: string;
+                                updatedAt: Date;
+                                decimals: number;
+                                type: "fiat" | "crypto";
+                            };
+                            creator: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            group: {
+                                id: string;
+                                name: string;
+                                description: string | null;
+                                image: string | null;
+                                creatorId: string;
+                                currencyId: string;
+                                emoji: string | null;
+                                color: string | null;
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                                token: string | null;
+                                useOptimalSettlement: boolean;
+                                defaultSplitType: "equal" | "percentage";
+                                type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                            } | null;
+                            category: {
+                                id: string;
+                                key: string | null;
+                                name: string;
+                                icon: string | null;
+                                order: number | null;
+                                createdAt: Date;
+                            } | null;
+                            recurrence: {
+                                location: {
+                                    id: string;
+                                    label: string;
+                                    latitude: number;
+                                    longitude: number;
+                                } | null;
+                                id: string;
+                                paidById: string;
+                                creatorId: string;
+                                groupId: string | null;
+                                title: string;
+                                description: string | null;
+                                amount: string;
+                                currencyId: string;
+                                frequency: "daily" | "weekly" | "monthly" | "yearly";
+                                interval: number;
+                                startDate: Date;
+                                endDate: Date | null;
+                                timezone: string;
+                                lastGenerated: Date | null;
+                                active: boolean;
+                                splitType: "custom" | "equal" | "percentage" | "shares";
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                                latitude: number | null;
+                                longitude: number | null;
+                                locationId: string | null;
+                                categoryId: string | null;
+                            } | null;
+                            id: string;
+                            title: string;
+                            description: string | null;
+                            amount: string;
+                            currencyId: string;
+                            exchangeRateToBase: string;
+                            exchangeRateSnapshotId: string | null;
+                            paidById: string;
+                            groupId: string | null;
+                            friendshipId: string | null;
+                            date: Date;
+                            timezone: string;
+                            createdAt: Date;
+                            updatedAt: Date;
+                            createdById: string;
+                            deletedAt: Date | null;
+                            splitType: "custom" | "equal" | "percentage" | "shares";
+                            recurringExpenseRuleId: string | null;
+                            image: string | null;
+                            latitude: number | null;
+                            longitude: number | null;
+                            locationId: string | null;
+                            categoryId: string | null;
+                            importId: string | null;
+                            importSourceRow: number | null;
+                        } & {
+                            shares: {
+                                user: {
+                                    id: string;
+                                    name: string;
+                                    image: string | null;
+                                    username: string | null;
+                                } | null;
+                                id: string;
+                                expenseId: string;
+                                userId: string;
+                                amount: string;
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                            }[];
+                            location: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null;
+                            paidByUser: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            currency: {
+                                id: string;
+                                name: string;
+                                code: string;
+                                symbol: string | null;
+                                exchangeRateToBase: string;
+                                updatedAt: Date;
+                                decimals: number;
+                                type: "fiat" | "crypto";
+                            };
+                            creator: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            group: {
+                                id: string;
+                                name: string;
+                                description: string | null;
+                                image: string | null;
+                                creatorId: string;
+                                currencyId: string;
+                                emoji: string | null;
+                                color: string | null;
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                                token: string | null;
+                                useOptimalSettlement: boolean;
+                                defaultSplitType: "equal" | "percentage";
+                                type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                            } | null;
+                            category: {
+                                id: string;
+                                key: string | null;
+                                name: string;
+                                icon: string | null;
+                                order: number | null;
+                                createdAt: Date;
+                            } | null;
+                            recurrence: {
+                                location: {
+                                    id: string;
+                                    label: string;
+                                    latitude: number;
+                                    longitude: number;
+                                } | null;
+                                id: string;
+                                paidById: string;
+                                creatorId: string;
+                                groupId: string | null;
+                                title: string;
+                                description: string | null;
+                                amount: string;
+                                currencyId: string;
+                                frequency: "daily" | "weekly" | "monthly" | "yearly";
+                                interval: number;
+                                startDate: Date;
+                                endDate: Date | null;
+                                timezone: string;
+                                lastGenerated: Date | null;
+                                active: boolean;
+                                splitType: "custom" | "equal" | "percentage" | "shares";
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                                latitude: number | null;
+                                longitude: number | null;
+                                locationId: string | null;
+                                categoryId: string | null;
+                            } | null;
+                            id: string;
+                            title: string;
+                            description: string | null;
+                            amount: string;
+                            currencyId: string;
+                            exchangeRateToBase: string;
+                            exchangeRateSnapshotId: string | null;
+                            paidById: string;
+                            groupId: string | null;
+                            friendshipId: string | null;
+                            date: Date;
+                            timezone: string;
+                            createdAt: Date;
+                            updatedAt: Date;
+                            createdById: string;
+                            deletedAt: Date | null;
+                            splitType: "custom" | "equal" | "percentage" | "shares";
+                            recurringExpenseRuleId: string | null;
+                            image: string | null;
+                            latitude: number | null;
+                            longitude: number | null;
+                            locationId: string | null;
+                            categoryId: string | null;
+                            importId: string | null;
+                            importSourceRow: number | null;
+                        };
+                        400: string | object;
+                        403: string | object | {
+                            code: string;
+                            message: string;
+                        };
+                        404: string | object;
+                        409: string | object;
+                        422: {
+                            type: "validation";
+                            on: string;
+                            summary?: string;
+                            message?: string;
+                            found?: unknown;
+                            property?: string;
+                            expected?: string;
+                        };
+                        429: string | object | {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
+                    };
                 };
             };
         };
@@ -10440,7 +11105,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
-                        429: string | object;
+                        429: string | object | {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -10601,7 +11270,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
-                    429: string | object;
+                    429: string | object | {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -10727,7 +11400,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
-                    429: string | object;
+                    429: string | object | {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -10793,7 +11470,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
-                    429: string | object;
+                    429: string | object | {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -10809,44 +11490,87 @@ export declare const appType: Elysia<"", {
                 body: {};
                 params: {};
                 query: {
+                    l?: number | undefined;
+                    cursor?: string | undefined;
+                    sort?: "amount" | "nextOccurrence" | undefined;
+                    direction?: "asc" | "desc" | undefined;
                     status?: "all" | "active" | "inactive" | undefined;
+                    groupId?: string | undefined;
                 };
                 headers: {};
                 response: {
                     401: "Unauthorized";
                     200: {
-                        nextOccurrence: Date | null;
-                        location: {
+                        items: {
+                            nextOccurrence: Date | null;
+                            location: {
+                                id: string;
+                                label: string;
+                                latitude: number;
+                                longitude: number;
+                            } | null;
+                            paidByUser: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            currency: {
+                                id: string;
+                                name: string;
+                                code: string;
+                                symbol: string | null;
+                                exchangeRateToBase: string;
+                                updatedAt: Date;
+                                decimals: number;
+                                type: "fiat" | "crypto";
+                            };
+                            group: {
+                                id: string;
+                                name: string;
+                                description: string | null;
+                                image: string | null;
+                                creatorId: string;
+                                currencyId: string;
+                                emoji: string | null;
+                                color: string | null;
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                                token: string | null;
+                                useOptimalSettlement: boolean;
+                                defaultSplitType: "equal" | "percentage";
+                                type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                            } | null;
+                            totalOccurrences: number;
                             id: string;
-                            label: string;
-                            latitude: number;
-                            longitude: number;
-                        } | null;
-                        totalOccurrences: number;
-                        id: string;
-                        paidById: string;
-                        creatorId: string;
-                        groupId: string | null;
-                        title: string;
-                        description: string | null;
-                        amount: string;
-                        currencyId: string;
-                        frequency: "daily" | "weekly" | "monthly" | "yearly";
-                        interval: number;
-                        startDate: Date | (Date & string);
-                        endDate: Date | (Date & string) | null;
-                        timezone: string;
-                        lastGenerated: Date | (Date & string) | null;
-                        active: boolean;
-                        splitType: "custom" | "equal" | "percentage" | "shares";
-                        createdAt: Date;
-                        updatedAt: Date;
-                        deletedAt: Date | null;
-                        latitude: number | null;
-                        longitude: number | null;
-                        locationId: string | null;
-                        categoryId: string | null;
-                    }[];
+                            paidById: string;
+                            creatorId: string;
+                            groupId: string | null;
+                            title: string;
+                            description: string | null;
+                            amount: string;
+                            currencyId: string;
+                            frequency: "daily" | "weekly" | "monthly" | "yearly";
+                            interval: number;
+                            startDate: Date | (Date & string);
+                            endDate: Date | (Date & string) | null;
+                            timezone: string;
+                            lastGenerated: Date | (Date & string) | null;
+                            active: boolean;
+                            splitType: "custom" | "equal" | "percentage" | "shares";
+                            createdAt: Date;
+                            updatedAt: Date;
+                            deletedAt: Date | null;
+                            latitude: number | null;
+                            longitude: number | null;
+                            locationId: string | null;
+                            categoryId: string | null;
+                        }[];
+                        hasMore: boolean;
+                        nextCursor: string | null;
+                    };
                     400: string | object;
                     403: string | object | {
                         code: string;
@@ -10863,7 +11587,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
-                    429: string | object;
+                    429: string | object | {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -10887,6 +11615,10 @@ export declare const appType: Elysia<"", {
                     lastGenerated?: Date | null | undefined;
                     locationId?: string | null | undefined;
                     categoryId?: string | null | undefined;
+                    splits?: {
+                        amount: string;
+                        userId: string;
+                    }[] | undefined;
                     amount: string;
                     currencyId: string;
                     title: string;
@@ -10894,17 +11626,43 @@ export declare const appType: Elysia<"", {
                     frequency: "daily" | "weekly" | "monthly" | "yearly";
                     interval: number;
                     startDate: string;
-                    splits: {
-                        amount: string;
-                        userId: string;
-                    }[];
                 };
                 params: {};
                 query: {};
                 headers: {};
                 response: {
                     401: "Unauthorized";
-                    201: "Created";
+                    201: {
+                        location: {
+                            id: string;
+                            label: string;
+                            latitude: number;
+                            longitude: number;
+                        } | null;
+                        id: string;
+                        paidById: string;
+                        creatorId: string;
+                        groupId: string | null;
+                        title: string;
+                        description: string | null;
+                        amount: string;
+                        currencyId: string;
+                        frequency: "daily" | "weekly" | "monthly" | "yearly";
+                        interval: number;
+                        startDate: Date;
+                        endDate: Date | null;
+                        timezone: string;
+                        lastGenerated: Date | null;
+                        active: boolean;
+                        splitType: "custom" | "equal" | "percentage" | "shares";
+                        createdAt: Date;
+                        updatedAt: Date;
+                        deletedAt: Date | null;
+                        latitude: number | null;
+                        longitude: number | null;
+                        locationId: string | null;
+                        categoryId: string | null;
+                    };
                     400: string | object;
                     403: string | object | {
                         code: string;
@@ -10921,26 +11679,10 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
-                    429: string | object;
-                };
-            };
-        };
-    };
-} & {
-    expenses: {
-        recurring: {
-            update: {
-                post: {
-                    body: {};
-                    params: {};
-                    query: {};
-                    headers: {};
-                    response: {
-                        400: string | object;
-                        403: string | object;
-                        404: string | object;
-                        409: string | object;
-                        429: string | object;
+                    429: string | object | {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -10988,7 +11730,11 @@ export declare const appType: Elysia<"", {
                                 property?: string;
                                 expected?: string;
                             };
-                            429: string | object;
+                            429: string | object | {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
+                            };
                         };
                     };
                 };
@@ -11009,7 +11755,14 @@ export declare const appType: Elysia<"", {
                     response: {
                         401: "Unauthorized";
                         200: {
+                            nextOccurrence: Date | null;
                             shares: {
+                                user: {
+                                    id: string;
+                                    name: string;
+                                    image: string | null;
+                                    username: string | null;
+                                } | null;
                                 id: string;
                                 recurringExpenseRuleId: string;
                                 userId: string;
@@ -11150,6 +11903,41 @@ export declare const appType: Elysia<"", {
                                 latitude: number;
                                 longitude: number;
                             } | null;
+                            paidByUser: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                                username: string | null;
+                            };
+                            currency: {
+                                id: string;
+                                name: string;
+                                code: string;
+                                symbol: string | null;
+                                exchangeRateToBase: string;
+                                updatedAt: Date;
+                                decimals: number;
+                                type: "fiat" | "crypto";
+                            };
+                            group: {
+                                id: string;
+                                name: string;
+                                description: string | null;
+                                image: string | null;
+                                creatorId: string;
+                                currencyId: string;
+                                emoji: string | null;
+                                color: string | null;
+                                createdAt: Date;
+                                updatedAt: Date;
+                                deletedAt: Date | null;
+                                token: string | null;
+                                useOptimalSettlement: boolean;
+                                defaultSplitType: "equal" | "percentage";
+                                type: "vacation" | "roommates" | "couple" | "travel" | "party" | "other";
+                                memberBalanceVisibility: "all_members" | "admins_only" | "no_one";
+                            } | null;
+                            totalOccurrences: number;
                             id: string;
                             paidById: string;
                             creatorId: string;
@@ -11190,7 +11978,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
-                        429: string | object;
+                        429: string | object | {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -11312,7 +12104,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
-                        429: string | object;
+                        429: string | object | {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -11378,7 +12174,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
-                        429: string | object;
+                        429: string | object | {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -11395,7 +12195,7 @@ export declare const appType: Elysia<"", {
                 l?: number | undefined;
                 cursor?: string | undefined;
                 sort?: import("./lib/groups").GROUP_SORT | undefined;
-                archived?: boolean | undefined;
+                filter?: import("./lib/groups").GROUP_FILTER | undefined;
                 q?: string | undefined;
             };
             headers: {};
@@ -11449,6 +12249,11 @@ export declare const appType: Elysia<"", {
                     property?: string;
                     expected?: string;
                 };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
+                };
             };
         };
     };
@@ -11461,7 +12266,7 @@ export declare const appType: Elysia<"", {
                 query: {
                     l?: number | undefined;
                     sort?: import("./lib/groups").GROUP_SORT | undefined;
-                    archived?: boolean | undefined;
+                    filter?: import("./lib/groups").GROUP_FILTER | undefined;
                     p?: number | undefined;
                 };
                 headers: {};
@@ -11497,6 +12302,7 @@ export declare const appType: Elysia<"", {
                         archivedAt: import("./lib/db/schema").GroupMember["archivedAt"];
                         pinnedAt: import("./lib/db/schema").GroupMember["pinnedAt"];
                     }[];
+                    400: "Use filter=archived instead";
                     403: {
                         code: string;
                         message: string;
@@ -11510,6 +12316,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -11522,7 +12333,8 @@ export declare const appType: Elysia<"", {
                 params: {};
                 query: {
                     l?: number | undefined;
-                    archived?: boolean | undefined;
+                    sort?: import("./lib/groups").GROUP_SORT | undefined;
+                    filter?: import("./lib/groups").GROUP_FILTER | undefined;
                     p?: number | undefined;
                     q: string;
                 };
@@ -11559,6 +12371,7 @@ export declare const appType: Elysia<"", {
                         archivedAt: import("./lib/db/schema").GroupMember["archivedAt"];
                         pinnedAt: import("./lib/db/schema").GroupMember["pinnedAt"];
                     }[];
+                    400: "Use filter=archived instead";
                     403: {
                         code: string;
                         message: string;
@@ -11571,6 +12384,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -11626,6 +12444,11 @@ export declare const appType: Elysia<"", {
                     found?: unknown;
                     property?: string;
                     expected?: string;
+                };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
                 };
             };
         };
@@ -11697,6 +12520,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -11714,6 +12542,8 @@ export declare const appType: Elysia<"", {
                 response: {
                     401: "Unauthorized";
                     200: {
+                        archivedAt: Date | null;
+                        pinnedAt: Date | null;
                         token: string;
                         totalOwing: number;
                         totalOwed: number;
@@ -11757,6 +12587,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -11830,6 +12665,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -11892,6 +12732,11 @@ export declare const appType: Elysia<"", {
                                 property?: string;
                                 expected?: string;
                             };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
+                            };
                         };
                     };
                 };
@@ -11952,6 +12797,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -11974,24 +12824,34 @@ export declare const appType: Elysia<"", {
                         401: "Unauthorized";
                         200: {
                             id: string;
-                            groupId: string;
-                            userId: string;
-                            role: string;
-                            joinedAt: Date;
                             createdAt: Date;
                             updatedAt: Date;
+                            role: string;
                             deletedAt: Date | null;
+                            userId: string;
+                            groupId: string;
+                            joinedAt: Date;
                             pinnedAt: Date | null;
                             archivedAt: Date | null;
                             defaultSplitPercentage: string | null;
                         };
-                        400: "At least one preference must be provided";
+                        400: {
+                            readonly code: "group_preferences_empty";
+                            readonly message: string;
+                        };
                         403: "Forbidden" | {
                             code: string;
                             message: string;
+                        } | {
+                            readonly message: string;
+                            readonly code: "banana_gold_required";
+                            readonly upgradeRequired: true;
                         };
                         404: "Not Found";
                         422: {
+                            readonly code: "group_pinned_cannot_archive";
+                            readonly message: string;
+                        } | {
                             type: "validation";
                             on: string;
                             summary?: string;
@@ -11999,6 +12859,11 @@ export declare const appType: Elysia<"", {
                             found?: unknown;
                             property?: string;
                             expected?: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -12053,6 +12918,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -12101,6 +12971,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -12352,6 +13227,11 @@ export declare const appType: Elysia<"", {
                             found?: unknown;
                             property?: string;
                             expected?: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -12605,6 +13485,11 @@ export declare const appType: Elysia<"", {
                                 found?: unknown;
                                 property?: string;
                                 expected?: string;
+                            };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
                             };
                         };
                     };
@@ -12859,6 +13744,11 @@ export declare const appType: Elysia<"", {
                                 property?: string;
                                 expected?: string;
                             };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
+                            };
                         };
                     };
                 };
@@ -13112,6 +14002,11 @@ export declare const appType: Elysia<"", {
                                 property?: string;
                                 expected?: string;
                             };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
+                            };
                         };
                     };
                 };
@@ -13157,6 +14052,11 @@ export declare const appType: Elysia<"", {
                             found?: unknown;
                             property?: string;
                             expected?: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -13219,6 +14119,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -13277,6 +14182,11 @@ export declare const appType: Elysia<"", {
                             found?: unknown;
                             property?: string;
                             expected?: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -13371,6 +14281,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -13417,6 +14332,11 @@ export declare const appType: Elysia<"", {
                             found?: unknown;
                             property?: string;
                             expected?: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -13471,6 +14391,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -13518,6 +14443,11 @@ export declare const appType: Elysia<"", {
                             found?: unknown;
                             property?: string;
                             expected?: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -13689,6 +14619,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -13757,6 +14692,11 @@ export declare const appType: Elysia<"", {
                                 found?: unknown;
                                 property?: string;
                                 expected?: string;
+                            };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
                             };
                         };
                     };
@@ -13835,6 +14775,11 @@ export declare const appType: Elysia<"", {
                                 property?: string;
                                 expected?: string;
                             };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
+                            };
                         };
                     };
                 };
@@ -13886,6 +14831,11 @@ export declare const appType: Elysia<"", {
                                 property?: string;
                                 expected?: string;
                             };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
+                            };
                         };
                     };
                 };
@@ -13926,6 +14876,7 @@ export declare const appType: Elysia<"", {
                                 message: string;
                             } | "Only admins can remove other admins";
                             404: "Not Found" | "Group member not found";
+                            409: "Member balance must be zero before removal";
                             422: {
                                 type: "validation";
                                 on: string;
@@ -13934,6 +14885,11 @@ export declare const appType: Elysia<"", {
                                 found?: unknown;
                                 property?: string;
                                 expected?: string;
+                            };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
                             };
                         };
                     };
@@ -13983,6 +14939,11 @@ export declare const appType: Elysia<"", {
                                 found?: unknown;
                                 property?: string;
                                 expected?: string;
+                            };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
                             };
                         };
                     };
@@ -14045,6 +15006,11 @@ export declare const appType: Elysia<"", {
                                 found?: unknown;
                                 property?: string;
                                 expected?: string;
+                            };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
                             };
                         };
                     };
@@ -14123,6 +15089,11 @@ export declare const appType: Elysia<"", {
                     property?: string;
                     expected?: string;
                 };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
+                };
             };
         };
     };
@@ -14189,6 +15160,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -14201,6 +15177,7 @@ export declare const appType: Elysia<"", {
                 params: {};
                 query: {
                     l?: number | undefined;
+                    sort?: import("./lib/friendships").FRIENDSHIP_SORT | undefined;
                     p?: number | undefined;
                     q: string;
                 };
@@ -14209,6 +15186,12 @@ export declare const appType: Elysia<"", {
                     401: "Unauthorized";
                     200: ({
                         mostRecentActivity: Date | null;
+                        user: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                            isGuest: boolean;
+                        };
                         id: string;
                         userId1: string;
                         userId2: string;
@@ -14217,13 +15200,6 @@ export declare const appType: Elysia<"", {
                         acceptedAt: Date | null;
                         createdAt: Date;
                         updatedAt: Date;
-                        user: {
-                            isGuest: boolean;
-                            id: string;
-                            name: string;
-                            image: string | null;
-                            username: string | null;
-                        };
                         currency: {
                             id: string;
                             name: string;
@@ -14254,6 +15230,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -14302,6 +15283,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -14341,6 +15327,11 @@ export declare const appType: Elysia<"", {
                     found?: unknown;
                     property?: string;
                     expected?: string;
+                };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
                 };
             };
         };
@@ -14384,6 +15375,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -14402,19 +15398,23 @@ export declare const appType: Elysia<"", {
                     401: "Unauthorized";
                     200: {
                         id: string;
-                        userId1: string;
-                        userId2: string;
-                        status: "deleted" | "pending" | "accepted" | "rejected";
-                        requestedById: string;
-                        acceptedAt: Date | null;
                         createdAt: Date;
                         updatedAt: Date;
+                        status: "deleted" | "pending" | "accepted" | "rejected";
+                        userId1: string;
+                        userId2: string;
+                        requestedById: string;
+                        acceptedAt: Date | null;
                     };
                     403: "Forbidden" | {
                         code: string;
                         message: string;
                     };
                     404: "Not Found" | "User not found";
+                    409: {
+                        readonly code: "FRIENDSHIP_HAS_OUTSTANDING_BALANCE";
+                        readonly message: "Friend balance must be zero before removal";
+                    };
                     422: {
                         type: "validation";
                         on: string;
@@ -14423,6 +15423,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -14655,6 +15660,11 @@ export declare const appType: Elysia<"", {
                             found?: unknown;
                             property?: string;
                             expected?: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -14890,6 +15900,11 @@ export declare const appType: Elysia<"", {
                                 property?: string;
                                 expected?: string;
                             };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
+                            };
                         };
                     };
                 };
@@ -14941,6 +15956,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -14983,6 +16003,11 @@ export declare const appType: Elysia<"", {
                             code: string;
                             message: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -15024,6 +16049,11 @@ export declare const appType: Elysia<"", {
                         403: {
                             code: string;
                             message: string;
+                        };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
                         };
                     };
                 };
@@ -15076,6 +16106,11 @@ export declare const appType: Elysia<"", {
                     found?: unknown;
                     property?: string;
                     expected?: string;
+                };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
                 };
             };
         };
@@ -15138,6 +16173,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -15222,6 +16262,10 @@ export declare const appType: Elysia<"", {
                         expected?: string;
                     };
                     429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    } | {
                         code: typeof import("./lib/billing").FEATURE_QUOTA_EXCEEDED;
                         featureKey: string;
                         plan: "free" | "gold";
@@ -15273,6 +16317,10 @@ export declare const appType: Elysia<"", {
                         expected?: string;
                     };
                     429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    } | {
                         code: typeof import("./lib/billing").FEATURE_QUOTA_EXCEEDED;
                         featureKey: string;
                         plan: "free" | "gold";
@@ -15330,6 +16378,10 @@ export declare const appType: Elysia<"", {
                             expected?: string;
                         };
                         429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        } | {
                             code: typeof import("./lib/billing").FEATURE_QUOTA_EXCEEDED;
                             featureKey: string;
                             plan: "free" | "gold";
@@ -15386,6 +16438,10 @@ export declare const appType: Elysia<"", {
                             expected?: string;
                         };
                         429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        } | {
                             code: typeof import("./lib/billing").FEATURE_QUOTA_EXCEEDED;
                             featureKey: string;
                             plan: "free" | "gold";
@@ -15425,6 +16481,11 @@ export declare const appType: Elysia<"", {
                     code: string;
                     message: string;
                 };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
+                };
             };
         };
     };
@@ -15447,6 +16508,11 @@ export declare const appType: Elysia<"", {
                     403: {
                         code: string;
                         message: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -15476,6 +16542,47 @@ export declare const appType: Elysia<"", {
                     403: {
                         code: string;
                         message: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
+                };
+            };
+        };
+    };
+} & {
+    invites: {
+        ":token": {
+            get: {
+                body: {};
+                params: {
+                    token: string;
+                };
+                query: {};
+                headers: {};
+                response: {
+                    200: {
+                        token: string;
+                        inviter: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        };
+                    };
+                    404: {
+                        readonly code: "INVITE_NOT_FOUND" | "INVITE_USER_NOT_FOUND";
+                        readonly message: string;
+                    };
+                    422: {
+                        type: "validation";
+                        on: string;
+                        summary?: string;
+                        message?: string;
+                        found?: unknown;
+                        property?: string;
+                        expected?: string;
                     };
                 };
             };
@@ -15523,6 +16630,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -15550,6 +16662,11 @@ export declare const appType: Elysia<"", {
                 403: {
                     code: string;
                     message: string;
+                };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
                 };
             };
         };
@@ -15677,6 +16794,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -15708,6 +16830,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -15828,6 +16955,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -15860,6 +16992,11 @@ export declare const appType: Elysia<"", {
                                 found?: unknown;
                                 property?: string;
                                 expected?: string;
+                            };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
                             };
                         };
                     };
@@ -15904,6 +17041,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -15940,6 +17082,11 @@ export declare const appType: Elysia<"", {
                                     property?: string;
                                     expected?: string;
                                 };
+                                429: {
+                                    code: "RATE_LIMIT_EXCEEDED";
+                                    message: string;
+                                    retryAfterSeconds: number;
+                                };
                             };
                         };
                     };
@@ -15974,6 +17121,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -16006,6 +17158,11 @@ export declare const appType: Elysia<"", {
                                 found?: unknown;
                                 property?: string;
                                 expected?: string;
+                            };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
                             };
                         };
                     };
@@ -16041,6 +17198,11 @@ export declare const appType: Elysia<"", {
                                 found?: unknown;
                                 property?: string;
                                 expected?: string;
+                            };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
                             };
                         };
                     };
@@ -16099,6 +17261,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -16144,6 +17311,11 @@ export declare const appType: Elysia<"", {
                                     property?: string;
                                     expected?: string;
                                 };
+                                429: {
+                                    code: "RATE_LIMIT_EXCEEDED";
+                                    message: string;
+                                    retryAfterSeconds: number;
+                                };
                             };
                         };
                     };
@@ -16184,6 +17356,11 @@ export declare const appType: Elysia<"", {
                                     property?: string;
                                     expected?: string;
                                 };
+                                429: {
+                                    code: "RATE_LIMIT_EXCEEDED";
+                                    message: string;
+                                    retryAfterSeconds: number;
+                                };
                             };
                         };
                     };
@@ -16219,6 +17396,11 @@ export declare const appType: Elysia<"", {
                                 found?: unknown;
                                 property?: string;
                                 expected?: string;
+                            };
+                            429: {
+                                code: "RATE_LIMIT_EXCEEDED";
+                                message: string;
+                                retryAfterSeconds: number;
                             };
                         };
                     };
@@ -16282,11 +17464,21 @@ export declare const appType: Elysia<"", {
                             headers: {};
                             response: {
                                 401: "Unauthorized";
-                                200: {};
-                                403: {
+                                200: {
+                                    status: string;
+                                    sentAt: Date;
+                                    campaignId: string;
+                                    recipientEmail: string;
+                                    resendEmailId: string | null;
+                                    cloudflareEmailId: string | null;
+                                    campaignName: string;
+                                    campaignSubject: string;
+                                };
+                                403: string | {
                                     code: string;
                                     message: string;
                                 };
+                                404: string;
                                 422: {
                                     type: "validation";
                                     on: string;
@@ -16295,6 +17487,11 @@ export declare const appType: Elysia<"", {
                                     found?: unknown;
                                     property?: string;
                                     expected?: string;
+                                };
+                                429: {
+                                    code: "RATE_LIMIT_EXCEEDED";
+                                    message: string;
+                                    retryAfterSeconds: number;
                                 };
                             };
                         };
@@ -16456,6 +17653,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -16500,6 +17702,11 @@ export declare const appType: Elysia<"", {
                         property?: string;
                         expected?: string;
                     };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
+                    };
                 };
             };
         };
@@ -16537,6 +17744,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -16569,6 +17781,11 @@ export declare const appType: Elysia<"", {
                         found?: unknown;
                         property?: string;
                         expected?: string;
+                    };
+                    429: {
+                        code: "RATE_LIMIT_EXCEEDED";
+                        message: string;
+                        retryAfterSeconds: number;
                     };
                 };
             };
@@ -16611,6 +17828,11 @@ export declare const appType: Elysia<"", {
                             property?: string;
                             expected?: string;
                         };
+                        429: {
+                            code: "RATE_LIMIT_EXCEEDED";
+                            message: string;
+                            retryAfterSeconds: number;
+                        };
                     };
                 };
             };
@@ -16652,6 +17874,11 @@ export declare const appType: Elysia<"", {
                 403: {
                     code: string;
                     message: string;
+                };
+                429: {
+                    code: "RATE_LIMIT_EXCEEDED";
+                    message: string;
+                    retryAfterSeconds: number;
                 };
             };
         };

@@ -81,7 +81,10 @@ use the reported candidates to clarify it. Omitting `--paid-by` defaults to you.
 Act on the user's requested changes; ask only for missing or ambiguous details.
 A payment records money already paid; it does not transfer money. Payments cannot
 be deleted from the CLI, so establish the amount, currency, date, direction and
-group (if any) before recording one. A clear request with those details supplies
+group (if any) before recording one. Something deleted elsewhere comes back with
+`banana expenses restore` or `banana payments restore`, which take the id and no
+flags; running one twice is safe, and there is no listing of deleted rows, so the
+id has to come from an activity feed or from the user. A clear request with those details supplies
 authorization; a balance inquiry alone does not.
 
 **4. Report names and currency codes to the user.** Cleaned shapes have both
@@ -99,6 +102,7 @@ show the names.
 | `banana expenses add` | `--title --amount --currency --date` required; `--paid-by --group --description --split-type --split` |
 | `banana expenses get <expense-id>` | one expense with payer and splits |
 | `banana expenses edit <expense-id>` | any subset of the add flags, plus `--no-group` |
+| `banana expenses restore <expense-id>` | brings a deleted expense back with its shares |
 | `banana recurring list` (or `banana expenses recurring list`) | `--status all\|active\|inactive` — the rules, not the expenses they make |
 | `banana recurring add` | `--title --amount --currency --frequency --start --split` required; `--interval --end --paid-by --group --description --split-type` |
 | `banana recurring get <rule-id>` | one rule, its splits, and the expenses it created |
@@ -106,6 +110,7 @@ show the names.
 | `banana recurring delete <rule-id>` | removes the rule itself |
 | `banana payments add` | `--amount --currency --from --to --date` required; `--group --description` |
 | `banana payments get <payment-id>` | |
+| `banana payments restore <payment-id>` | brings a deleted payment back |
 | `banana groups [list]` | `--search TEXT --limit --cursor --archived --sort balance\|lastActivity` |
 | `banana groups create` | `--name --currency` required; `--description --member --type vacation\|roommates\|couple\|travel\|party\|other` |
 | `banana groups get\|members\|activities <group>` | activities takes `--search --limit --cursor --type all\|expenses\|payments\|recurring_expenses --sort date\|amount --direction asc\|desc` |

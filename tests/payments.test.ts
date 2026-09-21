@@ -164,6 +164,28 @@ describe("BananaSplit CLI", () => {
     expect(stdout[0]).toContain("Settlement:  yes");
   });
 
+  it("restores a deleted payment with no body and no read-back", async () => {
+    const { calls, runtime, stdout } = harness(Response.json(PAYMENT));
+
+    expect(await runCli(["payments", "restore", "payment-1"], runtime)).toBe(0);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url.pathname).toBe("/base/payments/payment-1/restore");
+    expect(calls[0].init?.method).toBe("POST");
+    expect(calls[0].init?.body).toBeUndefined();
+    expect(stdout[0]).toContain("Payment restored");
+    expect(stdout[0]).toContain("Amount:      20.00 EUR");
+  });
+
+  it("surfaces a restore the API refuses without retrying", async () => {
+    const { calls, runtime, stderr } = harness(
+      new Response("Payment not found", { status: 404 }),
+    );
+
+    expect(await runCli(["payments", "restore", "payment-1"], runtime)).toBe(1);
+    expect(calls).toHaveLength(1);
+    expect(stderr[0]).toContain("Payment not found");
+  });
+
   it("reports a name that matches nothing", async () => {
     const { runtime, stderr } = harness((url, init) => lookup(url, init) ?? Response.json({}));
 

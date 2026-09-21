@@ -134,6 +134,14 @@ edit endpoint" conclusion.
     rather than guessing what an occurrence would be split into.
 - **`DELETE` exists here and nowhere else the CLI calls.** `recurring delete` is
   the only command that sends one; a payment still cannot be deleted.
+- **Undeleting is a `POST` to a sub-route.** `POST /expenses/:id/restore` and
+  `POST /payments/:id/restore` take no body and answer with the full detail —
+  expansions and shares included — which makes `expenses restore` and `payments
+  restore` the only writes that skip the read-back every other write needs. They
+  are idempotent (`200` for a row that is already active) and answer `403`,
+  `404` or `409` otherwise, which `request.ts` already surfaces unretried. There
+  is no endpoint listing deleted rows, so the id has to come from an activity
+  feed.
 - **`/currencies` takes no query params at all**, so `banana currencies
   --code`/`--search` fetches the one list and narrows it in the CLI.
 
