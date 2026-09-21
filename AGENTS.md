@@ -114,8 +114,17 @@ edit endpoint" conclusion.
   under `/expenses/recurring` (`GET` with `status=all|active|inactive`, `POST`,
   and `GET`/`PUT`/`DELETE` on `/:id`); the expenses a rule generates are normal
   `/expenses` rows carrying `recurringExpenseRuleId`, which is what
-  `expenses list --recurring` filters on. Two things about that endpoint set it
-  apart from every other write in this repo:
+  `expenses list --recurring` filters on. Three things about that endpoint set
+  it apart from every other write in this repo:
+  - **The collection needs a trailing slash and the sub-routes must not have
+    one.** `GET`/`POST` go to `/expenses/recurring/`; `GET`/`PUT`/`DELETE` go to
+    `/expenses/recurring/:id`. Without the slash the server matches
+    `/expenses/:id` first and looks an expense up by the literal id
+    `"recurring"`, which answers **500**, not 404 — so the failure reads like a
+    server fault rather than a wrong path. That cost a filed backend issue
+    before the cause was found. `RECURRING_COLLECTION` and `RECURRING_PATH` in
+    `src/commands/recurring.ts` keep the two apart; use the first for the
+    collection and the second to build `/:id` paths.
   - **`POST /expenses/recurring` answers `201 Created` with no row and no id.**
     Everything the CLI does after a write — read the row back, print names —
     needs an id, so `findCreatedRecurring` takes the newest rule in the listing
