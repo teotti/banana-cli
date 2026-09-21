@@ -141,16 +141,22 @@ edit endpoint" conclusion.
   - `splits` is **required** on the create, unlike a plain expense, which a
     group can split on the API's side. `recurring add` insists on `--split`
     rather than guessing what an occurrence would be split into.
-- **`DELETE` exists here and nowhere else the CLI calls.** `recurring delete` is
-  the only command that sends one; a payment still cannot be deleted.
-- **Undeleting is a `POST` to a sub-route.** `POST /expenses/:id/restore` and
-  `POST /payments/:id/restore` take no body and answer with the full detail —
-  expansions and shares included — which makes `expenses restore` and `payments
-  restore` the only writes that skip the read-back every other write needs. They
-  are idempotent (`200` for a row that is already active) and answer `403`,
-  `404` or `409` otherwise, which `request.ts` already surfaces unretried. There
-  is no endpoint listing deleted rows, so the id has to come from an activity
-  feed.
+- **Two commands send a `DELETE`**: `expenses delete` and `recurring delete`.
+  The API also has `DELETE`/`PUT` on `/payments/:id`, which the CLI does not
+  expose — a payment still cannot be deleted or edited from it.
+- **A delete answers with the flat row, and the row is gone.** There is nothing
+  to read back afterwards, so `expenses delete` reads the expense *before* the
+  delete and prints that: the receipt names the payer, the group and the
+  currency the flat row only has ids for. `--raw` skips the read and prints
+  what the delete itself answered.
+- **Deleting an expense is soft, and `expenses restore` undoes it.** `POST
+  /expenses/:id/restore` and `POST /payments/:id/restore` take no body and
+  answer with the full detail — expansions and shares included — which makes
+  them the only writes that skip the read-back every other write needs. They are
+  idempotent (`200` for a row that is already active) and answer `403`, `404` or
+  `409` otherwise, which `request.ts` already surfaces unretried. Nothing lists
+  deleted rows, so the id has to come from an activity feed or from before the
+  delete — which is why `expenses delete` prints the row it removed.
 - **`/currencies` takes no query params at all**, so `banana currencies
   --code`/`--search` fetches the one list and narrows it in the CLI.
 

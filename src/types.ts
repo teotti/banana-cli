@@ -24,6 +24,7 @@ export type Presentation =
   | "payment"
   | "expense-updated"
   | "expense-created"
+  | "expense-deleted"
   | "expense-restored"
   | "payment-created"
   | "payment-restored"

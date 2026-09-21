@@ -178,6 +178,7 @@ banana groups members "Lisbon trip"
 banana groups activities Lisbon --search dinner
 banana expenses list
 banana expenses get EXPENSE_ID
+banana expenses delete EXPENSE_ID
 banana expenses restore EXPENSE_ID
 banana payments get PAYMENT_ID
 banana payments restore PAYMENT_ID
@@ -253,8 +254,16 @@ link; `--no-group` does the reverse. Changing `--amount` on an equal split
 redistributes the splits automatically; any other split type needs matching
 `--split` values.
 
-Bring back an expense or a payment that was deleted, with the shares or ledger
-entries it had:
+Delete an expense. It leaves the balances of everyone it was split with, and
+the row that was removed is printed as a receipt:
+
+```sh
+banana expenses delete EXPENSE_ID
+```
+
+Deleting is soft, so it can be undone — but nothing lists deleted records, so
+note the id before you delete. Bring back an expense or a payment that was
+deleted, with the shares or ledger entries it had:
 
 ```sh
 banana expenses restore EXPENSE_ID
