@@ -48,20 +48,33 @@ describe("BananaSplit CLI", () => {
     expect(calls).toEqual([]);
   });
 
-  it("prints the installed version, and nothing else", async () => {
+  it("prints the installed version for the command and its alias", async () => {
     const { calls, runtime, stdout } = harness();
 
     expect(await runCli(["version"], runtime)).toBe(0);
-    expect(stdout).toEqual([`banana version ${CLI_VERSION}`]);
+    expect(await runCli(["-v"], runtime)).toBe(0);
+    expect(stdout).toEqual([
+      `banana version ${CLI_VERSION}`,
+      `banana version ${CLI_VERSION}`,
+    ]);
     expect(calls).toEqual([]);
   });
 
-  it("rejects arguments and output flags on version", async () => {
+  it("gives the version alias the canonical help and output restrictions", async () => {
     const { runtime, stderr } = harness();
+    const canonicalHelp = harness();
+    const aliasHelp = harness();
+    const subcommand = harness();
 
     expect(await runCli(["version", "later"], runtime)).toBe(2);
     expect(await runCli(["version", "--json"], runtime)).toBe(2);
-    expect(stderr[1]).toBe(
+    expect(await runCli(["-v", "--json"], runtime)).toBe(2);
+    expect(await runCli(["version", "--help"], canonicalHelp.runtime)).toBe(0);
+    expect(await runCli(["-v", "--help"], aliasHelp.runtime)).toBe(0);
+    expect(aliasHelp.stdout).toEqual(canonicalHelp.stdout);
+    expect(aliasHelp.stdout.join("\n")).toContain("banana -v");
+    expect(await runCli(["groups", "-v"], subcommand.runtime)).toBe(2);
+    expect(stderr[2]).toBe(
       '{"error":{"type":"usage","message":"--json is not supported for banana version"}}',
     );
   });

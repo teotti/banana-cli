@@ -167,6 +167,7 @@ Run `banana` from any directory:
 banana login
 banana doctor
 banana version
+banana -v
 banana upgrade
 banana me
 banana balance
