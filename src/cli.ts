@@ -99,6 +99,7 @@ const ROOT_HELP = helpText({
         ["logout", "Revoke and delete stored credentials"],
         ["doctor", "Check the CLI, your login and the agent skill"],
         ["version", "Print the installed version"],
+        ["-v", "Alias for `version`"],
         ["upgrade", "Upgrade the CLI to the latest stable release"],
         ["update", "Alias for `upgrade`"],
         ["skill install", "Install the agent skill for driving this CLI"],
@@ -164,8 +165,8 @@ const UNINSTALL_HELP = helpText({
 
 const VERSION_HELP = helpText({
   summary: "Print the installed version.",
-  usage: ["banana version"],
-  examples: ["banana version"],
+  usage: ["banana version", "banana -v"],
+  examples: ["banana version", "banana -v"],
 });
 
 const UPGRADE_HELP = helpText({
@@ -238,6 +239,7 @@ function parseCommand(args: string[]) {
 
 ${ROOT_HELP}` };
   }
+  if (args[0] === "-v") args = ["version", ...args.slice(1)];
   if (args[0] === "balances") args = ["balance", "users", ...args.slice(1)];
   // A rule is its own row, not an expense, so `recurring` is a command of its
   // own — but it is under `expenses` that people look for it.
