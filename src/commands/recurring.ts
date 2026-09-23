@@ -1,4 +1,6 @@
 import {
+  DEFAULT_LIST_LIMIT,
+  appendQuery,
   asArray,
   asRecord,
   display,
@@ -69,8 +71,12 @@ const HELP = helpText({
 const LIST_HELP = helpText({
   summary: "List the recurring rules you are part of.",
   usage: ["banana recurring list [flags]"],
-  options: [["--status all|active|inactive", "Which rules to list (default: all)"]],
-  notes: ["The listing is not paged: it answers with every rule at once."],
+  options: [
+    ["--status all|active|inactive", "Which rules to list (default: all)"],
+    ["--limit N", `Rules to fetch (default: ${DEFAULT_LIST_LIMIT})`],
+    ["--cursor CURSOR", "Continue from a cursor returned by a previous page"],
+  ],
+  notes: ["Reuse the same status and limit when requesting the next cursor."],
   examples: [
     "banana recurring list",
     "banana recurring list --status active --json",
@@ -236,7 +242,11 @@ function parseRecurringList(args: string[]): ParsedCommand {
   if (wantsHelp(args)) return { kind: "help", text: LIST_HELP };
   const { positionals, values } = parseOptions(
     args,
-    { status: { type: "string" } },
+    {
+      status: { type: "string" },
+      limit: { type: "string" },
+      cursor: { type: "string" },
+    },
     LIST_HELP,
   );
   requirePositionals(positionals, 0, LIST_HELP);
@@ -247,6 +257,12 @@ function parseRecurringList(args: string[]): ParsedCommand {
       enumValue(values.status, "--status", ["all", "active", "inactive"] as const) ??
       "all",
   });
+  appendQuery(
+    query,
+    "l",
+    positiveInteger(values.limit, "--limit") ?? String(DEFAULT_LIST_LIMIT),
+  );
+  appendQuery(query, "cursor", values.cursor as string | undefined);
   return {
     kind: "request",
     path: RECURRING_COLLECTION,
@@ -498,7 +514,7 @@ export function mergeRecurringBody(
  */
 export function findCreatedRecurring(sent: unknown, listing: unknown) {
   const wanted = asRecord(sent);
-  const matches = asArray(listing)
+  const matches = recurringItems(listing)
     .map(asRecord)
     .filter(
       (rule) =>
@@ -513,6 +529,10 @@ export function findCreatedRecurring(sent: unknown, listing: unknown) {
   return matches[0] ?? {};
 }
 
+export function recurringItems(body: unknown): unknown[] {
+  return Array.isArray(body) ? body : asArray(asRecord(body).items);
+}
+
 type Lookup = (path: string, query?: URLSearchParams) => Promise<unknown>;
 
 /**
@@ -523,7 +543,8 @@ type Lookup = (path: string, query?: URLSearchParams) => Promise<unknown>;
  * that fails costs the name, not the command.
  */
 export async function nameRecurring(body: unknown, get: Lookup) {
-  const rules = (Array.isArray(body) ? body : [body]).map(asRecord);
+  const isList = Array.isArray(body) || Array.isArray(asRecord(body).items);
+  const rules = (isList ? recurringItems(body) : [body]).map(asRecord);
   const currencies = new Map<string, string>();
   const users = new Map<string, string>();
   const groups = new Map<string, string>();
@@ -612,7 +633,11 @@ export async function nameRecurring(body: unknown, get: Lookup) {
         }
       : {}),
   }));
-  return Array.isArray(body) ? named : named[0];
+  return Array.isArray(body)
+    ? named
+    : isList
+      ? { ...asRecord(body), items: named }
+      : named[0];
 }
 
 function remember(map: Map<string, string>, id: unknown, name: unknown) {
@@ -702,13 +727,18 @@ function cleanRecurring(body: unknown) {
 }
 
 function cleanRecurringList(body: unknown) {
-  return asArray(body).map((value) => {
-    const rule = asRecord(value);
-    return {
-      ...cleanRule(rule),
-      totalOccurrences: numeric(rule.totalOccurrences),
-    };
-  });
+  const page = asRecord(body);
+  return {
+    items: recurringItems(body).map((value) => {
+      const rule = asRecord(value);
+      return {
+        ...cleanRule(rule),
+        totalOccurrences: numeric(rule.totalOccurrences),
+      };
+    }),
+    hasMore: page.hasMore === true,
+    nextCursor: page.nextCursor ?? null,
+  };
 }
 
 const OCCURRENCES_SHOWN = 5;
@@ -792,7 +822,8 @@ export const recurringPresenters = {
   "recurring-list": {
     clean: cleanRecurringList,
     format(body) {
-      const rules = asArray(body);
+      const response = asRecord(body);
+      const rules = asArray(response.items);
       return section(
         rules.length
           ? table(
@@ -819,6 +850,13 @@ export const recurringPresenters = {
               }),
             )
           : note("No recurring expenses."),
+        note(
+          response.hasMore
+            ? response.nextCursor
+              ? `More recurring rules available. Next page: banana recurring list --cursor ${JSON.stringify(response.nextCursor)}`
+              : "More recurring rules available."
+            : "End of recurring rules.",
+        ),
         note("banana recurring get <rule-id> shows one rule and its splits."),
       );
     },

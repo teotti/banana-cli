@@ -86,10 +86,13 @@ describe("banana recurring", () => {
     expect(calls[0].url.pathname).toBe("/base/expenses/recurring/");
     expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
       status: "all",
+      l: "5",
     });
     expect(stdout[0].split("\n")).toEqual([
       "ID      Title  Every    Next        Paid by       Amount  Active",
       "rule-1  Rent   monthly  2026-11-01  Leonardo  900.00 EUR  yes",
+      "",
+      "End of recurring rules.",
       "",
       "banana recurring get <rule-id> shows one rule and its splits.",
     ]);
@@ -110,31 +113,70 @@ describe("banana recurring", () => {
 
     expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
       status: "active",
+      l: "5",
     });
-    expect(JSON.parse(stdout[0])).toEqual([
-      {
-        id: "rule-1",
-        title: "Rent",
-        description: null,
-        amount: 900,
-        currencyId: "currency-eur",
-        currency: "EUR",
-        paidById: ME.id,
-        paidBy: "Leonardo",
-        groupId: GROUP.id,
-        group: "Lisbon trip",
-        frequency: "monthly",
-        interval: 1,
-        startDate: "2026-10-01T00:00:00.000Z",
-        endDate: null,
-        nextOccurrence: "2026-11-01T00:00:00.000Z",
-        lastGenerated: "2026-10-01T00:00:00.000Z",
-        active: true,
-        splitType: "equal",
-        timezone: "UTC",
-        totalOccurrences: 1,
-      },
-    ]);
+    expect(JSON.parse(stdout[0])).toEqual({
+      items: [
+        {
+          id: "rule-1",
+          title: "Rent",
+          description: null,
+          amount: 900,
+          currencyId: "currency-eur",
+          currency: "EUR",
+          paidById: ME.id,
+          paidBy: "Leonardo",
+          groupId: GROUP.id,
+          group: "Lisbon trip",
+          frequency: "monthly",
+          interval: 1,
+          startDate: "2026-10-01T00:00:00.000Z",
+          endDate: null,
+          nextOccurrence: "2026-11-01T00:00:00.000Z",
+          lastGenerated: "2026-10-01T00:00:00.000Z",
+          active: true,
+          splitType: "equal",
+          timezone: "UTC",
+          totalOccurrences: 1,
+        },
+      ],
+      hasMore: false,
+      nextCursor: null,
+    });
+  });
+
+  it("reads paginated rules and passes the next cursor with the chosen limit", async () => {
+    const { calls, runtime, stdout } = harness(
+      api((url) =>
+        url.pathname === "/base/expenses/recurring/"
+          ? Response.json({
+              items: [RULE],
+              hasMore: url.searchParams.get("cursor") === null,
+              nextCursor: url.searchParams.get("cursor") === null ? "next-page" : null,
+            })
+          : undefined,
+      ),
+    );
+
+    expect(await runCli(["recurring", "list", "--limit", "10", "--json"], runtime)).toBe(0);
+    expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
+      status: "all", l: "10",
+    });
+    expect(JSON.parse(stdout[0])).toMatchObject({
+      items: [{ id: "rule-1" }], hasMore: true, nextCursor: "next-page",
+    });
+
+    calls.length = 0;
+    expect(await runCli([
+      "recurring", "list", "--limit", "10", "--cursor", "next-page",
+    ], runtime)).toBe(0);
+    expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
+      status: "all", l: "10", cursor: "next-page",
+    });
+    expect(stdout[1]).toContain("End of recurring rules.");
+
+    expect(await runCli(["recurring", "list"], runtime)).toBe(0);
+    expect(stdout[2]).toContain("banana recurring list --cursor \"next-page\"");
   });
 
   it("rejects a --status the API does not take", async () => {
@@ -258,13 +300,77 @@ describe("banana recurring", () => {
     expect(stdout[0]).toContain("900.00 EUR");
   });
 
+  it("finds a created rule after the first page", async () => {
+    const created = { ...RULE, id: "rule-2", createdAt: "2026-09-23T12:00:00.000Z" };
+    const older = { ...RULE, createdAt: "2026-09-22T12:00:00.000Z" };
+    const { calls, runtime, stdout } = harness(
+      api((url, init) => {
+        if (url.pathname === "/base/expenses/recurring/") {
+          if (init?.method === "POST") return new Response("Created", { status: 201 });
+          return Response.json(
+            url.searchParams.has("cursor")
+              ? { items: [created], hasMore: false, nextCursor: null }
+              : { items: [older], hasMore: true, nextCursor: "page-2" },
+          );
+        }
+        return url.pathname === "/base/expenses/recurring/rule-2"
+          ? Response.json({ ...DETAIL, id: "rule-2" })
+          : undefined;
+      }),
+    );
+
+    expect(await runCli([
+      "recurring", "add", "--title", "Rent", "--amount", "900",
+      "--currency", "EUR", "--frequency", "monthly",
+      "--start", "2026-10-01", "--split", "me=900", "--json",
+    ], runtime)).toBe(0);
+
+    const pages = calls.filter(({ url, init }) =>
+      url.pathname === "/base/expenses/recurring/" && init?.method !== "POST"
+    );
+    expect(pages.map(({ url }) => Object.fromEntries(url.searchParams))).toEqual([
+      { status: "all", l: "100" },
+      { status: "all", l: "100", cursor: "page-2" },
+    ]);
+    expect(JSON.parse(stdout[0]).id).toBe("rule-2");
+  });
+
+  it("reports when a created rule cannot be found", async () => {
+    const { runtime, stderr } = harness(
+      api((url, init) =>
+        url.pathname === "/base/expenses/recurring/"
+          ? init?.method === "POST"
+            ? new Response("Created", { status: 201 })
+            : Response.json({ items: [], hasMore: false, nextCursor: null })
+          : undefined,
+      ),
+    );
+
+    expect(await runCli([
+      "recurring", "add", "--title", "Rent", "--amount", "900",
+      "--currency", "EUR", "--frequency", "monthly",
+      "--start", "2026-10-01", "--split", "me=900", "--json",
+    ], runtime)).toBe(1);
+    expect(JSON.parse(stderr[0]).error.message).toContain(
+      "Created recurring rule was not found in the listing",
+    );
+  });
+
   it("takes an --interval and an --end date", async () => {
+    const cleaner = {
+      ...RULE,
+      id: "rule-cleaner",
+      title: "Cleaner",
+      amount: "40.000000000000000000",
+      frequency: "weekly",
+      interval: 2,
+    };
     const { calls, runtime } = harness(
       api((url, init) =>
         url.pathname === "/base/expenses/recurring/" && init?.method === "POST"
           ? new Response("Created", { status: 201 })
           : url.pathname === "/base/expenses/recurring/"
-            ? Response.json([])
+            ? Response.json([cleaner])
             : undefined,
       ),
     );
@@ -477,6 +583,15 @@ describe("banana recurring", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("--raw preserves the paginated API envelope", async () => {
+    const page = { items: [RULE], hasMore: true, nextCursor: "page-2" };
+    const { calls, runtime, stdout } = harness(Response.json(page));
+
+    expect(await runCli(["recurring", "list", "--raw"], runtime)).toBe(0);
+    expect(JSON.parse(stdout[0])).toEqual(page);
+    expect(calls).toHaveLength(1);
+  });
+
   it("keeps the ids when a name lookup fails", async () => {
     const { runtime, stdout } = harness((url) =>
       url.pathname === "/base/expenses/recurring/"
@@ -486,7 +601,7 @@ describe("banana recurring", () => {
 
     expect(await runCli(["recurring", "list", "--json"], runtime)).toBe(0);
 
-    expect(JSON.parse(stdout[0])[0]).toMatchObject({
+    expect(JSON.parse(stdout[0]).items[0]).toMatchObject({
       currencyId: "currency-eur",
       currency: null,
       paidById: ME.id,
@@ -508,7 +623,7 @@ describe("banana recurring", () => {
     expect(await runCli(["expenses", "recurring", "list", "--json"], runtime)).toBe(0);
 
     expect(calls[0].url.pathname).toBe("/base/expenses/recurring/");
-    expect(JSON.parse(stdout[0])[0]).toMatchObject({ id: "rule-1" });
+    expect(JSON.parse(stdout[0]).items[0]).toMatchObject({ id: "rule-1" });
 
     await runCli(["expenses", "recurring", "--help"], runtime);
     expect(stdout[1]).toContain("banana recurring <command>");

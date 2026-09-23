@@ -110,7 +110,7 @@ show the names.
 | `banana expenses edit <expense-id>` | any subset of the add flags, plus `--no-group` |
 | `banana expenses delete <expense-id>` | changes everyone's balance — confirm with the user first; undo with `restore` |
 | `banana expenses restore <expense-id>` | brings a deleted expense back with its shares |
-| `banana recurring list` (or `banana expenses recurring list`) | `--status all\|active\|inactive` — the rules, not the expenses they make |
+| `banana recurring list` (or `banana expenses recurring list`) | `--status all\|active\|inactive --limit N --cursor C` — pages of rules, not the expenses they make |
 | `banana recurring add` | `--title --amount --currency --frequency --start --split` required; `--interval --end --paid-by --group --description --split-type` |
 | `banana recurring get <rule-id>` | one rule, its splits, and the expenses it created |
 | `banana recurring edit <rule-id>` | any subset of the add flags, plus `--no-group --no-end --active --inactive` |
@@ -215,7 +215,7 @@ be wrong if two rules with the same title and amount are created at once.
 
 ## Paging
 
-Expenses, groups and friends listings default to 5 rows. For a paged `--json`
+Expenses, recurring rules, groups and friends listings default to 5 rows. For a paged `--json`
 response `{items, hasMore, nextCursor}`, pass a non-null `nextCursor` back as
 `--cursor` with the same filters and sorting. Raise `--limit` when useful, but
 check `hasMore` before treating a page as complete. Per-person balances, group
