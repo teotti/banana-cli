@@ -23,6 +23,7 @@ import {
   mergeRecurringBody,
   nameRecurring,
   parseRecurring,
+  recurringItems,
   RECURRING_COLLECTION,
   RECURRING_PATH,
   recurringPresenters,
@@ -535,19 +536,29 @@ export async function runCli(
       command.presentation === "recurring-created" &&
       typeof asRecord(body).id !== "string"
     ) {
-      body = findCreatedRecurring(
-        command.body,
-        await request(
+      const rules: unknown[] = [];
+      let cursor: string | undefined;
+      do {
+        const query = new URLSearchParams({ status: "all", l: "100" });
+        if (cursor) query.set("cursor", cursor);
+        const page = await request(
           {
             kind: "request",
             path: RECURRING_COLLECTION,
             presentation: "recurring-list",
-            query: new URLSearchParams({ status: "all" }),
+            query,
           },
           requestRuntime,
           env,
-        ),
-      );
+        );
+        rules.push(...recurringItems(page));
+        const next = asRecord(page).nextCursor;
+        cursor = typeof next === "string" && next ? next : undefined;
+      } while (cursor);
+      body = findCreatedRecurring(command.body, rules);
+      if (typeof asRecord(body).id !== "string") {
+        throw new CliFailure("api", "Created recurring rule was not found in the listing");
+      }
     }
     const createdId = created ? asRecord(body).id : undefined;
     const detailPath =
