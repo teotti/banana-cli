@@ -127,6 +127,15 @@ describe("BananaSplit CLI", () => {
     expect(calls).toHaveLength(0);
   });
 
+  it("documents self-notification only for expense creation", async () => {
+    const { calls, runtime, stdout } = harness();
+    expect(await runCli(["expenses", "add", "--help"], runtime)).toBe(0);
+    expect(await runCli(["expenses", "edit", "--help"], runtime)).toBe(0);
+    expect(stdout[0]).toContain("--notify-me");
+    expect(stdout[1]).not.toContain("--notify-me");
+    expect(calls).toHaveLength(0);
+  });
+
   it("carries a time on --date through to the request", async () => {
     const cases: [string, string][] = [
       ["2026-09-16", "2026-09-16T00:00:00.000Z"],
@@ -210,6 +219,7 @@ describe("BananaSplit CLI", () => {
           "me=22",
           "--split",
           "Ana=20",
+          "--notify-me",
         ],
         runtime,
       ),
@@ -229,6 +239,7 @@ describe("BananaSplit CLI", () => {
         { userId: ANA.id, amount: "20" },
       ],
       description: "Team meal",
+      notifyMe: true,
       splitType: "custom",
       currencyId: "currency-eur",
       paidById: ME.id,
@@ -244,7 +255,7 @@ describe("BananaSplit CLI", () => {
     expect(stdout[0]).not.toContain(ANA.id);
   });
 
-  it("defaults the payer to the signed-in user", async () => {
+  it("defaults the payer to the signed-in user and omits self-notification", async () => {
     const { calls, runtime } = harness((url, init) => {
       const answer = lookup(url, init);
       return answer ?? Response.json({ id: "expense-1" });
@@ -279,6 +290,22 @@ describe("BananaSplit CLI", () => {
       paidById: ME.id,
       groupId: GROUP.id,
     });
+  });
+
+  it("accepts notifyMe in a JSON create body without mixing flags", async () => {
+    const { calls, runtime } = harness(Response.json({ id: "expense-1" }));
+    const body = JSON.stringify({ title: "Lunch", notifyMe: true });
+
+    expect(await runCli(["expenses", "add", body], runtime)).toBe(0);
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+      title: "Lunch", notifyMe: true,
+    });
+
+    const mixed = harness();
+    expect(await runCli([
+      "expenses", "add", body, "--notify-me",
+    ], mixed.runtime)).toBe(2);
+    expect(mixed.calls).toHaveLength(0);
   });
 
   it("keeps ids working and looks nothing up for them", async () => {
@@ -489,6 +516,17 @@ describe("BananaSplit CLI", () => {
         { userId: "user-2", amount: "20" },
       ],
     });
+  });
+
+  it("rejects notifyMe in JSON edits before making a request", async () => {
+    const { calls, runtime, stderr } = harness();
+    expect(await runCli([
+      "expenses", "edit", "expense-1", '{"notifyMe":true}', "--json",
+    ], runtime)).toBe(2);
+    expect(calls).toHaveLength(0);
+    expect(JSON.parse(stderr[0]).error.message).toContain(
+      "notifyMe is only valid when adding an expense",
+    );
   });
 
   it("edits an expense whose only change is a named currency", async () => {
