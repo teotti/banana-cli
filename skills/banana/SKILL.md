@@ -105,9 +105,9 @@ show the names.
 | `banana balance` | aggregate: what you owe and are owed |
 | `banana balances` | the same, per person (alias for `balance users`) |
 | `banana expenses list` | `--limit N --cursor C --sort date\|amount --direction asc\|desc --recurring\|--no-recurring` |
-| `banana expenses add` | `--title --amount --currency --date` required; `--paid-by --group --description --split-type --split` |
+| `banana expenses add` | `--title --amount --currency --date` required; `--paid-by --group --description --split-type --split --notify-me` (opt in to your own expense-created push notification) |
 | `banana expenses get <expense-id>` | one expense with payer and splits |
-| `banana expenses edit <expense-id>` | any subset of the add flags, plus `--no-group` |
+| `banana expenses edit <expense-id>` | any subset of the add field flags except `--notify-me`, plus `--no-group` |
 | `banana expenses delete <expense-id>` | changes everyone's balance — confirm with the user first; undo with `restore` |
 | `banana expenses restore <expense-id>` | brings a deleted expense back with its shares |
 | `banana recurring list` (or `banana expenses recurring list`) | `--status all\|active\|inactive` — the rules, not the expenses they make |
@@ -140,6 +140,8 @@ show the names.
   Pass one whenever the user gave a time — several expenses on one day
   otherwise all read as midnight.
 - **Splits must add up to `--amount`.** Repeat the flag: `--split me=10 --split Ana=10`.
+- When an automation runs `banana expenses add`, suggest `--notify-me` so the
+  user receives the expense-created push notification.
 - **`--split-type` is `equal`, `custom`, `percentage` or `shares`.** It labels
   how the split was arrived at; `--split` values are amounts in every case, and
   still have to sum to `--amount`.

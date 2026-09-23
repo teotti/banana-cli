@@ -222,12 +222,15 @@ banana groups create --name "Lisbon trip" --currency EUR \
 
 banana expenses add --title Dinner --amount 42 --currency EUR \
   --paid-by me --date 2026-09-01 --group "Lisbon trip" \
-  --split-type custom --split me=22 --split Ana=20
+  --split-type custom --split me=22 --split Ana=20 --notify-me
 
 banana payments add --amount 20 --currency EUR \
   --from me --to Ana --date 2026-09-01 \
   --description "Settle up"
 ```
+
+`--notify-me` sends the expense-created push notification to you as well. It is
+off by default and only applies when adding an expense.
 
 `--date` takes `YYYY-MM-DD` or `DD-MM-YYYY`, and accepts a time after a `T`
 with optional seconds, milliseconds and an offset. Without a time the row

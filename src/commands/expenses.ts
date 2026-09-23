@@ -49,6 +49,7 @@ const ADD_HELP = helpText({
     ["--paid-by WHO", "Who paid (default: you)"],
     ["--group NAME", "Charge the expense to a group"],
     ["--description TEXT", "Longer note"],
+    ["--notify-me", "Send yourself the expense-created push notification"],
     ["--split-type TYPE", SPLIT_TYPES],
     ["--split WHO=AMOUNT", "One person's share; repeat for each split"],
   ],
@@ -230,6 +231,7 @@ export function parseExpenses(args: string[]): ParsedCommand {
       date: { type: "string" },
       description: { type: "string" },
       group: { type: "string" },
+      "notify-me": { type: "boolean" },
       "paid-by": { type: "string" },
       split: { type: "string", multiple: true },
       "split-type": { type: "string" },
@@ -282,6 +284,7 @@ export function parseExpenses(args: string[]): ParsedCommand {
       date: isoDate(values.date, ADD_HELP),
       splits,
       ...(description === undefined ? {} : { description }),
+      ...(values["notify-me"] === true ? { notifyMe: true } : {}),
       ...(splitType === undefined ? {} : { splitType }),
     },
     references: [
@@ -395,6 +398,9 @@ function parseExpensesEdit(args: string[]): ParsedCommand {
 
   const jsonBody = parseJsonBody(rest, values, EDIT_HELP);
   if (jsonBody !== undefined) {
+    if ("notifyMe" in jsonBody) {
+      throw usageFailure("notifyMe is only valid when adding an expense", EDIT_HELP);
+    }
     return {
       kind: "request",
       method: "PUT",
