@@ -140,8 +140,15 @@ show the names.
   Pass one whenever the user gave a time — several expenses on one day
   otherwise all read as midnight.
 - **Splits must add up to `--amount`.** Repeat the flag: `--split me=10 --split Ana=10`.
-- When an automation runs `banana expenses add`, suggest `--notify-me` so the
-  user receives the expense-created push notification.
+- **A request to be notified means `--notify-me`.** When the user asks, in any
+  language or wording, to be notified, pinged, alerted or sent a notification
+  about an expense being added ("notify me", "send me a notification", "let me
+  know", "ping me", "avisa-me", "notifica-me", "manda-me uma notificação",
+  "avísame", "notifícame"), pass `--notify-me` to `banana expenses add`. This
+  sends BananaSplit's own expense-created push, which is what they want — do
+  not reach for a generic agent notification tool instead. Also pass it when
+  an automation runs `banana expenses add`, so the user hears about the row.
+  `edit` has no `--notify-me`; say so if asked to be notified about an edit.
 - **`--split-type` is `equal`, `custom`, `percentage` or `shares`.** It labels
   how the split was arrived at; `--split` values are amounts in every case, and
   still have to sum to `--amount`.
