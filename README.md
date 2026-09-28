@@ -383,11 +383,11 @@ bun run typecheck
 npm publishes use trusted publishing (OIDC) from `release.yml`, so no npm token
 is stored in the repository.
 
-The contract snapshot comes from staging (`bun run contract:download` with
-`BANANASPLIT_CONTRACT_URL` set), which runs ahead of production, while a
-released binary talks to production. So before tagging, check that anything the
-release depends on is live in production — run the new commands against a real
-account rather than trusting `server.d.ts`:
+The contract snapshot comes from staging (`bun run contract:download`, with
+`BANANASPLIT_CONTRACT_URL` set in `.env` or the shell), which runs ahead of
+production, while a released binary talks to production. So before tagging,
+check that anything the release depends on is live in production — run the new
+commands against a real account rather than trusting `server.d.ts`:
 
 ```sh
 bun test && bun run typecheck

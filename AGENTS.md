@@ -59,9 +59,11 @@ and it is the only way the file should ever appear or change — never hand-edit
 it:
 
 ```sh
-BANANASPLIT_CONTRACT_URL=<staging>/public/server.d.ts bun run contract:download
+bun run contract:download
 ```
 
+It reads `BANANASPLIT_CONTRACT_URL` (`<staging>/public/server.d.ts`) from the
+shell or from a gitignored `.env` at the repo root, which Bun loads on its own.
 The staging URL is kept out of this public repo; ask a maintainer for it.
 
 **Staging runs ahead of production, and the CLI talks to production.** A route
