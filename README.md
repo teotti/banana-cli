@@ -380,15 +380,14 @@ bun run typecheck
 
 ## Releasing
 
-The repository must be public and the `@bananasplitapp` npm organization must
-exist before the first release. Store a temporary granular npm publishing
-token with bypass 2FA as the `NPM_TOKEN` repository secret.
+npm publishes use trusted publishing (OIDC) from `release.yml`, so no npm token
+is stored in the repository.
 
-The contract snapshot comes from staging (`bun run contract:download`), which
-runs ahead of production, while a released binary talks to production. So
-before tagging, check that anything the release depends on is live in
-production — run the new commands against a real account rather than trusting
-`server.d.ts`:
+The contract snapshot comes from staging (`bun run contract:download`, with
+`BANANASPLIT_CONTRACT_URL` set in `.env` or the shell), which runs ahead of
+production, while a released binary talks to production. So before tagging,
+check that anything the release depends on is live in production — run the new
+commands against a real account rather than trusting `server.d.ts`:
 
 ```sh
 bun test && bun run typecheck
@@ -403,9 +402,7 @@ git push origin v0.1.0
 ```
 
 The tag workflow tests all targets, publishes the GitHub release, and publishes
-the npm package. After the first npm release, configure `release.yml` as the
-package's trusted GitHub Actions publisher and remove `NPM_TOKEN`; subsequent
-publishes use OIDC automatically.
+the npm package.
 
 Configuration, network, API, and usage errors are written to stderr. Human
 commands print `Error: MESSAGE`, `--json` prints a structured error object, and
