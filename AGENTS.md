@@ -40,7 +40,8 @@ rather than as an argument, which would expose it in the process list.
 
 ## API contract
 
-The exported Elysia server type lives in `server.d.ts` at the repo root.
+The exported Elysia server type lives in `server.d.ts` at the repo root. It is
+gitignored, not committed — download it first (below) if it is missing.
 Consult this local contract snapshot for routes, params, request bodies and
 response shapes.
 
@@ -54,7 +55,8 @@ the wrong route for it.
 ### Refreshing the snapshot
 
 Staging publishes the export; production does not. So there is one command,
-and it is the only way the file should ever change — never hand-edit it:
+and it is the only way the file should ever appear or change — never hand-edit
+it:
 
 ```sh
 BANANASPLIT_CONTRACT_URL=<staging>/public/server.d.ts bun run contract:download
