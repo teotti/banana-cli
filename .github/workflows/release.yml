@@ -241,5 +241,3 @@ jobs:
       - run: npm install --global npm@latest
       - name: Publish npm package
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

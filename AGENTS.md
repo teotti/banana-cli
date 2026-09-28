@@ -57,8 +57,10 @@ Staging publishes the export; production does not. So there is one command,
 and it is the only way the file should ever change — never hand-edit it:
 
 ```sh
-bun run contract:download   # curl -fsS -o server.d.ts <staging>/public/server.d.ts
+BANANASPLIT_CONTRACT_URL=<staging>/public/server.d.ts bun run contract:download
 ```
+
+The staging URL is kept out of this public repo; ask a maintainer for it.
 
 **Staging runs ahead of production, and the CLI talks to production.** A route
 that is in the snapshot is not necessarily one a released binary can call. An
@@ -99,8 +101,8 @@ edit endpoint" conclusion.
 - Splits must sum to the amount, so changing an amount means recomputing them.
 - List endpoints page with `p` / `l` query params and return
   `{items, hasMore, nextCursor}`.
-- **Searching is a separate route, not a parameter** (in production; staging
-  also takes `q` on the listings). `/groups/search`, `/friends/search` and
+- **Searching is also a separate route** (`q` on the listings works too, see
+  above). `/groups/search`, `/friends/search` and
   `/groups/:id/activities/search` take `q`, and they do not behave alike.
   `/groups/search` and `/friends/search` page with `p`, take no `cursor` or
   `sort`, and return a bare array; `/groups/:id/activities/search` is a normal
@@ -109,7 +111,7 @@ edit endpoint" conclusion.
   Only the activities one is wired up: `groups activities --search` switches to
   it (`src/commands/groups.ts`), which is why that search works against
   production. `groups --search` and `friends --search` instead send `q` to the
-  plain listing, so they stay staging-only until the API ships it.
+  plain listing.
 - **A recurring rule is its own row, not a flag on an expense.** The rules live
   under `/expenses/recurring` (`GET` with `status=all|active|inactive`, `POST`,
   and `GET`/`PUT`/`DELETE` on `/:id`); the expenses a rule generates are normal
@@ -350,7 +352,7 @@ if that error occurs. Don't report a green run you didn't get.
 
 ## Live data
 
-There is no staging environment. Anything you run hits the real account, and
+The CLI talks to production. Anything you run hits the real account, and
 creates are visible to the other people in a group. Prefer reads. If you must
 test a write, use a throwaway row you created, revert it, and confirm the
 revert.
