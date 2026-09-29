@@ -1,0 +1,413 @@
+# BananaSplit CLI
+
+[![npm version](https://img.shields.io/npm/v/%40bananasplitapp%2Fcli)](https://www.npmjs.com/package/@bananasplitapp/cli)
+
+Standalone access to the BananaSplit API for people and shell-enabled agents.
+
+## Use with your AI agent
+
+Install the skill with [Skills CLI](https://github.com/vercel-labs/skills)
+(requires Node.js/npm):
+
+```sh
+npx skills add teotti/banana-cli --skill banana --global
+```
+
+Choose your agent, start a new session, and ask: **“Use BananaSplit to check my
+balances.”** The skill guides your agent through installing the Banana CLI if
+needed and getting you signed in. You complete the browser login yourself.
+
+Already have Banana installed? Run `banana skill install` instead.
+
+## Install the CLI directly
+
+macOS and Linux (no Bun or Node required):
+
+```sh
+curl -fsSL https://github.com/teotti/banana-cli/releases/latest/download/install.sh | sh
+```
+
+Windows PowerShell (no Bun or Node required):
+
+```powershell
+irm https://github.com/teotti/banana-cli/releases/latest/download/install.ps1 | iex
+```
+
+Or install the TypeScript package with [Bun](https://bun.sh):
+
+```sh
+bun install -g @bananasplitapp/cli
+```
+
+Set `BANANA_INSTALL_DIR` to choose a different destination. To install a
+specific standalone release instead of the latest:
+
+```sh
+curl -fsSL https://github.com/teotti/banana-cli/releases/latest/download/install.sh \
+  | BANANA_VERSION=v0.1.0 sh
+```
+
+```powershell
+$env:BANANA_VERSION = "v0.1.0"
+irm https://github.com/teotti/banana-cli/releases/latest/download/install.ps1 | iex
+```
+
+Release downloads are verified against the published SHA-256 checksums before
+an existing installation is replaced.
+
+## Install the bundled skill
+
+After installing the CLI, run:
+
+```sh
+banana skill install
+```
+
+This automatically installs the skill for Claude Code, Codex, Cursor, Gemini CLI
+and opencode when their directories are present. No login, directory selection
+or manual file copying is needed. Start a new agent session to use it.
+
+The skill teaches your agent to use names, parse JSON, split expenses and record
+payments. Sign in with `banana login` when you are ready to access your account.
+
+<details>
+<summary>Choose an agent or a custom directory</summary>
+
+```sh
+banana skill install --agent codex
+banana skill install --list
+banana skill install --dir ~/.config/agent/skills
+```
+
+`--agent` works even before an agent's directory exists. Repeat it to choose
+several agents, or use `--all` to install for every supported agent.
+`CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `XDG_CONFIG_HOME` are honoured.
+
+Running the command again leaves an identical skill alone. A differing copy is
+preserved; use `banana skill install --force` to replace it with the bundled
+version. `--print` writes the skill to stdout without installing it.
+
+`banana skill uninstall` removes it again, from every agent that has one, and
+takes the same `--agent`, `--all` and `--dir` flags. A skill you have edited is
+left alone unless you pass `--force`.
+
+## Checking the install
+
+`banana doctor` reports the version, which `banana` your shell actually runs,
+the API it talks to, whether you are signed in, and whether an installed agent
+skill still matches this version of the CLI. Each check is `ok`, `warn` or
+`fail`, anything fixable names the command that fixes it, and `--json` gives the
+same report as data. It exits 1 only when a check failed.
+
+## Uninstalling
+
+`banana uninstall` removes the CLI and the login it stored — the binary if you
+installed one, or the npm package if you used Bun, revoking your login before
+deleting it. It lists what will go and asks first; `--yes` answers in advance,
+and without a terminal to ask in it prints the list and stops. The agent skill
+and, on Windows, the Path entry are named but left alone.
+
+The skill is embedded in the standalone binary and included in the npm package,
+so installing it needs no additional download.
+
+</details>
+
+## Setup
+
+Sign in through BananaSplit's device approval page:
+
+```sh
+banana login
+```
+
+The CLI prints a short code and verification URL, then tries to open that URL
+in your browser. On SSH or a headless machine, open the printed URL on another
+device and confirm that the browser shows the same code. There is no plaintext
+or environment-token fallback.
+
+Credentials are stored per API origin:
+
+- **macOS** — the login keychain, reached by running `/usr/bin/security`. Going
+  through Apple's own binary keeps the keychain item usable after `banana
+  upgrade` replaces the CLI binary; calling the keychain from the CLI itself
+  ties the item to that build and makes the next command block on a GUI
+  prompt. Set `BANANASPLIT_NO_KEYCHAIN=1` to use the file store instead.
+- **Everywhere else** — a `0600` JSON file at
+  `${XDG_DATA_HOME:-~/.local/share}/banana/credentials.json`, written through a
+  temporary file and renamed into place.
+
+To use a local loopback deployment:
+
+```sh
+export BANANASPLIT_API_URL="http://localhost:8080"
+# Optional when auth runs at a separate origin; include the complete /api base:
+export BANANASPLIT_AUTH_URL="http://localhost:8081/api"
+banana login
+```
+
+Non-loopback API, auth, and verification URLs must use HTTPS. Automated
+environments need credentials populated through the same `banana login` flow.
+
+The CLI reads these variables:
+
+| Variable | Effect |
+| --- | --- |
+| `BANANASPLIT_API_URL` | API base URL (default `https://api.bananasplit.net`) |
+| `BANANASPLIT_AUTH_URL` | Complete `/api` auth base, when auth runs at another origin |
+| `BANANASPLIT_NO_KEYCHAIN` | Use the credentials file on macOS too |
+| `BANANA_INSTALL_DIR` | Where the install script puts the binary |
+| `BANANA_VERSION` | Install a specific release instead of the latest |
+| `NO_COLOR` | Print help and listings without color |
+
+## Usage
+
+Run `banana` from any directory:
+
+```sh
+banana login
+banana doctor
+banana version
+banana -v
+banana upgrade
+banana me
+banana balance
+banana balances
+banana currencies
+banana friends
+banana groups
+banana groups members "Lisbon trip"
+banana groups activities Lisbon --search dinner
+banana expenses list
+banana expenses get EXPENSE_ID
+banana expenses delete EXPENSE_ID
+banana expenses restore EXPENSE_ID
+banana payments get PAYMENT_ID
+banana payments restore PAYMENT_ID
+banana skill install
+banana logout
+banana uninstall
+```
+
+Currencies, groups and people are named wherever a command takes one — by
+code, by name, or by a prefix of either. `banana groups get Lisbon` finds the
+Lisbon trip, `--paid-by me` is you, and an id still works if you have one.
+Ambiguous names are reported rather than guessed.
+
+Run `banana upgrade` to install the latest stable release, which reports the
+version it installed — `v0.2.4 → v0.2.5` — or tells you the version you were
+already on. Standalone installs upgrade in place; Bun package installs go
+through Bun's global package manager. `banana update` is the older name and
+still works.
+
+List expenses across the authenticated account, sorted by date or amount:
+
+```sh
+banana expenses list --sort amount --direction desc --limit 10
+banana expenses list --recurring --sort date --direction asc
+banana expenses list --no-recurring --json
+```
+
+Omit both recurring flags to include all expenses. In the interactive browser,
+reaching the last item loads and appends the next page with the same sorting,
+filtering, and page size. Outside the browser, use `--cursor CURSOR` with the
+same options to retrieve the next page. JSON output includes `items`, `hasMore`, and
+`nextCursor`. Each item includes `share`, the current user's share amount,
+and `isRecurring`. Full splits are available through expense details.
+
+Create groups, expenses, and payments without looking an id up first:
+
+```sh
+banana groups create --name "Lisbon trip" --currency EUR \
+  --type travel --member Ana
+
+banana expenses add --title Dinner --amount 42 --currency EUR \
+  --paid-by me --date 2026-09-01 --group "Lisbon trip" \
+  --split-type custom --split me=22 --split Ana=20 --notify-me
+
+banana payments add --amount 20 --currency EUR \
+  --from me --to Ana --date 2026-09-01 \
+  --description "Settle up"
+```
+
+`--notify-me` sends the expense-created push notification to you as well. It is
+off by default and only applies when adding an expense.
+
+`--date` takes `YYYY-MM-DD` or `DD-MM-YYYY`, and accepts a time after a `T`
+with optional seconds, milliseconds and an offset. Without a time the row
+lands at midnight UTC; without an offset the time is read as UTC:
+
+```sh
+banana expenses add --title Coffee --amount 4 --currency EUR \
+  --date 2026-09-16T21:20:00 --split me=4
+
+banana expenses edit EXPENSE_ID --date 2026-09-16T21:20:00+02:00
+```
+
+Edit an expense in place. Only the fields you pass change; everything else
+keeps its current value:
+
+```sh
+banana expenses edit EXPENSE_ID --title "Chinese dinner"
+banana expenses edit EXPENSE_ID --group "Lisbon trip"
+banana expenses edit EXPENSE_ID --amount 60 --split me=30 --split Ana=30
+banana expenses edit EXPENSE_ID '{"description":null}'
+```
+
+Moving an expense into a group with `--group` clears its direct friendship
+link; `--no-group` does the reverse. Changing `--amount` on an equal split
+redistributes the splits automatically; any other split type needs matching
+`--split` values.
+
+Delete an expense. It leaves the balances of everyone it was split with, and
+the row that was removed is printed as a receipt:
+
+```sh
+banana expenses delete EXPENSE_ID
+```
+
+Deleting is soft, so it can be undone — but nothing lists deleted records, so
+note the id before you delete. Bring back an expense or a payment that was
+deleted, with the shares or ledger entries it had:
+
+```sh
+banana expenses restore EXPENSE_ID
+banana payments restore PAYMENT_ID --json
+```
+
+Both take the id and no flags, and print the restored record in full. Restoring
+something that is already active succeeds and changes nothing, so running one
+twice is safe. There is no listing of deleted records, so the id has to come
+from an activity feed or from wherever you noted it down.
+
+Each create command also accepts its API body as one quoted JSON object. This
+form is the raw API shape, so it takes ids, not names:
+
+```sh
+banana groups create '{"name":"Lisbon trip","currencyId":"CURRENCY_ID"}'
+banana expenses add '{"title":"Dinner","amount":"42","currencyId":"CURRENCY_ID","paidById":"USER_ID","date":"2026-09-01","splits":[{"userId":"USER_ID","amount":"42"}]}'
+banana payments add '{"amount":"20","currencyId":"CURRENCY_ID","fromUserId":"USER_ID","toUserId":"FRIEND_ID","date":"2026-09-01"}'
+```
+
+Direct expenses require at least one `--split WHO=AMOUNT`. Group expenses
+may omit `--split` to use the group's configured default split. `banana groups
+get` reports that default, and `banana groups members` each member's share of
+it.
+
+Commands print a clean, human-readable summary by default. Use `--json` for
+the same operational fields as compact JSON, or `--raw` for the complete API
+response:
+
+```sh
+banana me
+banana --json groups list --limit 10
+banana groups get Lisbon --raw
+```
+
+The output flag may appear before or after the command. `--json` and `--raw`
+cannot be used together.
+
+Human output is laid out for reading: listings print as aligned tables with one
+column per field, and details print as `Label: value` blocks with ids last.
+Colors are tuned to stay legible on light and dark terminals, and are dropped
+entirely when output is not a TTY or `NO_COLOR` is set.
+
+Every command has its own help page — summary, usage, options, notes, and
+examples — and a usage mistake prints the reason with that page underneath:
+
+```sh
+banana --help
+banana expenses --help
+banana expenses edit --help
+```
+
+In an interactive terminal, `balance users`, `friends list`, `groups list`, `expenses list`,
+`groups members`, and `groups activities` open searchable browsers; type to
+filter, use the arrow keys to select an item, press Enter to open its details,
+Esc to return, and `q` to quit. Details of a group or a friend drill further: a
+group offers `m` for its members, `e` for its expenses and `a` for all of its
+activity; a friend offers `e`, `a` and `g` for the groups you share, and those
+groups drill on into their own members and expenses. Each is a browser of its
+own, with Esc stepping back up. In a non-interactive command
+card, friend and group lists fall back to five items and print a copyable `Next page` cursor
+command. Expense lists also default to five items outside the browser and show
+the next cursor. In the browser they use the API's default page size and load
+more as you reach the end. Search filters all loaded expenses; press ↓ at the
+end (or when no items match) to load another page. If loading fails, press ↓
+to retry. Use `--limit N` to choose a page size.
+
+## What we collect
+
+The CLI sends no analytics and opens no connection of its own. It talks only to
+the BananaSplit API, and nothing about your machine leaves it except the
+`User-Agent` header that every HTTP request carries:
+
+```
+bananasplit-cli/0.2.4 (darwin arm64; bun 1.3.9; tty)
+```
+
+That is the CLI version, your operating system and CPU architecture, the Bun
+version, and whether the command ran in an interactive terminal (`tty`), in
+continuous integration (`ci`, detected from `CI` and the usual provider
+variables), or with output redirected (`pipe`).
+
+We log those requests server-side and use them to see which commands people
+actually use and which ones fail, through PostHog as our analytics processor.
+The requests are tied to your account, because they are already authenticated
+with your credentials. Your expenses, group names, amounts, and command
+arguments are never used for analytics.
+
+There is no separate opt-out: the CLI is not doing the collecting, so switching
+it off would mean not calling the API at all. See the BananaSplit privacy
+policy for how request data is retained.
+
+## Development
+
+Install Bun, clone this repository, then install dependencies and expose
+`banana` on your path:
+
+```sh
+bun install
+bun link
+banana --help
+```
+
+Run the checks with:
+
+```sh
+bun test
+bun run typecheck
+```
+
+## Releasing
+
+npm publishes use trusted publishing (OIDC) from `release.yml`, so no npm token
+is stored in the repository.
+
+The contract snapshot comes from staging (`bun run contract:download`, with
+`BANANASPLIT_CONTRACT_URL` set in `.env` or the shell), which runs ahead of
+production, while a released binary talks to production. So before tagging,
+check that anything the release depends on is live in production — run the new
+commands against a real account rather than trusting `server.d.ts`:
+
+```sh
+bun test && bun run typecheck
+bun run banana <the new command>   # against production, with a throwaway row
+```
+
+Then update the version in `package.json` and push its matching stable tag:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The tag workflow tests all targets, publishes the GitHub release, and publishes
+the npm package.
+
+Configuration, network, API, and usage errors are written to stderr. Human
+commands print `Error: MESSAGE`, `--json` prints a structured error object, and
+`--raw` prints the API error body when available.
+
+`banana logout` revokes the stored refresh token before deleting the local
+credential. The last access token may remain valid server-side for up to 15
+minutes, but it is removed locally and cannot be refreshed.

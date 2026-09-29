@@ -1,0 +1,423 @@
+import { describe, expect, it } from "bun:test";
+import { runCli } from "../src/index";
+import { ANA, GROUP, ME, harness, lookup } from "./helpers";
+
+describe("BananaSplit CLI", () => {
+  it("maps group list options to API query parameters", async () => {
+    const { calls, runtime } = harness();
+
+    expect(
+      await runCli(
+        [
+          "groups",
+          "list",
+          "--limit",
+          "5",
+          "--cursor",
+          "next page",
+          "--archived",
+          "--sort",
+          "lastActivity",
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+    expect(calls[0].url.pathname).toBe("/base/groups");
+    expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
+      l: "5",
+      cursor: "next page",
+      archived: "true",
+      sort: "lastActivity",
+    });
+  });
+
+  it("limits the default group page to keep output navigable", async () => {
+    const { calls, runtime } = harness(
+      Response.json({ items: [], hasMore: false, nextCursor: null }),
+    );
+
+    expect(await runCli(["groups", "list"], runtime)).toBe(0);
+    expect(calls[0].url.searchParams.get("l")).toBe("5");
+  });
+
+  it("presents groups with operational fields and pagination", async () => {
+    const response = {
+      items: [
+        {
+          id: "group-1",
+          name: "Lisbon trip",
+          description: null,
+          currency: { code: "EUR", symbol: "€" },
+          balance: 12.5,
+          memberCount: 4,
+          membersPreview: [
+            { id: "user-1", name: "Leonardo", image: null },
+            { id: "user-2", name: "Ana", image: null },
+            { id: "user-3", name: "Rui", image: null },
+          ],
+          mostRecentActivity: "2026-08-28T10:00:00.000Z",
+          token: "private-invite-token",
+          createdAt: "2026-08-01T10:00:00.000Z",
+        },
+      ],
+      hasMore: true,
+      nextCursor: "cursor-2",
+    };
+    const { runtime, stdout } = harness(Response.json(response));
+
+    expect(
+      await runCli(["groups", "list", "--json"], runtime),
+    ).toBe(0);
+    expect(JSON.parse(stdout[0])).toEqual({
+      items: [
+        {
+          id: "group-1",
+          name: "Lisbon trip",
+          description: null,
+          currency: "EUR",
+          balance: 12.5,
+          memberCount: 4,
+          membersPreview: ["Leonardo", "Ana", "Rui"],
+          mostRecentActivity: "2026-08-28T10:00:00.000Z",
+        },
+      ],
+      hasMore: true,
+      nextCursor: "cursor-2",
+    });
+    expect(stdout[0]).not.toContain("private-invite-token");
+
+    expect(await runCli(["groups", "list"], runtime)).toBe(0);
+    expect(stdout[1]).toBe(
+      [
+        "Name         Members    Balance  Last activity",
+        "Lisbon trip        4  12.50 EUR  2026-08-28",
+        "",
+        'More groups available. Next page: banana groups list --cursor "cursor-2"',
+      ].join("\n"),
+    );
+  });
+
+  it("reads group list rows from servers that still send the full roster", async () => {
+    const { runtime, stdout } = harness(
+      Response.json({
+        items: [
+          {
+            id: "group-1",
+            name: "Lisbon trip",
+            type: "travel",
+            currency: { code: "EUR" },
+            balance: 0,
+            groupMembers: ["Leonardo", "Ana", "Rui", "Marta"].map((name) => ({
+              name,
+            })),
+          },
+        ],
+        hasMore: false,
+        nextCursor: null,
+      }),
+    );
+
+    expect(await runCli(["groups", "list", "--json"], runtime)).toBe(0);
+    const [group] = JSON.parse(stdout[0]).items;
+    expect(group.memberCount).toBe(4);
+    expect(group.membersPreview).toEqual(["Leonardo", "Ana", "Rui"]);
+    expect(group).not.toHaveProperty("type");
+  });
+
+  it("presents group details and members", async () => {
+    const group = {
+      id: "group-1",
+      name: "Lisbon trip",
+      description: "Summer holiday",
+      type: "travel",
+      currency: { code: "EUR" },
+      balance: -8,
+      totalOwed: 2,
+      totalOwing: 10,
+      defaultSplitType: "equal",
+      useOptimalSettlement: true,
+      memberBalanceVisibility: "all_members",
+      token: "private-invite-token",
+    };
+    const groupHarness = harness((url) =>
+      Response.json(
+        url.pathname.endsWith("/members")
+          ? [{ id: "member-1" }, { id: "member-2" }]
+          : group,
+      ),
+    );
+
+    expect(
+      await runCli(["--json", "groups", "get", GROUP.id], groupHarness.runtime),
+    ).toBe(0);
+    expect(JSON.parse(groupHarness.stdout[0])).toEqual({
+      id: "group-1",
+      name: "Lisbon trip",
+      description: "Summer holiday",
+      type: "travel",
+      currency: "EUR",
+      balance: -8,
+      totalOwed: 2,
+      totalOwing: 10,
+      memberCount: 2,
+      defaultSplitType: "equal",
+      useOptimalSettlement: true,
+      memberBalanceVisibility: "all_members",
+    });
+    expect(
+      await runCli(["groups", "get", GROUP.id], groupHarness.runtime),
+    ).toBe(0);
+    expect(groupHarness.stdout[1]).toContain("Members:            2");
+
+    const membersHarness = harness(
+      Response.json([
+        {
+          id: "member-1",
+          userId: "user-1",
+          name: "Leonardo",
+          role: "admin",
+          isGuest: false,
+          isGold: true,
+          defaultSplitPercentage: null,
+          joinedAt: "2026-08-01T10:00:00.000Z",
+          image: "ignored.png",
+        },
+      ]),
+    );
+    expect(
+      await runCli(
+        ["groups", "members", GROUP.id, "--json"],
+        membersHarness.runtime,
+      ),
+    ).toBe(0);
+    expect(JSON.parse(membersHarness.stdout[0])).toEqual([
+      {
+        id: "member-1",
+        userId: "user-1",
+        name: "Leonardo",
+        role: "admin",
+        isGuest: false,
+        isGold: true,
+        defaultSplitPercentage: null,
+        joinedAt: "2026-08-01T10:00:00.000Z",
+      },
+    ]);
+    expect(
+      await runCli(
+        ["groups", "members", GROUP.id],
+        membersHarness.runtime,
+      ),
+    ).toBe(0);
+    expect(membersHarness.stdout[1]).toBe(
+      [
+        "Name      Role   Guest  Default split  Joined",
+        "Leonardo  admin  no                 —  2026-08-01",
+      ].join("\n"),
+    );
+  });
+
+  it("finds a group by name for get, members and activities", async () => {
+    const { calls, runtime } = harness((url, init) => {
+      if (init?.method === undefined && url.pathname === "/base/groups") {
+        return Response.json({ items: [{ id: "group/one", name: "Lisbon trip" }] });
+      }
+      return lookup(url, init) ?? Response.json({});
+    });
+
+    expect(await runCli(["groups", "get", "lisbon"], runtime)).toBe(0);
+    expect(await runCli(["groups", "members", "Lisbon trip"], runtime)).toBe(0);
+    expect(
+      calls
+        .map(({ url }) => url.pathname)
+        .filter((path) => path !== "/base/groups"),
+    ).toEqual([
+      "/base/groups/group%2Fone",
+      "/base/groups/group%2Fone/members",
+      "/base/groups/group%2Fone/members",
+    ]);
+  });
+
+  it("uses the search activity endpoint and forwards filters", async () => {
+    const { calls, runtime } = harness();
+
+    expect(
+      await runCli(
+        [
+          "groups",
+          "activities",
+          GROUP.id,
+          "--search",
+          "dinner out",
+          "--limit",
+          "10",
+          "--cursor",
+          "next-page",
+          "--type",
+          "expenses",
+          "--sort",
+          "amount",
+          "--direction",
+          "desc",
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+    expect(calls[0].url.pathname).toBe(
+      `/base/groups/${GROUP.id}/activities/search`,
+    );
+    expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
+      l: "10",
+      cursor: "next-page",
+      type: "expenses",
+      sort: "amount",
+      direction: "desc",
+      q: "dinner out",
+    });
+  });
+
+  it("presents expense and payment activities", async () => {
+    const { runtime, stdout } = harness(
+      Response.json({
+        items: [
+        {
+          entity: "expense",
+          id: "expense-1",
+          title: "Dinner",
+          amount: 42,
+          currency: { code: "EUR" },
+          date: "2026-08-27T20:00:00.000Z",
+          paidByUser: { id: "user-1", name: "Leonardo", email: "ignored" },
+          category: { id: "category-1", name: "Food" },
+          splitType: "equal",
+          recurringExpenseRuleId: "rule-1",
+          description: "ignored",
+        },
+        {
+          entity: "payment",
+          id: "payment-1",
+          description: null,
+          amount: 15,
+          currency: { code: "EUR" },
+          date: "2026-08-28T09:00:00.000Z",
+          fromUser: { id: "user-2", name: "Ana" },
+          toUser: { id: "user-1", name: "Leonardo" },
+          isSettlement: true,
+          createdAt: "ignored",
+        },
+        ],
+        hasMore: true,
+        nextCursor: "next-page",
+      }),
+    );
+
+    expect(
+      await runCli(
+        ["groups", "activities", GROUP.id, "--json"],
+        runtime,
+      ),
+    ).toBe(0);
+    expect(JSON.parse(stdout[0])).toEqual({
+      items: [
+      {
+        entity: "expense",
+        id: "expense-1",
+        title: "Dinner",
+        amount: 42,
+        currency: "EUR",
+        date: "2026-08-27T20:00:00.000Z",
+        paidById: "user-1",
+        paidBy: "Leonardo",
+        category: "Food",
+        splitType: "equal",
+        isRecurring: true,
+      },
+      {
+        entity: "payment",
+        id: "payment-1",
+        description: null,
+        amount: 15,
+        currency: "EUR",
+        date: "2026-08-28T09:00:00.000Z",
+        fromUserId: "user-2",
+        from: "Ana",
+        toUserId: "user-1",
+        to: "Leonardo",
+        isSettlement: true,
+      },
+      ],
+      hasMore: true,
+      nextCursor: "next-page",
+    });
+    expect(
+      await runCli(["groups", "activities", GROUP.id], runtime),
+    ).toBe(0);
+    expect(stdout[1]).toBe(
+      [
+        "ID         Date        Kind     Title   Who                Amount",
+        "expense-1  2026-08-27  expense  Dinner  Leonardo        42.00 EUR",
+        "payment-1  2026-08-28  payment  —       Ana → Leonardo  15.00 EUR",
+        "",
+        "More activities available. Next page: banana groups activities " +
+          '<group> --cursor "next-page"',
+      ].join("\n"),
+    );
+  });
+
+  it("creates a group by naming its currency and members", async () => {
+    const created = {
+      id: "group-1",
+      name: "Lisbon trip",
+      description: "Summer holiday",
+      type: "travel",
+      currency: { code: "EUR" },
+      balance: 0,
+      defaultSplitType: "equal",
+      useOptimalSettlement: false,
+      memberBalanceVisibility: "all_members",
+      token: "private-invite-token",
+    };
+    const { calls, runtime, stdout } = harness((url, init) => {
+      const answer = lookup(url, init);
+      if (answer) return answer;
+      return url.pathname.endsWith("/members")
+        ? Response.json([{ id: "member-1" }, { id: "member-2" }])
+        : Response.json(created);
+    });
+
+    expect(
+      await runCli(
+        [
+          "groups",
+          "create",
+          "--name",
+          "Lisbon trip",
+          "--currency",
+          "EUR",
+          "--description",
+          "Summer holiday",
+          "--type",
+          "travel",
+          "--member",
+          "Ana",
+          "--member",
+          ME.id,
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+
+    const post = calls.find(({ init }) => init?.method === "POST")!;
+    expect(post.url.pathname).toBe("/base/groups");
+    expect(JSON.parse(String(post.init?.body))).toEqual({
+      name: "Lisbon trip",
+      description: "Summer holiday",
+      type: "travel",
+      groupMembers: [ANA.id, ME.id],
+      currencyId: "currency-eur",
+    });
+    expect(stdout[0]).toContain("Group created");
+    expect(stdout[0]).toContain("Currency:           EUR");
+    expect(stdout[0]).toContain("Members:            2");
+    expect(stdout[0]).not.toContain("private-invite-token");
+  });
+});

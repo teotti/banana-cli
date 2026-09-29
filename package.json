@@ -1,0 +1,34 @@
+{
+  "name": "@bananasplitapp/cli",
+  "description": "Command-line access to the BananaSplit API",
+  "type": "module",
+  "version": "0.3.5",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/teotti/banana-cli.git"
+  },
+  "files": [
+    "src",
+    "skills"
+  ],
+  "bin": {
+    "banana": "./src/index.ts"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "banana": "bun run ./src/index.ts",
+    "contract:download": "bun -e \"const url = process.env.BANANASPLIT_CONTRACT_URL; if (!url) throw new Error('Set BANANASPLIT_CONTRACT_URL (in .env or the shell)'); const res = await fetch(url); if (!res.ok) throw new Error(res.status + ' from ' + url); await Bun.write('server.d.ts', res);\"",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "typescript": "^7.0.2"
+  }
+}
