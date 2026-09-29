@@ -259,10 +259,10 @@ describe("BananaSplit CLI", () => {
           {
             id: "group-1",
             name: "Lisbon trip",
-            type: "travel",
             currency: { code: "EUR" },
             balance: 12.5,
-            groupMembers: [],
+            memberCount: 2,
+            membersPreview: [],
             mostRecentActivity: null,
           },
         ],
@@ -277,7 +277,7 @@ describe("BananaSplit CLI", () => {
 
     expect(await runCli(["groups", "list"], runtime)).toBe(0);
     expect(calls[0].url.searchParams.has("l")).toBe(false);
-    expect(paged[0]).toContain("Lisbon trip  travel");
+    expect(paged[0]).toContain("Lisbon trip        2  12.50 EUR");
     expect(stdout).toEqual([]);
   });
 
@@ -348,14 +348,13 @@ describe("BananaSplit CLI", () => {
             id: "group-1",
             name: "Lisbon trip",
             description: "Summer holiday",
-            type: "travel",
             currency: "EUR",
             balance: 12.5,
             memberCount: 2,
-            members: ["Leonardo", "Ana"],
+            membersPreview: ["Leonardo", "Ana"],
             mostRecentActivity: "2026-08-28T10:00:00.000Z",
           },
-          { id: "group-2", name: "Home", members: [] },
+          { id: "group-2", name: "Home", membersPreview: [] },
         ],
         hasMore: false,
       },

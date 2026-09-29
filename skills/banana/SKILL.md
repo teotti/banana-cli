@@ -160,6 +160,10 @@ show the names.
   member's `defaultSplitPercentage`. Read those before reconstructing a split
   from past expenses, and label a split that came from the group's percentages
   `percentage`, not `custom`.
+- **A group listing names at most three members.** `banana groups --json` gives
+  each group a `memberCount` and a `membersPreview` of up to three names. Use
+  `banana groups members <group>` for the whole roster, and `banana groups get`
+  for the group's `type`.
 - **Changing an amount:** an existing equal split is recomputed across its current
   participants if no splits are supplied. For other split types, supply matching
   `--split` values that sum to the new total.

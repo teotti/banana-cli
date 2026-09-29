@@ -311,18 +311,21 @@ function cleanGroupList(body: unknown) {
   return {
     items: asArray(response.items).map((value) => {
       const group = asRecord(value);
-      const members = asArray(group.groupMembers)
-        .map((member) => asRecord(member).name)
-        .filter((name): name is string => typeof name === "string");
+      // Lean list rows carry `memberCount` and up to three `membersPreview`
+      // entries, and no `type`; older servers send the full `groupMembers`
+      // roster instead. `groups members` is the way to the whole roster.
+      const roster = asArray(group.membersPreview ?? group.groupMembers);
       return {
         id: group.id ?? null,
         name: group.name ?? null,
         description: group.description ?? null,
-        type: group.type ?? null,
         currency: currencyCode(group.currency),
         balance: numeric(group.balance),
-        memberCount: members.length,
-        members,
+        memberCount: numeric(group.memberCount) ?? roster.length,
+        membersPreview: roster
+          .map((member) => asRecord(member).name)
+          .filter((name): name is string => typeof name === "string")
+          .slice(0, 3),
         mostRecentActivity: group.mostRecentActivity ?? null,
       };
     }),
@@ -600,7 +603,6 @@ export const groupPresenters = {
           ? table(
               [
                 { label: "Name", max: 24 },
-                { label: "Type", max: 12 },
                 { label: "Members", align: "right" },
                 { label: "Balance", align: "right" },
                 { label: "Last activity" },
@@ -609,7 +611,6 @@ export const groupPresenters = {
                 const group = asRecord(value);
                 return [
                   group.name,
-                  group.type,
                   group.memberCount,
                   humanAmount(group.balance, group.currency),
                   humanDate(group.mostRecentActivity),

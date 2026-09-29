@@ -10,10 +10,7 @@ describe("BananaSplit CLI", () => {
         name: "Euro",
         code: "EUR",
         symbol: "€",
-        type: "fiat",
         decimals: 2,
-        exchangeRateToBase: "1",
-        updatedAt: "2026-09-01T00:00:00.000Z",
       },
     ];
     const { calls, runtime, stdout } = harness(Response.json(response));
@@ -25,8 +22,8 @@ describe("BananaSplit CLI", () => {
       "/base/currencies",
     ]);
     expect(stdout[0].split("\n")).toEqual([
-      "Code  Name  Symbol  Type  Decimals  Rate to base",
-      "EUR   Euro  €       fiat         2             1",
+      "Code  Name  Symbol  Decimals",
+      "EUR   Euro  €              2",
     ]);
     expect(JSON.parse(stdout[1])).toEqual(response);
   });

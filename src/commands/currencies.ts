@@ -2,7 +2,6 @@ import {
   asArray,
   asRecord,
   matchItems,
-  numeric,
   parseOptions,
   requirePositionals,
   wantsHelp,
@@ -72,9 +71,7 @@ export const currencyPresenters = {
           { label: "Code" },
           { label: "Name", max: 24 },
           { label: "Symbol" },
-          { label: "Type" },
           { label: "Decimals", align: "right" },
-          { label: "Rate to base", align: "right" },
         ],
         currencies.map((value) => {
           const currency = asRecord(value);
@@ -82,9 +79,7 @@ export const currencyPresenters = {
             currency.code,
             currency.name,
             currency.symbol,
-            currency.type,
             currency.decimals,
-            numeric(currency.exchangeRateToBase),
           ];
         }),
       );

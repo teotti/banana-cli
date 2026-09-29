@@ -47,12 +47,13 @@ describe("BananaSplit CLI", () => {
           id: "group-1",
           name: "Lisbon trip",
           description: null,
-          type: "travel",
           currency: { code: "EUR", symbol: "€" },
           balance: 12.5,
-          groupMembers: [
+          memberCount: 4,
+          membersPreview: [
             { id: "user-1", name: "Leonardo", image: null },
             { id: "user-2", name: "Ana", image: null },
+            { id: "user-3", name: "Rui", image: null },
           ],
           mostRecentActivity: "2026-08-28T10:00:00.000Z",
           token: "private-invite-token",
@@ -73,11 +74,10 @@ describe("BananaSplit CLI", () => {
           id: "group-1",
           name: "Lisbon trip",
           description: null,
-          type: "travel",
           currency: "EUR",
           balance: 12.5,
-          memberCount: 2,
-          members: ["Leonardo", "Ana"],
+          memberCount: 4,
+          membersPreview: ["Leonardo", "Ana", "Rui"],
           mostRecentActivity: "2026-08-28T10:00:00.000Z",
         },
       ],
@@ -89,12 +89,39 @@ describe("BananaSplit CLI", () => {
     expect(await runCli(["groups", "list"], runtime)).toBe(0);
     expect(stdout[1]).toBe(
       [
-        "Name         Type    Members    Balance  Last activity",
-        "Lisbon trip  travel        2  12.50 EUR  2026-08-28",
+        "Name         Members    Balance  Last activity",
+        "Lisbon trip        4  12.50 EUR  2026-08-28",
         "",
         'More groups available. Next page: banana groups list --cursor "cursor-2"',
       ].join("\n"),
     );
+  });
+
+  it("reads group list rows from servers that still send the full roster", async () => {
+    const { runtime, stdout } = harness(
+      Response.json({
+        items: [
+          {
+            id: "group-1",
+            name: "Lisbon trip",
+            type: "travel",
+            currency: { code: "EUR" },
+            balance: 0,
+            groupMembers: ["Leonardo", "Ana", "Rui", "Marta"].map((name) => ({
+              name,
+            })),
+          },
+        ],
+        hasMore: false,
+        nextCursor: null,
+      }),
+    );
+
+    expect(await runCli(["groups", "list", "--json"], runtime)).toBe(0);
+    const [group] = JSON.parse(stdout[0]).items;
+    expect(group.memberCount).toBe(4);
+    expect(group.membersPreview).toEqual(["Leonardo", "Ana", "Rui"]);
+    expect(group).not.toHaveProperty("type");
   });
 
   it("presents group details and members", async () => {
