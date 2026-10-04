@@ -263,4 +263,120 @@ describe("BananaSplit CLI", () => {
         .map(({ url }) => url.searchParams.get("q")),
     ).toEqual(["ana@example.test", null]);
   });
+
+  it("resolves a username from the user directory when friends omit it", async () => {
+    const { calls, runtime } = harness((url, init) => {
+      if (init?.method === undefined && url.pathname === "/base/friends") {
+        return Response.json({
+          items: [{ id: "f-1", user: { id: ANA.id, name: "Ana" } }],
+        });
+      }
+      if (url.pathname === "/base/users/search") {
+        return Response.json([
+          {
+            id: ANA.id,
+            name: "Ana",
+            username: "diogo4",
+            friendship: { id: "f-1" },
+          },
+        ]);
+      }
+      return lookup(url, init) ?? Response.json({ id: "payment-1" });
+    });
+
+    expect(
+      await runCli(
+        [
+          "payments",
+          "add",
+          "--amount",
+          "5",
+          "--currency",
+          "EUR",
+          "--from",
+          ME.id,
+          "--to",
+          "diogo4",
+          "--date",
+          "2026-09-01",
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+    const search = calls.find(({ url }) => url.pathname === "/base/users/search");
+    expect(search?.url.searchParams.get("q")).toBe("diogo4");
+    const post = calls.find(({ init }) => init?.method === "POST")!;
+    expect(JSON.parse(String(post.init?.body)).toUserId).toBe(ANA.id);
+  });
+
+  it("resolves an email from one friend the directory matched", async () => {
+    const { runtime } = harness((url, init) => {
+      if (init?.method === undefined && url.pathname === "/base/friends") {
+        return Response.json({
+          items: [{ id: "f-1", user: { id: ANA.id, name: "Ana" } }],
+        });
+      }
+      if (url.pathname === "/base/users/search") {
+        return Response.json([
+          { id: ANA.id, name: "Ana", username: "diogo4", friendship: { id: "f-1" } },
+        ]);
+      }
+      return lookup(url, init) ?? Response.json({ id: "payment-1" });
+    });
+
+    expect(
+      await runCli(
+        [
+          "payments",
+          "add",
+          "--amount",
+          "5",
+          "--currency",
+          "EUR",
+          "--from",
+          ME.id,
+          "--to",
+          "ana@example.test",
+          "--date",
+          "2026-09-01",
+        ],
+        runtime,
+      ),
+    ).toBe(0);
+  });
+
+  it("ignores a directory hit that is not a friend", async () => {
+    const { runtime, stderr } = harness((url, init) => {
+      if (init?.method === undefined && url.pathname === "/base/friends") {
+        return Response.json({ items: [] });
+      }
+      if (url.pathname === "/base/users/search") {
+        return Response.json([
+          { id: ANA.id, name: "Ana", username: "diogo4", friendship: null },
+        ]);
+      }
+      return lookup(url, init) ?? Response.json({ id: "payment-1" });
+    });
+
+    expect(
+      await runCli(
+        [
+          "payments",
+          "add",
+          "--amount",
+          "5",
+          "--currency",
+          "EUR",
+          "--from",
+          ME.id,
+          "--to",
+          "diogo4",
+          "--date",
+          "2026-09-01",
+        ],
+        runtime,
+      ),
+    ).toBe(2);
+    expect(stderr[0]).toContain('No user matches "diogo4"');
+  });
 });

@@ -25,7 +25,8 @@
     "banana": "bun run ./src/index.ts",
     "contract:download": "bun -e \"const url = process.env.BANANASPLIT_CONTRACT_URL; if (!url) throw new Error('Set BANANASPLIT_CONTRACT_URL (in .env or the shell)'); const res = await fetch(url); if (!res.ok) throw new Error(res.status + ' from ' + url); await Bun.write('server.d.ts', res);\"",
     "test": "bun test",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "e2e": "bun run ./e2e/main.ts"
   },
   "devDependencies": {
     "@types/bun": "^1.4.2",

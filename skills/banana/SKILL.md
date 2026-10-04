@@ -234,9 +234,9 @@ response `{items, hasMore, nextCursor}`, pass a non-null `nextCursor` back as
 check `hasMore` before treating a page as complete. Per-person balances, group
 members and currencies return arrays instead. Do not assume every collection supports cursors.
 
-`--search` on groups and friends filters on the server. It matches names, while
-the CLI also answers to usernames and emails, so a search that finds nothing is
-worth retrying as a plain listing before concluding the person is not there.
+`--search` on groups and friends filters on the server. It matches names. A
+username or an email is resolved through `GET /users/search`, and only when
+that person is already a friend. The friends list does not include either field.
 
 ## Failures
 
