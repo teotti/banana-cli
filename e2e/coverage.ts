@@ -161,7 +161,6 @@ export const COVERAGE: CoverageItem[] = [
     "--interval",
     "--start",
     "--end",
-    "--no-end",
     "--paid-by",
     "--group",
     "--no-group",
@@ -171,6 +170,7 @@ export const COVERAGE: CoverageItem[] = [
     "--active",
     "--inactive",
   ]),
+  item("recurring.edit --no-end", "flag", "manual"),
   ...flags("payments.add", [
     "--amount",
     "--currency",

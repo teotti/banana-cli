@@ -573,7 +573,6 @@ export const scenarios: Scenario[] = [
       "recurring.edit --interval",
       "recurring.edit --start",
       "recurring.edit --end",
-      "recurring.edit --no-end",
       "recurring.edit --paid-by",
       "recurring.edit --group",
       "recurring.edit --no-group",
@@ -715,19 +714,10 @@ export const scenarios: Scenario[] = [
       }
       const resumed = asObject(
         expectJson(
-          await ctx.banana([
-            "recurring",
-            "edit",
-            rule.id,
-            "--active",
-            "--no-end",
-            "--json",
-          ]),
+          await ctx.banana(["recurring", "edit", rule.id, "--active", "--json"]),
         ),
       );
-      if (resumed.active !== true || resumed.endDate !== null) {
-        throw new Error("the rule did not resume without an end date");
-      }
+      if (resumed.active !== true) throw new Error("the rule did not resume");
       const detached = asObject(
         expectJson(
           await ctx.banana(["recurring", "edit", rule.id, "--no-group", "--json"]),
@@ -761,7 +751,9 @@ export const scenarios: Scenario[] = [
       }
 
       expectExit(await ctx.banana(["recurring", "delete", rule.id, "--json"]), 0);
-      expectExit(await ctx.banana(["recurring", "delete", occurred.id, "--json"]), 0);
+      // Deleting a rule clears recurringExpenseRuleId on the expenses it
+      // generated, which drops them from activities --type recurring_expenses.
+      // The occurrence rule stays until cleanup so Queries can still see it.
     },
   ),
 

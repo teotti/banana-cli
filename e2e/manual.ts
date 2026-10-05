@@ -37,6 +37,12 @@ export const MANUAL_CHECKS: ManualCheck[] = [
       "In a terminal, open banana groups, banana friends and banana expenses list. Type to search, move through a page, and confirm the next page loads at the end of the list.",
   },
   {
+    id: "manual:recurring-no-end",
+    title: "Clear a recurring end date",
+    steps:
+      "When PUT /expenses/recurring/:id accepts endDate: null (https://github.com/teotti/banana-server/issues/35), run recurring edit --active --no-end on a rule that has an end date. The response endDate is null.",
+  },
+  {
     id: "manual:notification",
     title: "Notification delivery",
     steps:
