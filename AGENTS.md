@@ -192,14 +192,16 @@ A parser stays pure: it emits `references`, each naming the body field to fill
 the request path), the flag it came from, and what kind of row to look in.
 `runCli` resolves them before the request. A value that is already a UUID costs
 no lookup at all. Otherwise one name of a kind is asked for by name (`q` on the
-plain listing, `l=25` — not the `/search` route, which nothing calls), while
-several of a kind — `--split Ana=20 --split Bruno=10` — fetch one wide
+plain listing, `l=25`). Group and friend `/search` routes are not used for
+that. A person the listing cannot name is looked up with `GET /users/search`.
+Several names of a kind — `--split Ana=20 --split Bruno=10` — fetch one wide
 page (`l=100`) instead of one request each; either way the rows are matched
 exact → prefix → substring, and an ambiguous name is reported rather than
-guessed. Because `q` searches names and the CLI also answers to usernames and
-emails, a `q` search that finds nothing falls back to one wide sweep before
-failing. That sweep carried name resolution on its own while production still
-ignored `q`, and is now what catches a username or an email. A `--paid-by` with
+guessed. Because `q` searches names, a `q` search that finds nothing falls
+back to one wide sweep before failing. A username or an email is not on a
+friend row, so a miss after that sweep asks `GET /users/search`. That route
+matches a username, or an email exactly, and does not return the email. Only
+a row that is already a friend is used. A `--paid-by` with
 no value at all resolves to the signed-in user, which is why adding an expense
 needs no `banana me` first.
 
@@ -353,6 +355,21 @@ bun run typecheck
 Both commands pass with Bun 1.4.0. TypeScript is a dev dependency. Bun 1.3.9
 previously rejected `preload = []` in `bunfig.toml`; use the verified Bun version
 if that error occurs. Don't report a green run you didn't get.
+
+`bun test` stays offline. The staging suite is opt-in and lives in `e2e/`:
+
+```sh
+bun run e2e login
+bun run e2e run
+bun run e2e cleanup [run-id]
+bun run e2e production-smoke
+```
+
+It runs the real CLI as a subprocess, journals every group, expense, payment
+and recurring rule it creates, and deletes them afterwards — including after a
+failed scenario or Ctrl-C. Configuration, fixtures and recovery are in
+`e2e/README.md`. Do not point it at production; `production-smoke` is the
+read-only check, with its own credentials.
 
 ## Live data
 

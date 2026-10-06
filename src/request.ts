@@ -1,3 +1,5 @@
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import {
   clearAfterUnauthorized,
   DEFAULT_API_URL,
@@ -105,11 +107,92 @@ async function send(
   }
 }
 
+let nextRequestAt = 0;
+
+/**
+ * Staging allows 30 requests a minute. The suite stays under that, and the
+ * gap is shared by every `banana` process in the run.
+ */
+export const REQUEST_PACE_MS = 2_500;
+
+/** E2E sets this so staging is not asked in a burst. Unset for normal use. */
+export function requestGapMs(env: Environment) {
+  const raw = env.BANANASPLIT_REQUEST_GAP_MS?.trim();
+  if (!raw) return 0;
+  const ms = Number(raw);
+  if (!Number.isFinite(ms) || ms <= 0) return 0;
+  return Math.min(ms, 10_000);
+}
+
+/** The next request may leave at `nextAt`. `previous` is the last reservation. */
+export function paceStamp(previous: number, now: number, gap: number) {
+  const at = Math.max(now, previous);
+  return { waitMs: at - now, nextAt: at + gap };
+}
+
+async function reservePace(file: string, gap: number) {
+  mkdirSync(dirname(file), { recursive: true });
+  const lock = `${file}.lock`;
+  const deadline = Date.now() + 30_000;
+  for (;;) {
+    try {
+      mkdirSync(lock);
+      break;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      try {
+        if (Date.now() - statSync(lock).mtimeMs > 15_000) {
+          rmSync(lock, { recursive: true, force: true });
+        }
+      } catch {
+        // Another process removed the stale lock first.
+      }
+      if (Date.now() > deadline) {
+        throw new Error("Timed out waiting for the request pace lock.");
+      }
+      await Bun.sleep(20);
+    }
+  }
+  try {
+    let previous = 0;
+    try {
+      const parsed: unknown = JSON.parse(readFileSync(file, "utf8"));
+      if (parsed && typeof parsed === "object" && "nextAt" in parsed) {
+        const nextAt = Number((parsed as { nextAt: unknown }).nextAt);
+        if (Number.isFinite(nextAt)) previous = nextAt;
+      }
+    } catch {
+      // The first request in a run creates the file.
+    }
+    const reserved = paceStamp(previous, Date.now(), gap);
+    writeFileSync(file, JSON.stringify({ nextAt: reserved.nextAt }));
+    return reserved.waitMs;
+  } finally {
+    rmSync(lock, { recursive: true, force: true });
+  }
+}
+
+async function paceRequest(env: Environment) {
+  const gap = requestGapMs(env);
+  if (gap === 0) return;
+  const file = env.BANANASPLIT_REQUEST_PACE_FILE?.trim();
+  if (file) {
+    const wait = await reservePace(file, gap);
+    if (wait > 0) await Bun.sleep(wait);
+    return;
+  }
+  const now = Date.now();
+  const wait = nextRequestAt - now;
+  nextRequestAt = Math.max(now, nextRequestAt) + gap;
+  if (wait > 0) await Bun.sleep(wait);
+}
+
 export async function request(
   command: RequestCommand,
   runtime: AuthRuntime,
   env: Environment,
 ) {
+  await paceRequest(env);
   let credential = await getAccessCredential(runtime, env);
   let response = await send(command, runtime, env, credential);
   if (response.status === 401) {

@@ -26,7 +26,7 @@ describe("BananaSplit CLI", () => {
     expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
       l: "5",
       cursor: "next page",
-      archived: "true",
+      filter: "archived",
       sort: "lastActivity",
     });
   });

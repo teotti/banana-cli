@@ -152,6 +152,54 @@ function lookups(runtime: AuthRuntime, env: Environment) {
   return { lists, currentUser };
 }
 
+function listedRows(body: unknown) {
+  if (Array.isArray(body)) return body;
+  return asArray(asRecord(body).items);
+}
+
+/**
+ * Friend listings omit username and email. The user directory matches a
+ * username, or an email exactly, and does not echo the email back. A row
+ * counts only when it is already a friend.
+ */
+async function matchUserDirectory(
+  value: string,
+  reference: Reference,
+  runtime: AuthRuntime,
+  env: Environment,
+) {
+  const body = await request(
+    {
+      kind: "request",
+      path: "/users/search",
+      presentation: "user",
+      query: new URLSearchParams({ q: value }),
+    },
+    runtime,
+    env,
+  );
+  const friends = listedRows(body).filter((row) => {
+    const friendship = asRecord(asRecord(row).friendship);
+    return typeof friendship.id === "string" && friendship.id.length > 0;
+  });
+  const id = pick(
+    collect(
+      friends.map((row) => {
+        const user = asRecord(row);
+        return candidate(user.id, user.name, user.username);
+      }),
+    ),
+    reference,
+    value,
+  );
+  if (id !== undefined) return id;
+  if (friends.length === 1 && value.includes("@")) {
+    const found = asRecord(friends[0]).id;
+    if (typeof found === "string") return found;
+  }
+  return undefined;
+}
+
 /** Sets `splits.0.userId`-style paths, so a split names a person too. */
 function assign(body: unknown, field: string, id: string) {
   const path = field.split(".");
@@ -209,9 +257,14 @@ export async function resolveReferences(
         (names.get(reference.kind)?.size ?? 0) > 1 ? undefined : value;
       id = pick(await lists[reference.kind](search), reference, value);
       if (id === undefined && search !== undefined) {
-        // The server's search and this one disagree — a username, an email, a
-        // middle-of-the-name match. Sweep a wide page before giving up.
+        // The server's search and this one disagree — a middle-of-the-name
+        // match. Sweep a wide page before giving up.
         id = pick(await lists[reference.kind](undefined), reference, value);
+      }
+      if (id === undefined && reference.kind === "user") {
+        // Friend rows carry a name and no login. `/users/search` matches a
+        // username, or an email exactly, and only a friend is accepted.
+        id = await matchUserDirectory(value, reference, runtime, env);
       }
       if (id === undefined) {
         throw usageFailure(

@@ -152,7 +152,7 @@ function parseGroupsList(args: string[]): ParsedCommand {
   );
   appendQuery(query, "q", values.search as string | undefined);
   appendQuery(query, "cursor", values.cursor as string | undefined);
-  appendQuery(query, "archived", values.archived as boolean | undefined);
+  if (values.archived) appendQuery(query, "filter", "archived");
   appendQuery(
     query,
     "sort",
