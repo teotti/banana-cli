@@ -16,7 +16,7 @@ import {
 } from "./commands/expenses";
 import { friendPresenters, parseFriends } from "./commands/friends";
 import { groupPresenters, parseGroups } from "./commands/groups";
-import { mePresenters, parseMe } from "./commands/me";
+import { mePresenters, nameUserCurrency, parseMe } from "./commands/me";
 import { parsePayments, paymentPresenters } from "./commands/payments";
 import {
   findCreatedRecurring,
@@ -609,6 +609,13 @@ export async function runCli(
           requestRuntime,
           env,
         ),
+      );
+    }
+
+    // The signed-in user's default currency is an id; the terminal prints its code.
+    if (output.mode !== "raw" && command.presentation === "user") {
+      body = await nameUserCurrency(body, (path) =>
+        request({ kind: "request", path, presentation: "currency-list" }, requestRuntime, env),
       );
     }
 
