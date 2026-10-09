@@ -163,15 +163,8 @@ edit endpoint" conclusion.
   `409` otherwise, which `request.ts` already surfaces unretried. Nothing lists
   deleted rows, so the id has to come from an activity feed or from before the
   delete — which is why `expenses delete` prints the row it removed.
-- **`automated` is a create-only flag; `origin` is what it becomes.** `POST
-  /expenses`, `/expenses/bulk` (per item) and `/payments` take an optional
-  boolean `automated`, which `--automated` on `expenses add` and `payments
-  add` sends. The server detects the channel itself and stores `cli` or
-  `cli_automation`; responses carry a read-only `origin` that is `cli`, `mcp`,
-  their `_automation` variants, or `null` for everything else (web, mobile,
-  recurring occurrences, older rows). Never send `origin`, and never send
-  `automated` on an edit: a row keeps the origin it was created with. A
-  non-boolean `automated`, the string `"true"` included, is a 422.
+- **`--automated` is create-only.** `expenses add` and `payments add` send
+  `automated: true` with it, for rows a script creates. Edits never send it.
 - **`/currencies` takes no query params at all**, so `banana currencies
   --code`/`--search` fetches the one list and narrows it in the CLI.
 
