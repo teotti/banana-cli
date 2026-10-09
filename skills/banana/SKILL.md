@@ -149,13 +149,8 @@ show the names.
   not reach for a generic agent notification tool instead. Also pass it when
   an automation runs `banana expenses add`, so the user hears about the row.
   `edit` has no `--notify-me`; say so if asked to be notified about an edit.
-- **A job or script passes `--automated`.** When `banana expenses add` or
-  `banana payments add` runs from a scheduled job, cron, CI or any script with
-  no person asking for that row right then, pass `--automated`. BananaSplit
-  then labels the row as automated (`CLI · Automated`) for everyone in the
-  group. Leave it off when you are acting on a user's request in the
-  conversation — that row was asked for by hand. An edit keeps the label the
-  row was created with, so `edit` has no `--automated`.
+- **A job or script passes `--automated`.** See
+  [Scripts, jobs and automations](#scripts-jobs-and-automations).
 - **`--split-type` is `equal`, `custom`, `percentage` or `shares`.** It labels
   how the split was arrived at; `--split` values are amounts in every case, and
   still have to sum to `--amount`.
@@ -232,6 +227,61 @@ banana recurring edit <rule-id> --inactive --json
 The create endpoint answers with no row, so the CLI finds the rule it just wrote
 in the listing and reads it back. That is the one write whose `--json` shape can
 be wrong if two rules with the same title and amount are created at once.
+
+## Scripts, jobs and automations
+
+Every expense and payment records how it was created, and everyone in the group
+sees it: a row typed by a person reads `CLI`, a row a program made on its own
+reads `CLI · Automated`. `--automated` on `banana expenses add` and
+`banana payments add` is what sets the second label. Nothing detects it for
+you, so getting it right is your job.
+
+**Put `--automated` on every `expenses add` and `payments add` in anything that
+runs without a person asking for that row at that moment.** That includes:
+
+- a script you write for the user to run later or on a schedule — a shell or
+  Python script, a cron entry, a launchd agent, a systemd timer, a Makefile
+  target, a CI or GitHub Actions workflow, a webhook handler, a Zapier, n8n or
+  Shortcuts step;
+- a scheduled or background agent task, including one you are running as now;
+- a batch import: a bank statement, a CSV, a receipt inbox, another app's export.
+
+Write the flag into the script itself, on every create call, rather than
+leaving it to whoever runs it. It still belongs there when you or the user
+run the script once by hand to try it: the label describes how the row comes to
+exist, not who pressed enter the first time.
+
+**Leave it off when you are acting on a request in the conversation** — "log
+the dinner I paid for" is a row the user asked for by hand, even though you
+typed the command. `expenses edit` has no `--automated`; a row keeps the label
+it was created with.
+
+When writing such a script:
+
+- **Consider `banana recurring add` first.** A fixed amount on a fixed schedule
+  (rent, a subscription) needs no script: the rule lives on the server and
+  creates each occurrence itself. Write a script when the amount or the
+  participants change each run, such as parsing a bill or importing a feed.
+- **Check the login at the start** with `banana me --json`, and stop on a
+  non-zero exit. The script uses the login stored by `banana login` on the
+  machine it runs on; a CI runner or another machine needs its own login.
+- **Use `--json` and check exit codes.** Exit 2 is a mistake in the script;
+  exit 1 is a config, network or API failure.
+- **Do not retry a failed create blindly.** It may already have been saved —
+  see [Failures](#failures). A script that runs again on a schedule should
+  check the expense list for what it already made before adding it again.
+- **Add `--notify-me` to expenses** so the user hears about each row the job
+  creates.
+
+```sh
+#!/bin/sh
+set -eu
+banana me --json > /dev/null
+banana expenses add --title "Airbnb" --amount 64.20 --currency EUR \
+  --date 2026-10-01 --group "Lisbon trip" --notify-me --automated --json
+banana payments add --amount 32.10 --currency EUR --from Ana --to me \
+  --date 2026-10-01 --group "Lisbon trip" --automated --json
+```
 
 ## Paging
 
