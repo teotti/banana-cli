@@ -149,8 +149,8 @@ show the names.
   not reach for a generic agent notification tool instead. Also pass it when
   an automation runs `banana expenses add`, so the user hears about the row.
   `edit` has no `--notify-me`; say so if asked to be notified about an edit.
-- **`--automated` is only for rows a job or script creates**, never for rows
-  you add for a person. See [Jobs and scripts](#jobs-and-scripts).
+- **`--automated` is only for automations**, never for a row a person or an
+  agent creates as it is asked for. See [Jobs and scripts](#jobs-and-scripts).
 - **`--split-type` is `equal`, `custom`, `percentage` or `shares`.** It labels
   how the split was arrived at; `--split` values are amounts in every case, and
   still have to sum to `--amount`.
@@ -234,8 +234,8 @@ be wrong if two rules with the same title and amount are created at once.
 job or script. When you write a job or script that adds expenses or payments,
 put `--automated` on every create call in it.
 
-Never pass it when you add a row yourself for a person, whether in a
-conversation or from a scheduled agent task. `expenses edit` has no
+Leave it off when a person or an agent creates the row at the time it is asked
+for, including when you add one in a conversation. `expenses edit` has no
 `--automated`.
 
 In a job or script, check the login first with `banana me --json`, use
