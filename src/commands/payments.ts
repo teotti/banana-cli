@@ -34,6 +34,7 @@ const ADD_HELP = helpText({
     ["--date DATE", "When it happened, with an optional time (required)"],
     ["--group NAME", "Settle inside a group"],
     ["--description TEXT", "Longer note"],
+    ["--automated", "Mark it as created by a job or script, not by hand"],
   ],
   notes: [
     "--currency, --group, --from and --to take a code, a name or a prefix\nof one, as well as an id. `--from me` is you.",
@@ -116,6 +117,7 @@ export function parsePayments(args: string[]): ParsedCommand {
     rest,
     {
       amount: { type: "string" },
+      automated: { type: "boolean" },
       currency: { type: "string" },
       date: { type: "string" },
       description: { type: "string" },
@@ -148,6 +150,7 @@ export function parsePayments(args: string[]): ParsedCommand {
       amount: requiredString(values.amount, "--amount", ADD_HELP),
       date: isoDate(values.date, ADD_HELP),
       ...(description === undefined ? {} : { description }),
+      ...(values.automated === true ? { automated: true } : {}),
     },
     references: [
       {
@@ -196,6 +199,7 @@ function cleanPayment(body: unknown) {
     group: asRecord(payment.group).name ?? null,
     date: payment.date ?? null,
     isSettlement: payment.isSettlement === true,
+    origin: payment.origin ?? null,
     createdAt: payment.createdAt ?? null,
   };
 }
@@ -231,6 +235,7 @@ function cleanCreatedPaymentItem(value: unknown) {
     timezone: payment.timezone ?? null,
     isSettlement: payment.isSettlement === true,
     usedOptimalSettlement: payment.usedOptimalSettlement === true,
+    origin: payment.origin ?? null,
   };
 }
 

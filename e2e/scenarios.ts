@@ -38,6 +38,16 @@ function yesterday() {
   return new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+// A backend without record origins answers null, so only a set origin is
+// checked.
+function assertAutomatedOrigin(body: Record<string, unknown>, kind: string) {
+  if (body.origin != null && body.origin !== "cli_automation") {
+    throw new Error(
+      `expected an --automated ${kind} to have origin cli_automation, got ${String(body.origin)}`,
+    );
+  }
+}
+
 function assertAllocation(
   body: Record<string, unknown>,
   splitType: string,
@@ -318,6 +328,7 @@ export const scenarios: Scenario[] = [
       "expenses.add --group",
       "expenses.add --description",
       "expenses.add --notify-me",
+      "expenses.add --automated",
       "expenses.add --split-type",
       "expenses.add --split",
       "expenses.edit --title",
@@ -340,11 +351,13 @@ export const scenarios: Scenario[] = [
         splitType: "equal",
         paidBy: "me",
         notify: true,
+        automated: true,
         splits: [
           ["me", "1.00"],
           [partner, "1.00"],
         ],
       });
+      assertAutomatedOrigin(equal.body, "expense");
       ctx.world.expenseId = equal.id;
       ctx.world.expenseTitle = String(equal.body.title ?? "");
       ctx.world.oneOffId = equal.id;
@@ -486,6 +499,7 @@ export const scenarios: Scenario[] = [
       "payments.add --date",
       "payments.add --group",
       "payments.add --description",
+      "payments.add --automated",
     ],
     async (ctx) => {
       const before = await ctx.balances();
@@ -513,7 +527,9 @@ export const scenarios: Scenario[] = [
         amount: "1.00",
         from: ctx.config.partnerName,
         to: "me",
+        automated: true,
       });
+      assertAutomatedOrigin(settled.body, "payment");
       if (
         settled.body.fromUserId !== ctx.config.partnerId ||
         settled.body.toUserId !== ctx.config.accountId

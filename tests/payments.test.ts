@@ -14,6 +14,7 @@ const CREATED = {
   timezone: "UTC",
   isSettlement: true,
   usedOptimalSettlement: true,
+  origin: "cli",
 };
 
 const PAYMENT = {
@@ -57,6 +58,7 @@ describe("BananaSplit CLI", () => {
           "Lisbon",
           "--description",
           "Settle up",
+          "--automated",
         ],
         runtime,
       ),
@@ -72,6 +74,7 @@ describe("BananaSplit CLI", () => {
       fromUserId: ME.id,
       toUserId: ANA.id,
       groupId: GROUP.id,
+      automated: true,
     });
     // The created row is read back, so the output names what it made.
     expect(calls.at(-1)!.url.pathname).toBe("/base/payments/payment-1");
@@ -108,6 +111,8 @@ describe("BananaSplit CLI", () => {
       ),
     ).toBe(0);
     expect(calls[0].init?.method).toBe("POST");
+    // Without --automated the field stays off, so the API keeps the plain origin.
+    expect(JSON.parse(String(calls[0].init?.body))).not.toHaveProperty("automated");
   });
 
   it("presents a multi-payment settlement as the rows it created", async () => {
@@ -150,6 +155,7 @@ describe("BananaSplit CLI", () => {
       timezone: "UTC",
       isSettlement: true,
       usedOptimalSettlement: true,
+      origin: "cli",
     });
   });
 

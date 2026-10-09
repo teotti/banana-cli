@@ -105,9 +105,9 @@ show the names.
 | `banana balance` | aggregate: what you owe and are owed |
 | `banana balances` | the same, per person (alias for `balance users`) |
 | `banana expenses list` | `--limit N --cursor C --sort date\|amount --direction asc\|desc --recurring\|--no-recurring` |
-| `banana expenses add` | `--title --amount --currency --date` required; `--paid-by --group --description --split-type --split --notify-me` (opt in to your own expense-created push notification) |
+| `banana expenses add` | `--title --amount --currency --date` required; `--paid-by --group --description --split-type --split --notify-me --automated` (`--notify-me` opts in to your own expense-created push notification) |
 | `banana expenses get <expense-id>` | one expense with payer and splits |
-| `banana expenses edit <expense-id>` | any subset of the add field flags except `--notify-me`, plus `--no-group` |
+| `banana expenses edit <expense-id>` | any subset of the add field flags except `--notify-me` and `--automated`, plus `--no-group` |
 | `banana expenses delete <expense-id>` | changes everyone's balance — confirm with the user first; undo with `restore` |
 | `banana expenses restore <expense-id>` | brings a deleted expense back with its shares |
 | `banana recurring list` (or `banana expenses recurring list`) | `--status all\|active\|inactive --limit N --cursor C` — pages of rules, not the expenses they make |
@@ -115,7 +115,7 @@ show the names.
 | `banana recurring get <rule-id>` | one rule, its splits, and the expenses it created |
 | `banana recurring edit <rule-id>` | any subset of the add flags, plus `--no-group --no-end --active --inactive` |
 | `banana recurring delete <rule-id>` | removes the rule itself |
-| `banana payments add` | `--amount --currency --from --to --date` required; `--group --description` |
+| `banana payments add` | `--amount --currency --from --to --date` required; `--group --description --automated` |
 | `banana payments get <payment-id>` | |
 | `banana payments restore <payment-id>` | brings a deleted payment back |
 | `banana groups [list]` | `--search TEXT --limit --cursor --archived --sort balance\|lastActivity` |
@@ -149,6 +149,13 @@ show the names.
   not reach for a generic agent notification tool instead. Also pass it when
   an automation runs `banana expenses add`, so the user hears about the row.
   `edit` has no `--notify-me`; say so if asked to be notified about an edit.
+- **A job or script passes `--automated`.** When `banana expenses add` or
+  `banana payments add` runs from a scheduled job, cron, CI or any script with
+  no person asking for that row right then, pass `--automated`. BananaSplit
+  then labels the row as automated (`CLI · Automated`) for everyone in the
+  group. Leave it off when you are acting on a user's request in the
+  conversation — that row was asked for by hand. An edit keeps the label the
+  row was created with, so `edit` has no `--automated`.
 - **`--split-type` is `equal`, `custom`, `percentage` or `shares`.** It labels
   how the split was arrived at; `--split` values are amounts in every case, and
   still have to sum to `--amount`.
