@@ -50,6 +50,7 @@ const ADD_HELP = helpText({
     ["--group NAME", "Charge the expense to a group"],
     ["--description TEXT", "Longer note"],
     ["--notify-me", "Send yourself the expense-created push notification"],
+    ["--automated", "Mark it as created by a job or script"],
     ["--split-type TYPE", SPLIT_TYPES],
     ["--split WHO=AMOUNT", "One person's share; repeat for each split"],
   ],
@@ -231,6 +232,7 @@ export function parseExpenses(args: string[]): ParsedCommand {
       date: { type: "string" },
       description: { type: "string" },
       group: { type: "string" },
+      automated: { type: "boolean" },
       "notify-me": { type: "boolean" },
       "paid-by": { type: "string" },
       split: { type: "string", multiple: true },
@@ -285,6 +287,7 @@ export function parseExpenses(args: string[]): ParsedCommand {
       splits,
       ...(description === undefined ? {} : { description }),
       ...(values["notify-me"] === true ? { notifyMe: true } : {}),
+      ...(values.automated === true ? { automated: true } : {}),
       ...(splitType === undefined ? {} : { splitType }),
     },
     references: [
@@ -400,6 +403,9 @@ function parseExpensesEdit(args: string[]): ParsedCommand {
   if (jsonBody !== undefined) {
     if ("notifyMe" in jsonBody) {
       throw usageFailure("notifyMe is only valid when adding an expense", EDIT_HELP);
+    }
+    if ("automated" in jsonBody) {
+      throw usageFailure("automated is only valid when adding an expense", EDIT_HELP);
     }
     return {
       kind: "request",
@@ -551,6 +557,7 @@ function cleanExpense(body: unknown) {
     category: asRecord(expense.category).name ?? null,
     date: expense.date ?? null,
     splitType: expense.splitType ?? null,
+    origin: expense.origin ?? null,
     createdAt: expense.createdAt ?? null,
     splits: asArray(expense.shares).map((value) => {
       const share = asRecord(value);

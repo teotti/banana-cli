@@ -232,6 +232,9 @@ banana payments add --amount 20 --currency EUR \
 `--notify-me` sends the expense-created push notification to you as well. It is
 off by default and only applies when adding an expense.
 
+`--automated` marks an expense or payment as created by a job or script. Leave
+it off when a person or an agent creates the row at the time it is asked for.
+
 `--date` takes `YYYY-MM-DD` or `DD-MM-YYYY`, and accepts a time after a `T`
 with optional seconds, milliseconds and an offset. Without a time the row
 lands at midnight UTC; without an offset the time is read as UTC:

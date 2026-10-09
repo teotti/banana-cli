@@ -49,6 +49,7 @@ describe("BananaSplit CLI", () => {
         date: "2026-09-01T00:00:00.000Z",
         share: { userId: "user-2", amount: "20.000000000000000000" },
         recurrence: { frequency: "monthly" },
+        origin: "cli_automation",
       }],
       hasMore: true,
       nextCursor: "cursor-2",
@@ -61,7 +62,8 @@ describe("BananaSplit CLI", () => {
         currencyId: null, currency: "EUR",
         paidById: "user-1", paidBy: "Leonardo",
         groupId: "group-1", group: "Lisbon trip", category: "Food",
-        date: "2026-09-01T00:00:00.000Z", splitType: null, createdAt: null,
+        date: "2026-09-01T00:00:00.000Z", splitType: null,
+        origin: "cli_automation", createdAt: null,
         isRecurring: true, share: 20,
       }],
       hasMore: true, nextCursor: "cursor-2",
@@ -133,6 +135,8 @@ describe("BananaSplit CLI", () => {
     expect(await runCli(["expenses", "edit", "--help"], runtime)).toBe(0);
     expect(stdout[0]).toContain("--notify-me");
     expect(stdout[1]).not.toContain("--notify-me");
+    expect(stdout[0]).toContain("--automated");
+    expect(stdout[1]).not.toContain("--automated");
     expect(calls).toHaveLength(0);
   });
 
@@ -220,6 +224,7 @@ describe("BananaSplit CLI", () => {
           "--split",
           "Ana=20",
           "--notify-me",
+          "--automated",
         ],
         runtime,
       ),
@@ -240,6 +245,7 @@ describe("BananaSplit CLI", () => {
       ],
       description: "Team meal",
       notifyMe: true,
+      automated: true,
       splitType: "custom",
       currencyId: "currency-eur",
       paidById: ME.id,
@@ -526,6 +532,17 @@ describe("BananaSplit CLI", () => {
     expect(calls).toHaveLength(0);
     expect(JSON.parse(stderr[0]).error.message).toContain(
       "notifyMe is only valid when adding an expense",
+    );
+  });
+
+  it("rejects automated in JSON edits before making a request", async () => {
+    const { calls, runtime, stderr } = harness();
+    expect(await runCli([
+      "expenses", "edit", "expense-1", '{"automated":true}', "--json",
+    ], runtime)).toBe(2);
+    expect(calls).toHaveLength(0);
+    expect(JSON.parse(stderr[0]).error.message).toContain(
+      "automated is only valid when adding an expense",
     );
   });
 

@@ -163,6 +163,9 @@ edit endpoint" conclusion.
   `409` otherwise, which `request.ts` already surfaces unretried. Nothing lists
   deleted rows, so the id has to come from an activity feed or from before the
   delete — which is why `expenses delete` prints the row it removed.
+- **`--automated` is create-only.** `expenses add` and `payments add` send
+  `automated: true` with it, for rows an automation creates — never for one a
+  person or agent creates as it is asked for. Edits never send it.
 - **`/currencies` takes no query params at all**, so `banana currencies
   --code`/`--search` fetches the one list and narrows it in the CLI.
 

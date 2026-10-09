@@ -92,6 +92,7 @@ export type ScenarioContext = {
     splitType?: string;
     paidBy?: string;
     notify?: boolean;
+    automated?: boolean;
     json?: Record<string, unknown>;
   }) => Promise<{ id: string; body: Record<string, unknown> }>;
   createPayment: (input: {
@@ -99,6 +100,7 @@ export type ScenarioContext = {
     amount: string;
     from: string;
     to: string;
+    automated?: boolean;
     json?: Record<string, unknown>;
   }) => Promise<{ id: string; body: Record<string, unknown> }>;
   createRule: (input: {
@@ -266,6 +268,7 @@ export function bindCreates(input: {
             : []),
           ...(expense.splitType ? ["--split-type", expense.splitType] : []),
           ...(expense.notify ? ["--notify-me"] : []),
+          ...(expense.automated ? ["--automated"] : []),
           ...splits.flatMap(([who, amount]) => ["--split", `${who}=${amount}`]),
         ],
         confirm: (body) =>
@@ -316,6 +319,7 @@ export function bindCreates(input: {
               "--description",
               description,
               ...(world.groupName ? ["--group", world.groupName] : []),
+              ...(payment.automated ? ["--automated"] : []),
             ],
             confirm: (body) =>
               body.description === description &&
