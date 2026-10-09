@@ -50,7 +50,7 @@ const ADD_HELP = helpText({
     ["--group NAME", "Charge the expense to a group"],
     ["--description TEXT", "Longer note"],
     ["--notify-me", "Send yourself the expense-created push notification"],
-    ["--automated", "Mark it as created by a script, not by a person"],
+    ["--automated", "Mark it as created by a job or script"],
     ["--split-type TYPE", SPLIT_TYPES],
     ["--split WHO=AMOUNT", "One person's share; repeat for each split"],
   ],

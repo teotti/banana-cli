@@ -34,7 +34,7 @@ const ADD_HELP = helpText({
     ["--date DATE", "When it happened, with an optional time (required)"],
     ["--group NAME", "Settle inside a group"],
     ["--description TEXT", "Longer note"],
-    ["--automated", "Mark it as created by a script, not by a person"],
+    ["--automated", "Mark it as created by a job or script"],
   ],
   notes: [
     "--currency, --group, --from and --to take a code, a name or a prefix\nof one, as well as an id. `--from me` is you.",

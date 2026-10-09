@@ -149,8 +149,8 @@ show the names.
   not reach for a generic agent notification tool instead. Also pass it when
   an automation runs `banana expenses add`, so the user hears about the row.
   `edit` has no `--notify-me`; say so if asked to be notified about an edit.
-- **`--automated` is only for rows a script creates**, never for rows you add
-  for a person. See [Scripts](#scripts).
+- **`--automated` is only for rows a job or script creates**, never for rows
+  you add for a person. See [Jobs and scripts](#jobs-and-scripts).
 - **`--split-type` is `equal`, `custom`, `percentage` or `shares`.** It labels
   how the split was arrived at; `--split` values are amounts in every case, and
   still have to sum to `--amount`.
@@ -228,19 +228,19 @@ The create endpoint answers with no row, so the CLI finds the rule it just wrote
 in the listing and reads it back. That is the one write whose `--json` shape can
 be wrong if two rules with the same title and amount are created at once.
 
-## Scripts
+## Jobs and scripts
 
 `--automated` on `expenses add` and `payments add` marks a row as created by a
-script. When you write a script, cron job or import that adds expenses or
-payments, put `--automated` on every create call in it.
+job or script. When you write a job or script that adds expenses or payments,
+put `--automated` on every create call in it.
 
 Never pass it when you add a row yourself for a person, whether in a
 conversation or from a scheduled agent task. `expenses edit` has no
 `--automated`.
 
-In a script, check the login first with `banana me --json`, use `--json`, and
-stop on a non-zero exit. For a fixed amount on a fixed schedule, use
-`banana recurring add` instead of a script.
+In a job or script, check the login first with `banana me --json`, use
+`--json`, and stop on a non-zero exit. For a fixed amount on a fixed schedule,
+use `banana recurring add` instead.
 
 ```sh
 #!/bin/sh
