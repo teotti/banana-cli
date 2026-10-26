@@ -4,6 +4,8 @@
 
 Standalone access to the BananaSplit API for people and shell-enabled agents.
 
+Full documentation, including the command reference and the MCP server, lives at [docs.bananasplit.net](https://docs.bananasplit.net).
+
 ## Use with your AI agent
 
 Install the skill with [Skills CLI](https://github.com/vercel-labs/skills)
@@ -160,6 +162,8 @@ The CLI reads these variables:
 | `NO_COLOR` | Print help and listings without color |
 
 ## Usage
+
+The complete command reference is at [docs.bananasplit.net/cli/commands](https://docs.bananasplit.net/cli/commands).
 
 Run `banana` from any directory:
 
