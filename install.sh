@@ -52,8 +52,10 @@ fi
 tar -xzf "${TEMP_DIR}/${ARCHIVE}" -C "$TEMP_DIR"
 mkdir -p "$INSTALL_DIR"
 install -m 755 "${TEMP_DIR}/banana" "${INSTALL_DIR}/banana"
+# A relative link, so it follows the binary through every upgrade.
+ln -sf banana "${INSTALL_DIR}/bananasplit"
 
-echo "Installed banana to ${INSTALL_DIR}/banana"
+echo "Installed banana to ${INSTALL_DIR}/banana (also runs as bananasplit)"
 case ":${PATH}:" in
   *":${INSTALL_DIR}:"*) ;;
   *) echo "Add ${INSTALL_DIR} to PATH to run banana from any shell." ;;

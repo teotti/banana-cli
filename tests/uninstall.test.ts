@@ -1,9 +1,18 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtemp, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { runCli } from "../src/index";
-import { uninstallCli, type UninstallRuntime } from "../src/uninstall";
+import {
+  defaultUninstallRuntime,
+  uninstallCli,
+  WINDOWS_SHIM,
+  type UninstallRuntime,
+} from "../src/uninstall";
 import { harness } from "./helpers";
 
 const BINARY = "/home/user/.local/bin/banana";
+const ALIAS = "/home/user/.local/bin/bananasplit";
 
 /**
  * A machine that never loses a file: `removed` records what was deleted and
@@ -20,6 +29,7 @@ function machine(overrides: Partial<UninstallRuntime> = {}) {
     env: { HOME: "/home/user" },
     execPath: BINARY,
     isStandalone: true,
+    isAlias: async () => true,
     logout: async () => {
       loggedOut += 1;
       return "Logged out.";
@@ -45,9 +55,11 @@ describe("banana uninstall", () => {
 
     const message = await uninstallCli({ yes: false }, test.runtime);
 
-    expect(test.removed).toEqual([BINARY]);
+    expect(test.removed).toEqual([BINARY, ALIAS]);
     expect(test.loggedOut()).toBe(1);
-    expect(message).toBe("Removed ~/.local/bin/banana.\nLogged out.");
+    expect(message).toBe(
+      "Removed ~/.local/bin/banana and ~/.local/bin/bananasplit.\nLogged out.",
+    );
   });
 
   it("leaves everything alone when the question is answered no", async () => {
@@ -91,7 +103,35 @@ describe("banana uninstall", () => {
 
     await uninstallCli({ yes: true }, test.runtime);
 
+    expect(test.removed).toEqual([BINARY, ALIAS]);
+  });
+
+  it("leaves a bananasplit the installer did not make", async () => {
+    const checked: string[][] = [];
+    const test = machine({
+      isAlias: async (path, binary) => {
+        checked.push([path, binary]);
+        return false;
+      },
+    });
+
+    const message = await uninstallCli({ yes: true }, test.runtime);
+
+    expect(checked).toEqual([[ALIAS, BINARY]]);
     expect(test.removed).toEqual([BINARY]);
+    expect(message).toBe("Removed ~/.local/bin/banana.\nLogged out.");
+  });
+
+  it("leaves a bananasplit.cmd that is not the installer's shim", async () => {
+    const test = machine({
+      platform: "win32",
+      execPath: "C:\\bin\\banana.exe",
+      isAlias: async () => false,
+    });
+
+    await uninstallCli({ yes: true }, test.runtime);
+
+    expect(test.spawned[0]?.join(" ")).not.toContain("bananasplit");
   });
 
   it("names the skill and the Path entry without touching them", async () => {
@@ -115,6 +155,7 @@ describe("banana uninstall", () => {
 
     expect(test.spawned[0]?.[0]).toBe("powershell.exe");
     expect(test.spawned[0]?.join(" ")).toContain("Wait-Process -Id 4242");
+    expect(test.spawned[0]?.join(" ")).toContain("C:\\bin\\bananasplit.cmd");
     expect(test.removed).toEqual([]);
     expect(message).toContain("will finish uninstalling after this command exits");
   });
@@ -168,7 +209,7 @@ describe("banana uninstall", () => {
 
     await uninstallCli({ yes: true }, test.runtime);
 
-    expect(order).toEqual(["logout", "remove"]);
+    expect(order).toEqual(["logout", "remove", "remove"]);
   });
 
   it("stops before deleting anything if the login cannot be revoked", async () => {
@@ -218,5 +259,30 @@ describe("banana uninstall", () => {
       expect(await runCli(["uninstall", "everything"], test.runtime)).toBe(2);
       expect(test.stderr.join("\n")).toContain("Unexpected argument: everything");
     });
+  });
+});
+
+describe("the bananasplit alias check", () => {
+  const { isAlias } = defaultUninstallRuntime();
+
+  it("knows the installer's symlink from a file that only shares its name", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "banana-alias-"));
+    const binary = join(dir, "banana");
+    await writeFile(binary, "binary");
+    await symlink("banana", join(dir, "bananasplit"));
+    await writeFile(join(dir, "other"), "binary");
+
+    expect(await isAlias(join(dir, "bananasplit"), binary)).toBe(true);
+    expect(await isAlias(join(dir, "other"), binary)).toBe(false);
+    expect(await isAlias(join(dir, "missing"), binary)).toBe(false);
+  });
+
+  it("knows the installer's shim from another .cmd", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "banana-alias-"));
+    await writeFile(join(dir, "shim.cmd"), `${WINDOWS_SHIM}\r\n`);
+    await writeFile(join(dir, "other.cmd"), "@echo off\r\n");
+
+    expect(await isAlias(join(dir, "shim.cmd"), "banana.exe")).toBe(true);
+    expect(await isAlias(join(dir, "other.cmd"), "banana.exe")).toBe(false);
   });
 });

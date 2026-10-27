@@ -198,6 +198,11 @@ export async function updateCli(
           `Move-Item -LiteralPath ${powerShellQuote(
             win32.join(stagingDir, "banana.exe"),
           )} -Destination ${powerShellQuote(runtime.execPath)} -Force`,
+          `Move-Item -LiteralPath ${powerShellQuote(
+            win32.join(stagingDir, "bananasplit.cmd"),
+          )} -Destination ${powerShellQuote(
+            win32.join(installDir, "bananasplit.cmd"),
+          )} -Force`,
           `Remove-Item -LiteralPath ${powerShellQuote(
             stagingDir,
           )} -Recurse -Force`,

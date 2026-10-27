@@ -1,6 +1,6 @@
-import { rm, stat } from "node:fs/promises";
+import { lstat, realpath, rm, stat } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, win32 } from "node:path";
+import { dirname, join, win32 } from "node:path";
 import { supportsColor } from "./help";
 import { note } from "./render";
 import { agentTargets, type SkillRuntime } from "./skill";
@@ -8,6 +8,8 @@ import { CliFailure, type Environment } from "./types";
 
 const PACKAGE = "@bananasplitapp/cli";
 const INDENT = "  ";
+/** What install.ps1 writes to bananasplit.cmd, which tells its shim from any other file. */
+export const WINDOWS_SHIM = '@"%~dp0banana.exe" %*';
 
 type UninstallProcess = {
   exited: Promise<number>;
@@ -34,6 +36,8 @@ export type UninstallRuntime = {
   /** Revokes and deletes the stored credential, returning what it did. */
   logout: () => Promise<string | undefined>;
   isStandalone: boolean;
+  /** Whether `path` is the installer's alias for `binary`, rather than someone else's file. */
+  isAlias: (path: string, binary: string) => Promise<boolean>;
   pid: number;
   platform: string;
   remove: (path: string) => Promise<void>;
@@ -49,6 +53,19 @@ export function defaultUninstallRuntime(): Omit<UninstallRuntime, "logout"> {
     env: process.env,
     execPath: process.execPath,
     isStandalone: Bun.isStandaloneExecutable,
+    isAlias: async (path, binary) => {
+      try {
+        if (path.endsWith(".cmd")) {
+          return (await Bun.file(path).text()).trim() === WINDOWS_SHIM;
+        }
+        return (
+          (await lstat(path)).isSymbolicLink() &&
+          (await realpath(path)) === (await realpath(binary))
+        );
+      } catch {
+        return false;
+      }
+    },
     pid: process.pid,
     platform: process.platform,
     remove: async (path) => {
@@ -116,6 +133,13 @@ function plan(runtime: UninstallRuntime) {
     : { kind: "package" as const, target: PACKAGE };
 }
 
+/** Where the installer puts the `bananasplit` alias, beside the binary. */
+function aliasPath(runtime: UninstallRuntime) {
+  return runtime.platform === "win32"
+    ? win32.join(win32.dirname(runtime.execPath), "bananasplit.cmd")
+    : join(dirname(runtime.execPath), "bananasplit");
+}
+
 export async function uninstallCli(
   command: { yes: boolean },
   overrides: Partial<UninstallRuntime> & Pick<UninstallRuntime, "logout">,
@@ -125,12 +149,20 @@ export async function uninstallCli(
     ...overrides,
   } as UninstallRuntime;
   const step = plan(runtime);
+  // A package manager removes its own bins; a standalone binary's alias is
+  // removed only if it is still the one the installer made.
+  const alias =
+    step.kind === "binary" &&
+    (await runtime.isAlias(aliasPath(runtime), runtime.execPath))
+      ? aliasPath(runtime)
+      : undefined;
   const skills = await runtime.skills();
 
   const removing = [
     step.kind === "binary"
       ? short(step.target, runtime.env)
       : `the ${PACKAGE} package`,
+    ...(alias ? [short(alias, runtime.env)] : []),
     "your stored login, revoked and then deleted",
   ];
   const keeping = [
@@ -198,6 +230,9 @@ export async function uninstallCli(
         [
           `Wait-Process -Id ${runtime.pid} -ErrorAction SilentlyContinue`,
           `Remove-Item -LiteralPath '${runtime.execPath.replaceAll("'", "''")}' -Force`,
+          ...(alias
+            ? [`Remove-Item -LiteralPath '${alias.replaceAll("'", "''")}' -Force`]
+            : []),
         ].join("\n"),
       ],
       { detached: true, env: runtime.env, stdin: "ignore", stdout: "ignore", stderr: "ignore" },
@@ -207,6 +242,7 @@ export async function uninstallCli(
   } else {
     try {
       await runtime.remove(step.target);
+      if (alias) await runtime.remove(alias);
     } catch (error) {
       throw new CliFailure(
         "config",
@@ -215,7 +251,11 @@ export async function uninstallCli(
         }`,
       );
     }
-    done.push(`Removed ${short(step.target, runtime.env)}.`);
+    done.push(
+      `Removed ${short(step.target, runtime.env)}${
+        alias ? ` and ${short(alias, runtime.env)}` : ""
+      }.`,
+    );
   }
 
   return [
