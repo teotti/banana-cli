@@ -160,6 +160,20 @@ describe("banana uninstall", () => {
     expect(message).toContain("will finish uninstalling after this command exits");
   });
 
+  it("uninstalls a Homebrew install through brew", async () => {
+    const test = machine({
+      execPath: "/home/linuxbrew/.linuxbrew/Cellar/bananasplit/0.4.0/bin/banana",
+    });
+
+    const message = await uninstallCli({ yes: true }, test.runtime);
+
+    expect(test.spawned).toEqual([
+      ["/home/linuxbrew/.linuxbrew/bin/brew", "uninstall", "bananasplit"],
+    ]);
+    expect(test.removed).toEqual([]);
+    expect(message).toContain("Uninstalled the bananasplit Homebrew formula.");
+  });
+
   it("uninstalls a package install through its package manager", async () => {
     const test = machine({ isStandalone: false, execPath: "/home/user/.bun/bin/bun" });
 

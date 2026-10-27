@@ -22,6 +22,21 @@ function isSet(value: string | undefined) {
   return normalized !== "" && normalized !== "0" && normalized !== "false";
 }
 
+/** The formula `brew install teotti/bananasplit/bananasplit` installs. */
+export const HOMEBREW_FORMULA = "bananasplit";
+
+/**
+ * The `brew` that owns this binary, when Homebrew installed it. A formula's
+ * files live under `<prefix>/Cellar/<formula>/<version>/`, and a compiled
+ * binary reports that resolved path as its `execPath` even when run through
+ * the `<prefix>/bin` link. Homebrew has to upgrade and remove those files
+ * itself, or its records stop matching what is on disk.
+ */
+export function homebrew(execPath: string) {
+  const at = execPath.indexOf(`/Cellar/${HOMEBREW_FORMULA}/`);
+  return at === -1 ? undefined : `${execPath.slice(0, at)}/bin/brew`;
+}
+
 export function isCI(env: Environment) {
   return isSet(env.CI) || CI_VARIABLES.some((name) => isSet(env[name]));
 }

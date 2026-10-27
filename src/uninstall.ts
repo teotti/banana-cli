@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { dirname, join, win32 } from "node:path";
 import { supportsColor } from "./help";
 import { note } from "./render";
+import { HOMEBREW_FORMULA, homebrew } from "./shared";
 import { agentTargets, type SkillRuntime } from "./skill";
 import { CliFailure, type Environment } from "./types";
 
@@ -123,11 +124,14 @@ function short(path: string, env: Environment) {
 }
 
 /**
- * What the command is about to do, before it does any of it. A package install
- * is uninstalled by its package manager; only a standalone binary is a file to
- * delete, and on Windows it cannot delete itself while it is running.
+ * What the command is about to do, before it does any of it. A package or
+ * Homebrew install is uninstalled by its package manager; only a standalone
+ * binary is a file to delete, and on Windows it cannot delete itself while it
+ * is running.
  */
 function plan(runtime: UninstallRuntime) {
+  const brew = homebrew(runtime.execPath);
+  if (brew) return { kind: "homebrew" as const, target: brew };
   return runtime.isStandalone
     ? { kind: "binary" as const, target: runtime.execPath }
     : { kind: "package" as const, target: PACKAGE };
@@ -161,7 +165,9 @@ export async function uninstallCli(
   const removing = [
     step.kind === "binary"
       ? short(step.target, runtime.env)
-      : `the ${PACKAGE} package`,
+      : step.kind === "homebrew"
+        ? `the ${HOMEBREW_FORMULA} Homebrew formula`
+        : `the ${PACKAGE} package`,
     ...(alias ? [short(alias, runtime.env)] : []),
     "your stored login, revoked and then deleted",
   ];
@@ -219,6 +225,19 @@ export async function uninstallCli(
       throw new CliFailure("config", `Could not remove the ${PACKAGE} package.`);
     }
     done.push(`Removed the ${PACKAGE} package.`);
+  } else if (step.kind === "homebrew") {
+    const child = runtime.spawn([step.target, "uninstall", HOMEBREW_FORMULA], {
+      env: runtime.env,
+      stdout: "ignore",
+      stderr: "inherit",
+    });
+    if ((await child.exited) !== 0) {
+      throw new CliFailure(
+        "config",
+        `Could not uninstall the ${HOMEBREW_FORMULA} Homebrew formula.`,
+      );
+    }
+    done.push(`Uninstalled the ${HOMEBREW_FORMULA} Homebrew formula.`);
   } else if (runtime.platform === "win32") {
     // A running .exe cannot delete itself, so hand the job to a process that
     // outlives this one — the same wait-then-act shape `upgrade` uses.

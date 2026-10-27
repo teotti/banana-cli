@@ -1,4 +1,4 @@
-import { stat } from "node:fs/promises";
+import { realpath, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { version as CLI_VERSION } from "../package.json";
 import { readApiUrl } from "./auth";
@@ -41,7 +41,12 @@ export function defaultDoctorRuntime(): Omit<DoctorRuntime, "whoami"> {
     env: process.env,
     execPath: process.execPath,
     isStandalone: Bun.isStandaloneExecutable,
-    which: async (command) => Bun.which(command) ?? undefined,
+    // Resolved, because execPath is: Homebrew puts a link to the binary on
+    // PATH, and that link is this binary rather than another copy.
+    which: async (command) => {
+      const found = Bun.which(command);
+      return found === null ? undefined : realpath(found).catch(() => found);
+    },
     readSkill: async (path) => {
       const file = Bun.file(path);
       return (await file.exists()) ? file.text() : undefined;

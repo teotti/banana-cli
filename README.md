@@ -37,6 +37,12 @@ Windows PowerShell (no Bun or Node required):
 irm https://github.com/teotti/banana-cli/releases/latest/download/install.ps1 | iex
 ```
 
+Homebrew (macOS and Linux):
+
+```sh
+brew install teotti/bananasplit/bananasplit
+```
+
 Or install the TypeScript package with [Bun](https://bun.sh):
 
 ```sh
