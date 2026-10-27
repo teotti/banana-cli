@@ -79,16 +79,14 @@ describe("CLI updater", () => {
       },
     });
 
-    expect(await updateCli(test.runtime)).toBe(
-      `Banana is now up to date.\n  v${CLI_VERSION} → v9.9.9`,
-    );
+    expect(await updateCli(test.runtime)).toBe("Banana is now up to date.");
     expect(test.calls).toEqual([
       [
         ["/opt/homebrew/bin/brew", "upgrade", "bananasplit"],
         { env: { PATH: "/bin" }, stdout: "ignore", stderr: "inherit" },
       ],
     ]);
-    expect(urls).toEqual([LATEST]);
+    expect(urls).toEqual([]);
   });
 
   it("runs the verified POSIX installer against the current binary directory", async () => {

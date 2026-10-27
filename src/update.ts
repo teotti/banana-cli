@@ -140,7 +140,10 @@ export async function updateCli(
         stderr: "inherit",
       }),
     );
-    return updated(await latestVersion(runtime.fetch), runtime.color);
+    // brew installs what its tap names, which can trail the GitHub release
+    // (a stale tap, HOMEBREW_NO_AUTO_UPDATE), so the latest tag is not
+    // necessarily what is now installed.
+    return updated(undefined, runtime.color);
   }
 
   if (!runtime.isStandalone) {
