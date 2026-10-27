@@ -86,6 +86,8 @@ export interface CliRuntime {
   now?: () => number;
   openUrl?: (url: string) => Promise<void>;
   pager?: Pager;
+  /** The name the CLI was run as, which its own messages call it by. */
+  programName?: string;
   secrets?: SecureStorage;
   sleep?: Sleep;
   stderr?: OutputWriter;

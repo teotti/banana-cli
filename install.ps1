@@ -57,8 +57,13 @@ try {
   New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
   Copy-Item (Join-Path $TempDir "banana.exe") (Join-Path $InstallDir "banana.exe") -Force
   # A shim rather than a link: symlinks need elevation, and an upgrade replaces
-  # banana.exe, which would leave a hard link pointing at the old binary.
-  Set-Content (Join-Path $InstallDir "bananasplit.cmd") '@"%~dp0banana.exe" %*' -Encoding Ascii
+  # banana.exe, which would leave a hard link pointing at the old binary. It
+  # starts banana.exe by that name, so it says which name the user typed.
+  Set-Content (Join-Path $InstallDir "bananasplit.cmd") @(
+    '@setlocal',
+    '@set "BANANA_INVOKED_AS=bananasplit"',
+    '@"%~dp0banana.exe" %*'
+  ) -Encoding Ascii
 
   if (-not $env:BANANA_SKIP_PATH_UPDATE) {
     $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")

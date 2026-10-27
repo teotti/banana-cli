@@ -84,7 +84,8 @@ ${archive("linux-x64", "      ")}
   end
 
   test do
-    assert_match "banana <command>", shell_output("#{bin}/bananasplit --help")
+    assert_match "banana <command>", shell_output("#{bin}/banana --help")
+    assert_match "bananasplit <command>", shell_output("#{bin}/bananasplit --help")
   end
 end
 `;

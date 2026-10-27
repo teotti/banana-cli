@@ -34,7 +34,7 @@ import { uninstallCli } from "./uninstall";
 import { colorizeHelp, errorText, helpHeader, helpText, supportsColor } from "./help";
 import { request } from "./request";
 import { resolveReferences } from "./resolve";
-import { asArray, asRecord, usageFailure } from "./shared";
+import { asArray, asRecord, renameCommand, usageFailure } from "./shared";
 import {
   CliFailure,
   type BrowserLevel,
@@ -311,6 +311,8 @@ function serializeFailure(error: unknown, mode: OutputMode) {
     },
   });
   return {
+    /** Whether the CLI wrote the message, rather than passing on the API's. */
+    authored: failure.type !== "api",
     exitCode:
       failure.type === "cancelled" ? 130 : failure.type === "usage" ? 2 : 1,
     output:
@@ -331,6 +333,11 @@ export async function runCli(
 ): Promise<number> {
   const stdout = runtime.stdout ?? console.log;
   const stderr = runtime.stderr ?? console.error;
+  // The CLI's own messages, under the name it was run as. Responses go to
+  // stdout untouched.
+  const name = runtime.programName ?? "banana";
+  const say = (text: string) => stdout(renameCommand(text, name));
+  const warn = (text: string) => stderr(renameCommand(text, name));
   const outputMode: OutputMode = args.includes("--json")
     ? "json"
     : args.includes("--raw")
@@ -341,7 +348,7 @@ export async function runCli(
     const output = parseOutputFlags(args);
     const command = parseCommand(output.args);
     if (command.kind === "help") {
-      stdout(colorizeHelp(command.text));
+      say(colorizeHelp(command.text));
       return 0;
     }
     if (command.kind === "doctor" && output.mode === "raw") {
@@ -376,19 +383,16 @@ export async function runCli(
 
     const env = runtime.env ?? process.env;
     if (command.kind === "skill") {
-      stdout(
-        command.print
-          ? SKILL_TEXT
-          : await (runtime.installSkill ?? installSkill)(command, { env }),
-      );
+      if (command.print) stdout(SKILL_TEXT);
+      else say(await (runtime.installSkill ?? installSkill)(command, { env }));
       return 0;
     }
     if (command.kind === "version") {
-      stdout(`banana version ${CLI_VERSION}`);
+      say(`banana version ${CLI_VERSION}`);
       return 0;
     }
     if (command.kind === "update") {
-      stdout(await (runtime.update ?? updateCli)());
+      say(await (runtime.update ?? updateCli)());
       return 0;
     }
     const requestRuntime = createAuthRuntime(runtime);
@@ -407,15 +411,15 @@ export async function runCli(
               return typeof name === "string" ? name : "you";
             },
           })))();
-      stdout(
-        output.mode === "json"
-          ? JSON.stringify({ checks, status: overall(checks), ok: !failed })
-          : formatChecks(checks, runtime.stdout === undefined && supportsColor()),
-      );
+      if (output.mode === "json") {
+        stdout(JSON.stringify({ checks, status: overall(checks), ok: !failed }));
+      } else {
+        say(formatChecks(checks, runtime.stdout === undefined && supportsColor()));
+      }
       return failed ? 1 : 0;
     }
     if (command.kind === "uninstall") {
-      stdout(
+      say(
         await (runtime.uninstall ??
           ((only: { yes: boolean }) =>
             uninstallCli(only, {
@@ -434,9 +438,9 @@ export async function runCli(
     }
     if (command.kind === "auth") {
       if (command.action === "login") {
-        await login(requestRuntime, env, stdout, stderr);
+        await login(requestRuntime, env, say, warn);
       } else {
-        await logout(requestRuntime, env, stdout);
+        await logout(requestRuntime, env, say);
       }
       return 0;
     }
@@ -705,7 +709,8 @@ export async function runCli(
     return 0;
   } catch (error) {
     const failure = serializeFailure(error, outputMode);
-    stderr(failure.output);
+    if (failure.authored) warn(failure.output);
+    else stderr(failure.output);
     return failure.exitCode;
   }
 }

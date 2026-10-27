@@ -4,7 +4,12 @@
 
 Standalone access to the BananaSplit API for people and shell-enabled agents.
 
-Run it as `banana` or `bananasplit` — they're the same command.
+Run **banana** or **bananasplit** from any directory:
+
+```sh
+banana balance
+bananasplit balance
+```
 
 Full documentation, including the command reference and the MCP server, lives at [docs.bananasplit.net](https://docs.bananasplit.net).
 
