@@ -62,6 +62,12 @@ describe("renaming the CLI's own text", () => {
     );
   });
 
+  it("renames lines that open with a color code", () => {
+    expect(
+      renameCommand("\x1b[38;2;45;111;196m  banana balance\x1b[0m", "bananasplit"),
+    ).toBe("\x1b[38;2;45;111;196m  bananasplit balance\x1b[0m");
+  });
+
   it("changes nothing under the banana name", () => {
     expect(renameCommand("  banana expenses list", "banana")).toBe(
       "  banana expenses list",

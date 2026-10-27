@@ -61,12 +61,13 @@ export function invokedName(
  * command is renamed — one opening a line, as in usage and examples, or
  * quoted in backticks or after "for" in a sentence — so "the banana skill"
  * and skills/banana/SKILL.md keep the skill's name. API data never passes
- * through here: an expense called "banana bread" stays one.
+ * through here: an expense called "banana bread" stays one. Colored help
+ * opens each line with an escape code, which is skipped like the indent.
  */
 export function renameCommand(text: string, name: string) {
   return name === "banana"
     ? text
-    : text.replace(/(^[ \t]*|`|for )banana(?![\w-])/gm, `$1${name}`);
+    : text.replace(/(^(?:\x1b\[[0-9;]*m)*[ \t]*|`|for )banana(?![\w-])/gm, `$1${name}`);
 }
 
 export function isCI(env: Environment) {
