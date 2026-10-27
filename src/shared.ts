@@ -1,3 +1,4 @@
+import { win32 } from "node:path";
 import { parseArgs } from "node:util";
 import { version as CLI_VERSION } from "../package.json";
 import { CliFailure, type Environment, type OptionConfig } from "./types";
@@ -35,6 +36,37 @@ export const HOMEBREW_FORMULA = "bananasplit";
 export function homebrew(execPath: string) {
   const at = execPath.indexOf(`/Cellar/${HOMEBREW_FORMULA}/`);
   return at === -1 ? undefined : `${execPath.slice(0, at)}/bin/brew`;
+}
+
+/**
+ * The name the CLI was run as: `bananasplit` through the alias, otherwise
+ * `banana`. A compiled binary sees the name it was started by in `argv0`,
+ * even through install.sh's or Homebrew's symlink; the Windows shim has to
+ * say so in BANANA_INVOKED_AS, because it starts banana.exe by its own name.
+ * A package install runs src/bananasplit.ts instead, which passes the name.
+ */
+export function invokedName(
+  argv0: string = process.argv0,
+  env: Environment = process.env,
+) {
+  if (env.BANANA_INVOKED_AS === "bananasplit") return "bananasplit";
+  // win32.basename splits on both separators.
+  return win32.basename(argv0).replace(/\.exe$/i, "") === "bananasplit"
+    ? "bananasplit"
+    : "banana";
+}
+
+/**
+ * The CLI's own text with its commands under the name it was run as. Only a
+ * command is renamed — one opening a line, as in usage and examples, or
+ * quoted in backticks or after "for" in a sentence — so "the banana skill"
+ * and skills/banana/SKILL.md keep the skill's name. API data never passes
+ * through here: an expense called "banana bread" stays one.
+ */
+export function renameCommand(text: string, name: string) {
+  return name === "banana"
+    ? text
+    : text.replace(/(^[ \t]*|`|for )banana(?![\w-])/gm, `$1${name}`);
 }
 
 export function isCI(env: Environment) {

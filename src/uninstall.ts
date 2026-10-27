@@ -10,7 +10,13 @@ import { CliFailure, type Environment } from "./types";
 const PACKAGE = "@bananasplitapp/cli";
 const INDENT = "  ";
 /** What install.ps1 writes to bananasplit.cmd, which tells its shim from any other file. */
-export const WINDOWS_SHIM = '@"%~dp0banana.exe" %*';
+export const WINDOWS_SHIM = [
+  "@setlocal",
+  '@set "BANANA_INVOKED_AS=bananasplit"',
+  '@"%~dp0banana.exe" %*',
+].join("\n");
+/** The shim v0.5.0 wrote, before it named itself. */
+const WINDOWS_SHIM_V0_5 = '@"%~dp0banana.exe" %*';
 
 type UninstallProcess = {
   exited: Promise<number>;
@@ -57,7 +63,10 @@ export function defaultUninstallRuntime(): Omit<UninstallRuntime, "logout"> {
     isAlias: async (path, binary) => {
       try {
         if (path.endsWith(".cmd")) {
-          return (await Bun.file(path).text()).trim() === WINDOWS_SHIM;
+          const shim = (await Bun.file(path).text())
+            .replaceAll("\r\n", "\n")
+            .trim();
+          return shim === WINDOWS_SHIM || shim === WINDOWS_SHIM_V0_5;
         }
         return (
           (await lstat(path)).isSymbolicLink() &&

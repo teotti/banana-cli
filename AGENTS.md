@@ -338,6 +338,18 @@ removed by `uninstall`:
   known cost is cmd's "Terminate batch job (Y/N)?" prompt after Ctrl-C under
   `bananasplit`. Avoiding it would mean shipping a second copy of the binary.
 
+**Run as `bananasplit`, the CLI calls itself that.** Help, examples,
+`version`, and the CLI's own messages and errors all say `bananasplit`.
+`invokedName()` in `src/shared.ts` decides which name to use: a compiled
+binary reads `process.argv0`, which keeps the typed name through a symlink
+even though `execPath` resolves it. The Windows shim runs `banana.exe` by
+that name, so it sets `BANANA_INVOKED_AS` instead. A package install runs
+each bin by its resolved file path, so the `bananasplit` bin is a separate
+entry file, `src/bananasplit.ts`. `runCli` renames only text the CLI wrote,
+through `renameCommand()`: a `banana` that opens a line, sits in backticks or
+follows "for". API data and `skill install --print` are never rewritten, and
+the skill keeps its name, `banana`.
+
 `uninstall` removes the alias only if it is still the installer's: a symlink
 that resolves to this binary, or a `.cmd` whose contents are exactly the shim.
 A file someone else put there under that name is left alone.
