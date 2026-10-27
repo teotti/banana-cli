@@ -12,6 +12,8 @@ on:
       - install.ps1
       - src/update.ts
       - src/uninstall.ts
+      - src/shared.ts
+      - scripts/homebrew-formula.ts
       - .github/workflows/release.yml
 
 permissions:
@@ -230,9 +232,53 @@ jobs:
             Stop-Process $Server -Force -ErrorAction SilentlyContinue
           }
 
+  homebrew-formula:
+    needs: package
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - uses: actions/download-artifact@v5
+        with:
+          name: release-assets
+          path: assets
+      - name: Install the formula from this build
+        shell: bash
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_FROM_API: "1"
+        run: |
+          set -eu
+          version="$(bun -p 'require("./package.json").version')"
+          # Served under /v<version>/ like a release, since brew reads the
+          # version from the URL.
+          root="$RUNNER_TEMP/banana-formula"
+          mkdir -p "$root/v$version"
+          cp assets/* "$root/v$version/"
+          python3 -m http.server 38124 --directory "$root" >/dev/null 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for _ in 1 2 3 4 5; do
+            curl -fsS "http://127.0.0.1:38124/v$version/SHA256SUMS" >/dev/null && break
+            sleep 1
+          done
+
+          brew tap-new --no-git local/bananasplit
+          tap="$(brew --repository)/Library/Taps/local/homebrew-bananasplit"
+          bun run scripts/homebrew-formula.ts "$version" "assets/SHA256SUMS" \
+            "http://127.0.0.1:38124/v$version" > "$tap/Formula/bananasplit.rb"
+          brew audit --strict local/bananasplit/bananasplit
+          brew install local/bananasplit/bananasplit
+          brew test local/bananasplit/bananasplit
+          prefix="$(brew --prefix)"
+          "$prefix/bin/banana" --help | grep -Fq "banana <command> [--json | --raw]"
+          "$prefix/bin/bananasplit" --help | grep -Fq "banana <command> [--json | --raw]"
+
   github-release:
     if: github.event_name == 'push'
-    needs: [installer-posix, installer-windows]
+    needs: [installer-posix, installer-windows, homebrew-formula]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -247,9 +293,42 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: gh release create "$GITHUB_REF_NAME" release/* --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
 
+  homebrew-tap:
+    if: github.event_name == 'push'
+    needs: github-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - uses: actions/download-artifact@v5
+        with:
+          name: release-assets
+          path: release
+      - name: Publish the formula to teotti/homebrew-bananasplit
+        shell: bash
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -eu
+          git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/teotti/homebrew-bananasplit.git" tap
+          mkdir -p tap/Formula
+          bun run scripts/homebrew-formula.ts "${GITHUB_REF_NAME#v}" release/SHA256SUMS > tap/Formula/bananasplit.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/bananasplit.rb
+          if git diff --cached --quiet; then
+            echo "Formula already at $GITHUB_REF_NAME"
+          else
+            git commit -m "bananasplit $GITHUB_REF_NAME"
+            git push
+          fi
+
   npm:
     if: github.event_name == 'push'
-    needs: [installer-posix, installer-windows]
+    needs: [installer-posix, installer-windows, homebrew-formula]
     runs-on: ubuntu-latest
     permissions:
       contents: read

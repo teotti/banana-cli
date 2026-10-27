@@ -3,6 +3,7 @@ import { version as CLI_VERSION } from "../package.json";
 import { BOLD, RESET, YELLOW } from "./colors";
 import { supportsColor } from "./help";
 import { note } from "./render";
+import { HOMEBREW_FORMULA, homebrew } from "./shared";
 import { CliFailure, type Environment, type Fetch } from "./types";
 
 const PACKAGE = "@bananasplitapp/cli";
@@ -129,6 +130,21 @@ export async function updateCli(
   overrides: Partial<UpdateRuntime> = {},
 ): Promise<string> {
   const runtime = { ...defaultRuntime(), ...overrides };
+
+  const brew = homebrew(runtime.execPath);
+  if (brew) {
+    await waitForUpdate(
+      runtime.spawn([brew, "upgrade", HOMEBREW_FORMULA], {
+        env: runtime.env,
+        stdout: "ignore",
+        stderr: "inherit",
+      }),
+    );
+    // brew installs what its tap names, which can trail the GitHub release
+    // (a stale tap, HOMEBREW_NO_AUTO_UPDATE), so the latest tag is not
+    // necessarily what is now installed.
+    return updated(undefined, runtime.color);
+  }
 
   if (!runtime.isStandalone) {
     await waitForUpdate(

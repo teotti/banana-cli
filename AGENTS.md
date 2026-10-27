@@ -325,6 +325,7 @@ its own way, and each one has to keep working through `upgrade` and be
 removed by `uninstall`:
 
 - **npm/Bun:** a second `bin` in `package.json`. The package manager owns it.
+- **Homebrew:** the formula links both names itself (see below).
 - **`install.sh`:** a relative symlink, `bananasplit -> banana`. An upgrade
   re-runs the installer in place, so the link is recreated, and a compiled
   binary reports its resolved path as `execPath`, so `bananasplit upgrade`
@@ -344,6 +345,29 @@ A file someone else put there under that name is left alone.
 The installer jobs in `release.yml` run both names. They also run on pull
 requests that touch the installers, `update.ts` or `uninstall.ts`. On those
 runs, the release-version check and the publish jobs are skipped.
+
+## Homebrew
+
+`brew install teotti/bananasplit/bananasplit` installs from the tap repo
+`teotti/homebrew-bananasplit`. A tap repo's name must start with `homebrew-`, or
+`brew` cannot find it from the short `user/tap/formula` form. The formula
+downloads the same release archives that `install.sh` does, and nobody edits it
+by hand. `scripts/homebrew-formula.ts` writes it from the release's
+`SHA256SUMS`, and the `homebrew-tap` job in `release.yml` pushes it after the
+GitHub release is published. That push uses the `HOMEBREW_TAP_TOKEN` secret, a
+token that can write to the tap repo. Before any release, the
+`homebrew-formula` job serves the archives it just built, then audits, installs
+and tests the generated formula from a local tap.
+
+A Homebrew binary lives in `<prefix>/Cellar/bananasplit/<version>/bin/`, and
+`homebrew()` in `src/shared.ts` recognizes a binary by that path. `upgrade`
+and `uninstall` then run `brew upgrade` or `brew uninstall` instead of touching
+the files. If the CLI rewrote them itself, Homebrew's records would stop
+matching what is on disk. v0.4.0 and earlier do not have this check, which is
+why the tap's first formula is the release after it.
+
+`doctor` compares the resolved path of the `banana` on PATH, because Homebrew
+puts a symlink there, and `execPath` is always the resolved binary.
 
 ## Usage tracking
 

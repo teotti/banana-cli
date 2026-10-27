@@ -68,6 +68,27 @@ describe("CLI updater", () => {
     ]);
   });
 
+  it("leaves a Homebrew install to brew instead of the installer", async () => {
+    const urls: string[] = [];
+    const test = updater({
+      execPath: "/opt/homebrew/Cellar/bananasplit/0.4.0/bin/banana",
+      platform: "darwin",
+      fetch: async (input) => {
+        urls.push(String(input));
+        return redirect("9.9.9");
+      },
+    });
+
+    expect(await updateCli(test.runtime)).toBe("Banana is now up to date.");
+    expect(test.calls).toEqual([
+      [
+        ["/opt/homebrew/bin/brew", "upgrade", "bananasplit"],
+        { env: { PATH: "/bin" }, stdout: "ignore", stderr: "inherit" },
+      ],
+    ]);
+    expect(urls).toEqual([]);
+  });
+
   it("runs the verified POSIX installer against the current binary directory", async () => {
     const urls: string[] = [];
     const test = updater({
