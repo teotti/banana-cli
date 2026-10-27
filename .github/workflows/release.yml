@@ -4,6 +4,15 @@ on:
   push:
     tags:
       - "v*.*.*"
+  # Builds and installer tests also run on a pull request that could break an
+  # install; only a tag publishes.
+  pull_request:
+    paths:
+      - install.sh
+      - install.ps1
+      - src/update.ts
+      - src/uninstall.ts
+      - .github/workflows/release.yml
 
 permissions:
   contents: read
@@ -18,6 +27,7 @@ jobs:
           bun-version: 1.4.0
       - run: bun install --frozen-lockfile
       - name: Verify release version
+        if: github.event_name == 'push'
         shell: bash
         run: |
           set -eu
@@ -182,6 +192,15 @@ jobs:
           Copy-Item assets/* $Good
           Copy-Item $Good $Bad -Recurse
           Add-Content (Join-Path $Bad "banana-windows-x64.zip") "corrupt"
+          # Select-String finding nothing is not an error, so check the exit code
+          # and the text before anything else can overwrite $LASTEXITCODE.
+          function Assert-Help($Command) {
+            $Output = & $Command --help | Out-String
+            if ($LASTEXITCODE -ne 0) { throw "$Command --help exited $LASTEXITCODE" }
+            if (-not $Output.Contains("banana <command> [--json | --raw]")) {
+              throw "$Command --help did not print the usage line"
+            }
+          }
           $Server = Start-Process python -ArgumentList "-m", "http.server", "38123", "--directory", $Root -PassThru
           try {
             for ($Attempt = 0; $Attempt -lt 5; $Attempt++) {
@@ -196,22 +215,23 @@ jobs:
             $env:BANANA_INSTALL_DIR = $InstallDir
             $env:BANANA_RELEASE_BASE_URL = "http://127.0.0.1:38123/good"
             & ./install.ps1
-            & (Join-Path $InstallDir "banana.exe") --help | Select-String -SimpleMatch "banana <command> [--json | --raw]"
-            & (Join-Path $InstallDir "bananasplit.cmd") --help | Select-String -SimpleMatch "banana <command> [--json | --raw]"
+            Assert-Help (Join-Path $InstallDir "banana.exe")
+            Assert-Help (Join-Path $InstallDir "bananasplit.cmd")
             Set-Content (Join-Path $InstallDir "banana.exe") "broken"
             & ./install.ps1
-            & (Join-Path $InstallDir "banana.exe") --help | Select-String -SimpleMatch "banana <command> [--json | --raw]"
+            Assert-Help (Join-Path $InstallDir "banana.exe")
 
             $env:BANANA_RELEASE_BASE_URL = "http://127.0.0.1:38123/bad"
             $Failed = $false
             try { & ./install.ps1 } catch { $Failed = $true }
             if (-not $Failed) { throw "Installer accepted a bad checksum" }
-            & (Join-Path $InstallDir "banana.exe") --help | Select-String -SimpleMatch "banana <command> [--json | --raw]"
+            Assert-Help (Join-Path $InstallDir "banana.exe")
           } finally {
             Stop-Process $Server -Force -ErrorAction SilentlyContinue
           }
 
   github-release:
+    if: github.event_name == 'push'
     needs: [installer-posix, installer-windows]
     runs-on: ubuntu-latest
     permissions:
@@ -228,6 +248,7 @@ jobs:
         run: gh release create "$GITHUB_REF_NAME" release/* --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
 
   npm:
+    if: github.event_name == 'push'
     needs: [installer-posix, installer-windows]
     runs-on: ubuntu-latest
     permissions:

@@ -318,6 +318,33 @@ which defers to a detached `Wait-Process` — the same shape `upgrade` uses. A
 package install is removed by its package manager, never by deleting
 `execPath`, which there is Bun itself.
 
+## The `bananasplit` alias
+
+The CLI also runs as `bananasplit`. Each install path provides that name in
+its own way, and each one has to keep working through `upgrade` and be
+removed by `uninstall`:
+
+- **npm/Bun:** a second `bin` in `package.json`. The package manager owns it.
+- **`install.sh`:** a relative symlink, `bananasplit -> banana`. An upgrade
+  re-runs the installer in place, so the link is recreated, and a compiled
+  binary reports its resolved path as `execPath`, so `bananasplit upgrade`
+  replaces `banana`, not the link.
+- **`install.ps1`:** a `bananasplit.cmd` shim (`WINDOWS_SHIM` in
+  `src/uninstall.ts`). A symlink needs elevation, and a hard link breaks:
+  `upgrade` moves a new `banana.exe` over the old one, which leaves a hard link
+  on the old binary. Because the Windows upgrade installs into a staging
+  directory, `src/update.ts` moves the shim out along with the exe. The
+  known cost is cmd's "Terminate batch job (Y/N)?" prompt after Ctrl-C under
+  `bananasplit`. Avoiding it would mean shipping a second copy of the binary.
+
+`uninstall` removes the alias only if it is still the installer's: a symlink
+that resolves to this binary, or a `.cmd` whose contents are exactly the shim.
+A file someone else put there under that name is left alone.
+
+The installer jobs in `release.yml` run both names. They also run on pull
+requests that touch the installers, `update.ts` or `uninstall.ts`. On those
+runs, the release-version check and the publish jobs are skipped.
+
 ## Usage tracking
 
 There is **no client-side telemetry** and no analytics SDK. Usage is measured on
