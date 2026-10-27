@@ -4,6 +4,7 @@ import { uninstallCli, type UninstallRuntime } from "../src/uninstall";
 import { harness } from "./helpers";
 
 const BINARY = "/home/user/.local/bin/banana";
+const ALIAS = "/home/user/.local/bin/bananasplit";
 
 /**
  * A machine that never loses a file: `removed` records what was deleted and
@@ -45,7 +46,7 @@ describe("banana uninstall", () => {
 
     const message = await uninstallCli({ yes: false }, test.runtime);
 
-    expect(test.removed).toEqual([BINARY]);
+    expect(test.removed).toEqual([BINARY, ALIAS]);
     expect(test.loggedOut()).toBe(1);
     expect(message).toBe("Removed ~/.local/bin/banana.\nLogged out.");
   });
@@ -91,7 +92,7 @@ describe("banana uninstall", () => {
 
     await uninstallCli({ yes: true }, test.runtime);
 
-    expect(test.removed).toEqual([BINARY]);
+    expect(test.removed).toEqual([BINARY, ALIAS]);
   });
 
   it("names the skill and the Path entry without touching them", async () => {
@@ -115,6 +116,7 @@ describe("banana uninstall", () => {
 
     expect(test.spawned[0]?.[0]).toBe("powershell.exe");
     expect(test.spawned[0]?.join(" ")).toContain("Wait-Process -Id 4242");
+    expect(test.spawned[0]?.join(" ")).toContain("C:\\bin\\bananasplit.cmd");
     expect(test.removed).toEqual([]);
     expect(message).toContain("will finish uninstalling after this command exits");
   });
@@ -168,7 +170,7 @@ describe("banana uninstall", () => {
 
     await uninstallCli({ yes: true }, test.runtime);
 
-    expect(order).toEqual(["logout", "remove"]);
+    expect(order).toEqual(["logout", "remove", "remove"]);
   });
 
   it("stops before deleting anything if the login cannot be revoked", async () => {

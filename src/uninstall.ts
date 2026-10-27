@@ -1,6 +1,6 @@
 import { rm, stat } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, win32 } from "node:path";
+import { dirname, join, win32 } from "node:path";
 import { supportsColor } from "./help";
 import { note } from "./render";
 import { agentTargets, type SkillRuntime } from "./skill";
@@ -198,6 +198,9 @@ export async function uninstallCli(
         [
           `Wait-Process -Id ${runtime.pid} -ErrorAction SilentlyContinue`,
           `Remove-Item -LiteralPath '${runtime.execPath.replaceAll("'", "''")}' -Force`,
+          `Remove-Item -LiteralPath '${win32
+            .join(win32.dirname(runtime.execPath), "bananasplit.cmd")
+            .replaceAll("'", "''")}' -Force -ErrorAction SilentlyContinue`,
         ].join("\n"),
       ],
       { detached: true, env: runtime.env, stdin: "ignore", stdout: "ignore", stderr: "ignore" },
@@ -207,6 +210,8 @@ export async function uninstallCli(
   } else {
     try {
       await runtime.remove(step.target);
+      // The installer's alias; `remove` is forced, so a missing one is fine.
+      await runtime.remove(join(dirname(step.target), "bananasplit"));
     } catch (error) {
       throw new CliFailure(
         "config",

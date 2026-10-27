@@ -135,6 +135,9 @@ describe("CLI updater", () => {
     expect(test.calls[1]?.[0][3]).toContain(
       "Move-Item -LiteralPath 'C:\\Tools\\Banana\\.banana-update-42\\banana.exe'",
     );
+    expect(test.calls[1]?.[0][3]).toContain(
+      "Move-Item -LiteralPath 'C:\\Tools\\Banana\\.banana-update-42\\bananasplit.cmd' -Destination 'C:\\Tools\\Banana\\bananasplit.cmd' -Force",
+    );
     expect(test.calls[1]?.[1]).toMatchObject({
       detached: true,
       env: { PATH: "/bin" },

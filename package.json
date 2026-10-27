@@ -13,7 +13,8 @@
     "skills"
   ],
   "bin": {
-    "banana": "./src/index.ts"
+    "banana": "./src/index.ts",
+    "bananasplit": "./src/index.ts"
   },
   "engines": {
     "bun": ">=1.4.0"
